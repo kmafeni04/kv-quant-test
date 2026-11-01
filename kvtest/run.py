@@ -12,7 +12,8 @@ import os
 import statistics
 import time
 
-from . import client, codegraders, config, fit as fitmod, longctx, loops, server as srv, tasks
+from . import (client, codegraders, config, fit as fitmod, hostinfo, longctx, loops,
+               server as srv, tasks)
 
 
 def log(msg):
@@ -64,6 +65,11 @@ class Runner:
         self.l_tasks = tasks.l_tasks(facts)
         self.c_tasks = codegraders.c_tasks()
         self.doc_sha = longctx.sha256(doc)
+        self.run_started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        self.run_finished = None
+        self.hardware = hostinfo.snapshot()
+        _atomic_write(os.path.join(self.out_dir, "hardware.json"), self.hardware)
+        log(f"host: {hostinfo.one_line(self.hardware)}")
 
     # ------------------------------------------------------------ request plumbing
     def _sample(self, base, prompt_or_messages, budget, sampling, tier, task_id, rep, seed,
@@ -327,6 +333,7 @@ class Runner:
                 raise
             except Exception as e:                                 # noqa: BLE001
                 log(f"arm {model}/{kv}: crashed ({type(e).__name__}: {e}); continuing")
+        self.run_finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         raw = self.build_raw(unrun=unrun)
         _atomic_write(os.path.join(self.out_dir, "raw.json"), raw)
         log(f"raw.json written: {'deadline_reached' if unrun else 'complete'}")
@@ -369,6 +376,7 @@ class Runner:
         manifest["document_sha256"] = self.doc_sha
         manifest["context"] = self.ctx
         manifest["knobs"] = self.knobs_map
+        manifest["host_runtime"] = self.hardware
         return {
             "manifest": manifest,
             "stamp": self.stamp,
@@ -383,6 +391,13 @@ class Runner:
             "samples": len(samples),
             "deadline_reached": bool(unrun),
             "unrun_arms": [{"model": m, "kv": kv} for m, kv in (unrun or [])],
+            "timing": {
+                "run_started": getattr(self, "run_started", None),
+                "run_finished": getattr(self, "run_finished", None),
+                "arms_wall_s": int(round(sum((a.get("wall_s") or 0)
+                                             for a in arms.values()))),
+                "fit_wall_s": (self.fit or {}).get("wall_s_total") or (self.fit or {}).get("wall_s"),
+            },
             "tasks": {"R": [t["id"] for t in self.r_tasks],
                       "C": [t["id"] for t in self.c_tasks],
                       "L": [t["id"] for t in self.l_tasks]},

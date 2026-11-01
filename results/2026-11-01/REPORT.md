@@ -5,6 +5,20 @@ Context (identical for every arm): **-c 102400**. llama.cpp `2a667032dc78`, docu
 Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **15 h 27 m** (14 h 12 m of it the matrix).
 
 
+## Hardware and build this ran on
+
+| item | value |
+|---|---|
+| GPU | NVIDIA GeForce RTX 3080 Laptop GPU, 16384 MiB total, compute 8.6 |
+| driver / CUDA | 615.78.08 / 13.4 |
+| CPU | 11th Gen Intel(R) Core(TM) i9-11950H @ 2.60GHz (16 logical cores) |
+| RAM | 62.5 GiB |
+| OS / kernel | Arch Linux / 7.2.11-arch1-1 |
+| llama.cpp | 2a667032dc78 (clean working tree) |
+| build flags | `CMAKE_BUILD_TYPE=Release`, `CMAKE_CUDA_ARCHITECTURES=86`, `GGML_CUDA=ON`, `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=OFF`, `GGML_CUDA_FA_QUANTS=q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`, `GGML_CUDA_NO_VMM=OFF`, `GGML_NATIVE=ON` |
+
+Recorded: captured on the same machine, recorded in hardware.json. Per-arm GPU peak and the offload knobs are in the offload table above; those are what the memory budget was actually spent on.
+
 ## Verdict
 
 **Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.95 of 100 (R 80.0% and C 89.9% averaged), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB peak with {'ncmoe': 48} offloaded. **Its lead is not established:** 11 of the other arms — including its own model's f16 arm — cannot be distinguished from it (p ≥ 0.05, all paired samples pooled).

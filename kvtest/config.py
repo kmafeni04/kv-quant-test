@@ -117,5 +117,5 @@ def build_manifest():
         "reasoning_budget_tokens": REASONING_BUDGET_TOKENS,
         "reps": REPS,
         "seeds": SEEDS,
-        "host": "RTX 3080 Laptop 16384 MiB / 64 GiB RAM",
+        "host": (lock().get("host") or {}),
     }

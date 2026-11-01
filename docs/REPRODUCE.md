@@ -76,6 +76,7 @@ Never the scoring rules.
 | `matrix.csv` | one row per model × KV: R %, C %/resolved, loop rate, speeds, VRAM, knobs |
 | `REPORT.md`, `report.html` | the write-up and the three-tab browser artifact |
 | `figures/` | every figure as a standalone SVG plus `figures.json` with the numbers behind it |
+| `hardware.json` | GPU, VRAM, driver, CUDA, CPU, RAM, OS/kernel, llama.cpp commit and build flags, captured by `kvtest/hostinfo.py` when the run starts; the same block is printed under "Hardware and build this ran on" in `REPORT.md` and is embedded in `raw.json` as `manifest.host_runtime` |
 | `logs/<model>__<kv>.log` | full llama-server stderr including the exact command line |
 
 Every number in `REPORT.md` is derived from `samples.jsonl`; no metric is written by hand.

@@ -12,10 +12,14 @@
     }
   },
   "host": {
+    "captured_at_utc": "2026-11-01T19:09:24Z",
+    "cpu": "11th Gen Intel(R) Core(TM) i9-11950H @ 2.60GHz",
     "cpu_cores": 16,
-    "gpu": "NVIDIA GeForce RTX 3080 Laptop GPU, 16384 MiB, sm_86",
-    "os": "Arch Linux, kernel 7.2.11",
-    "ram_gib": 62
+    "cuda": "13.4",
+    "driver": "615.78.08",
+    "gpu": "NVIDIA GeForce RTX 3080 Laptop GPU 16384 MiB sm_86",
+    "os": "Arch Linux, kernel 7.2.11-arch1-1",
+    "ram_gib": 62.5
   },
   "llama_cpp": {
     "build_type": "Release",

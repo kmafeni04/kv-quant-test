@@ -5,6 +5,19 @@ Context (identical for every arm): **-c 16384**. llama.cpp `2a667032dc78`, docum
 Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **—** (13 m 12 s of it the matrix).
 
 
+## Hardware and build this ran on
+
+| item | value |
+|---|---|
+| GPU | NVIDIA GeForce RTX 3080 Laptop GPU 16384 MiB sm_86 |
+| driver / CUDA | — / — |
+| CPU | — (16 logical cores) |
+| RAM | 62.5 GiB |
+| OS / kernel | Arch Linux, kernel 7.2.11-arch1-1 / — |
+| llama.cpp | 2a667032dc78 |
+
+Recorded: from models.lock.json (run predates runtime capture). Per-arm GPU peak and the offload knobs are in the offload table above; those are what the memory budget was actually spent on.
+
 ## Verdict
 
 **Best overall: `qwen36-35b` with a `q4_0` KV cache** — capability 81.20 of 100 (R 70.0% and C 92.4% averaged), 0/4 structural-loop samples, 45.6 t/s decode, 9541 MiB peak with {'ncmoe': 26} offloaded. **Its lead is not established:** 0 of the other arms — including its own model's f16 arm — cannot be distinguished from it (p ≥ 0.05, all paired samples pooled).

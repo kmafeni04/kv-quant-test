@@ -9,7 +9,7 @@ import os
 import statistics
 from collections import defaultdict
 
-from . import config
+from . import config, hostinfo
 
 KV_ORDER = config.KV_ARMS
 
@@ -184,6 +184,48 @@ def _parse_iso(s):
         return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
     except (TypeError, ValueError):
         return None
+
+
+def load_hardware(out_dir, raw):
+    """Hardware as it was when the run happened. Returns (hardware, provenance)."""
+    hw = (raw.get("manifest") or {}).get("host_runtime")
+    if hw:
+        return hw, "captured at matrix start"
+    path = os.path.join(out_dir, "hardware.json")
+    if os.path.exists(path):
+        return json.load(open(path)), "captured on the same machine, recorded in hardware.json"
+    lock = config.lock().get("host") or {}
+    if lock:
+        return {"gpu": {"name": lock.get("gpu")}, "ram_gib": lock.get("ram_gib"),
+                "cpu": {"logical_cores": lock.get("cpu_cores")}, "os": lock.get("os"),
+                "llama_cpp": config.lock().get("llama_cpp") or {}}, \
+            "from models.lock.json (run predates runtime capture)"
+    return {}, "unknown"
+
+
+def _hardware_md(hw, provenance):
+    if not hw:
+        return ["_Hardware not recorded._"]
+    g, ll, c = hw.get("gpu") or {}, hw.get("llama_cpp") or {}, hw.get("cpu") or {}
+    flags = ll.get("flags") or {}
+    lines = ["| item | value |", "|---|---|",
+             f"| GPU | {g.get('name') or '—'}"
+             + (f", {g['memory_total_mib']} MiB total" if g.get("memory_total_mib") else "")
+             + (f", compute {g['compute_capability']}" if g.get("compute_capability") else "") + " |",
+             f"| driver / CUDA | {g.get('driver') or '—'} / {hw.get('cuda_toolkit') or '—'} |",
+             f"| CPU | {c.get('model') or '—'} ({c.get('logical_cores') or '—'} logical cores) |",
+             f"| RAM | {hw.get('ram_gib') or '—'} GiB |",
+             f"| OS / kernel | {hw.get('os') or '—'} / {hw.get('kernel') or '—'} |",
+             f"| llama.cpp | {str(ll.get('commit') or '—')[:12]}"
+             + ("" if "tree_dirty" not in ll else
+                (" (clean working tree)" if not ll["tree_dirty"] else " (DIRTY working tree)"))
+             + " |"]
+    if flags:
+        lines.append("| build flags | " + ", ".join(f"`{k}={v}`" for k, v in sorted(flags.items()))
+                     + " |")
+    lines.append(f"\nRecorded: {provenance}. Per-arm GPU peak and the offload knobs are in the "
+                 f"offload table above; those are what the memory budget was actually spent on.")
+    return lines
 
 
 def load_timing(out_dir, raw):
@@ -568,6 +610,8 @@ def write_markdown(out, raw, rows, path):
     unfit = (raw.get("fit") or {}).get("unfit") or []
     if unfit:
         L.append(f"> **Unfit / excluded models:** {', '.join(unfit)}\n")
+    L.append("\n## Hardware and build this ran on\n")
+    L.extend(_hardware_md(out.get("_hardware") or {}, out.get("_hardware_provenance") or ""))
     L.append("\n## Verdict\n")
     v = out.get("verdict") or {}
     if v.get("overall"):
@@ -870,7 +914,7 @@ generation-length cut-off, not wrong code. The prose summary, with those caveats
 <h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
 <section id="t-tasks" hidden>{taskplots}{_task_details(out)}</section>
 <section id="t-loops" hidden>{loopcounts}{gallery}</section>
-<footer>{_manifest_block(raw)}</footer>
+<footer>{_manifest_block(raw, out.get('_hardware'))}</footer>
 <script>
 const RAW = {json.dumps(data)};
 function tab(name) {{
@@ -1442,13 +1486,15 @@ def _gallery(out, raw):
     return f'<div class="dim">{note}</div>' + "".join(cards)
 
 
-def _manifest_block(raw):
+def _manifest_block(raw, hardware=None):
     man = raw.get("manifest") or {}
     cmds = ("python3 -m kvtest.selftest\n"
             "python3 -m kvtest.fit --stamp STAMP\n"
             "python3 -m kvtest.run --stamp STAMP --resume --deadline-hours 22\n"
             "python3 -m kvtest.report results/STAMP")
-    return ("<b>Manifest</b><pre>" + html.escape(json.dumps({
+    hw = hardware or (raw.get("manifest") or {}).get("host_runtime") or {}
+    hwline = ("<b>Hardware</b> " + html.escape(hostinfo.one_line(hw)) + "<br>") if hw else ""
+    return (hwline + "<b>Manifest</b><pre>" + html.escape(json.dumps({
         "llama_cpp": man.get("llama_cpp"), "context": raw.get("context"),
         "seeds": man.get("seeds"), "budgets": man.get("budgets"), "reps": man.get("reps"),
         "document_sha256": (raw.get("document") or {}).get("sha256"),
@@ -1508,6 +1554,7 @@ def build(out_dir):
     out = agg(raw, samples, arms)
     out["_stamp"] = raw.get("stamp") or os.path.basename(out_dir.rstrip("/"))
     out["_timing"] = load_timing(out_dir, raw)
+    out["_hardware"], out["_hardware_provenance"] = load_hardware(out_dir, raw)
     out["_samples_path"] = os.path.join(out_dir, "samples.jsonl")
     rows = deltas(out)
     write_markdown(out, raw, rows, os.path.join(out_dir, "REPORT.md"))

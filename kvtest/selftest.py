@@ -326,6 +326,13 @@ def test_runner_end_to_end(tmp):
     tool = next(s for s in samples if s["task"] == "tool_episode")
     check("tool episode flagged as a loop", tool["flagged"], tool.get("flag_reason"))
     check("loop sample flagged in the sample stream", any(s["flagged"] for s in samples))
+    check("run recorded the hardware it ran on",
+          os.path.exists(os.path.join(out_dir, "hardware.json")), os.listdir(out_dir))
+    hw = json.load(open(os.path.join(out_dir, "hardware.json")))
+    from . import hostinfo
+    check("hardware capture names the GPU, the CPU and the build flags",
+          bool((hw.get("gpu") or {}).get("name")) and bool((hw.get("cpu") or {}).get("model"))
+          and (hw.get("llama_cpp") or {}).get("flags"), hostinfo.one_line(hw))
     check("raw.json has one arm and a manifest",
           len(raw["arms"]) == 1 and "llama_cpp" in raw["manifest"])
     return out_dir
@@ -414,6 +421,13 @@ def test_report(tmp, runner_out):
           [t[2] for t in v["flat"]])
     # and it must also work on the real end-to-end arm the mock produced
     report.build(runner_out)
+    md = open(os.path.join(runner_out, "REPORT.md")).read()
+    check("report prints the hardware and build section",
+          "## Hardware and build this ran on" in md and "| GPU |" in md,
+          [ln for ln in md.splitlines() if "GPU" in ln][:2])
+    check("report falls back to hardware.json when raw.json predates capture",
+          "hardware.json" in md or "captured at matrix start" in md,
+          [ln for ln in md.splitlines() if "Recorded:" in ln][:1])
 
 
 def main():
