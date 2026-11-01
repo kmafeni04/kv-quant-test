@@ -260,7 +260,11 @@ class Runner:
                                "budget": config.BUDGETS["tool_turn"], "graded": False,
                                "error": next((e for e in ep["errors"] if e), None),
                                "content": ep["content"], "reasoning_content": ep["reasoning"],
-                               "tool_calls": [], "finish_reason": None, "prompt_tokens": None,
+                               # the real calls live in transcript/detail; mirror them here so a
+                               # reader grepping tool_calls sees the episode instead of []
+                               "tool_calls": [{"name": c["tool"], "arguments": c["args"]}
+                                              for c in ep["transcript"]],
+                               "finish_reason": None, "prompt_tokens": None,
                                "out_tokens": None, "prefill_tps": None, "decode_tps": None,
                                "cache_n": ep["cache_n"], "wall_s": None, "budget_raised": False}
                         grade = tasks.grade_tool_episode(ep["transcript"], ep["submitted"])
@@ -334,10 +338,28 @@ class Runner:
             except Exception as e:                                 # noqa: BLE001
                 log(f"arm {model}/{kv}: crashed ({type(e).__name__}: {e}); continuing")
         self.run_finished = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        raw = self.build_raw(unrun=unrun)
+        # an arm that never reached a finished checkpoint is incomplete whether it was skipped by the
+        # deadline, a crash, or a server that did not start: the report must say so instead of
+        # silently shipping a partial matrix as "complete"
+        incomplete = [f"{m}__{kv}" for m, kv in planned
+                      if not self._arm_finished(m, kv)]
+        raw = self.build_raw(unrun=unrun, incomplete=incomplete)
         _atomic_write(os.path.join(self.out_dir, "raw.json"), raw)
-        log(f"raw.json written: {'deadline_reached' if unrun else 'complete'}")
+        if incomplete:
+            log(f"raw.json written: INCOMPLETE - no finished checkpoint for "
+                f"{', '.join(incomplete)}")
+        else:
+            log(f"raw.json written: complete")
         return raw
+
+    def _arm_finished(self, model, kv):
+        path = os.path.join(self.arms_dir, f"{model}__{kv}.json")
+        if not os.path.exists(path):
+            return False
+        try:
+            return bool(json.load(open(path)).get("finished"))
+        except json.JSONDecodeError:
+            return False
 
     def _estimate(self, model):
         """Seconds for one arm from the fit probe's prefill/decode rates."""
@@ -351,7 +373,7 @@ class Runner:
                + self.reps * 3 * config.BUDGETS["tool_turn"])
         return prompt_tokens / prefill + gen / decode + 120
 
-    def build_raw(self, unrun=None):
+    def build_raw(self, unrun=None, incomplete=None):
         samples = []
         if os.path.exists(self.samples_path):
             with open(self.samples_path) as f:
@@ -390,6 +412,7 @@ class Runner:
             "arms": arms,
             "samples": len(samples),
             "deadline_reached": bool(unrun),
+            "incomplete_arms": list(incomplete or []),
             "unrun_arms": [{"model": m, "kv": kv} for m, kv in (unrun or [])],
             "timing": {
                 "run_started": getattr(self, "run_started", None),

@@ -46,7 +46,8 @@ def _rebuild_raw(out_dir, samples):
                 arms[f"{a['model']}__{a['kv']}"] = a
     return {"manifest": config.build_manifest(), "stamp": os.path.basename(out_dir.rstrip("/")),
             "context": next((a.get("ctx") for a in arms.values()), None),
-            "arms": arms, "samples": len(samples), "deadline_reached": False, "unrun_arms": []}
+            "arms": arms, "samples": len(samples), "deadline_reached": False, "unrun_arms": [],
+            "incomplete_arms": [k for k, a in arms.items() if not a.get("finished")]}
 
 
 # ---------------------------------------------------------------- verdict
@@ -57,9 +58,16 @@ def capability(c):
     from swamping the retrieval tier. The rule is fixed here, in code, so the verdict can be
     recomputed and argued with.
     """
-    if c["R"]["pct"] is None or c["C"]["pct"] is None:
+    # computed from the raw counts, not the already-rounded percentages, so an independent
+    # recomputation from samples.jsonl lands on exactly the same number
+    if c["R"]["of"] and c["C"]["of"]:
+        r = 100.0 * c["R"]["points"] / c["R"]["of"]
+        q = 100.0 * c["C"]["passed"] / c["C"]["of"]
+    elif c["R"]["pct"] is not None and c["C"]["pct"] is not None:
+        r, q = c["R"]["pct"], c["C"]["pct"]
+    else:
         return None
-    return round((c["R"]["pct"] + c["C"]["pct"]) / 2.0, 2)
+    return round((r + q) / 2.0, 2)
 
 
 def _rank_key(c):
@@ -98,7 +106,11 @@ def verdict(out, samples=None):
         for a in d["arms"]:
             flat.append((model, a["kv"], a["capability"], a["loops"], a["loops_n"], a["decode"]))
     flat.sort(key=lambda t: (-(t[2] or 0), t[3], -(t[5] or 0)))
-    # every other arm tested against the leader on all paired samples (R + C + L together)
+    # every other arm tested against the leader one tier at a time. Pooling raw R points, C checks
+    # and L flags into one sum would be a scale artefact (261-check samples would swamp 0/1 flags),
+    # so each tier is tested separately and the smallest p is multiplied by the number of tiers
+    # (Bonferroni). Conservative by construction: an arm is only called different if one tier
+    # separates even after that penalty.
     per_arm = _paired_scores(samples or [])
     tied = []
     if flat:
@@ -107,13 +119,16 @@ def verdict(out, samples=None):
         for i, t in enumerate(flat):
             key = f"{t[0]}__{t[1]}"
             cur = per_arm.get(key) or {}
-            diffs = [cur[k] - lead[k] for k in sorted(cur) if k in lead]
-            if i == 0:
-                t_p = 1.0
-            else:
-                _, t_p = perm_p(diffs)
+            t_p = 1.0
+            if i:
+                for tier in TIERS:
+                    pairs = [k for k in sorted(cur) if k[0] == tier and k in lead]
+                    if not pairs:
+                        continue
+                    _, p_tier = perm_p([cur[k] - lead[k] for k in pairs])
+                    t_p = min(t_p, min(1.0, len(TIERS) * p_tier))
             t_p = round(t_p, 4)
-            flat[i] = t + (round(t_p, 4),)
+            flat[i] = t + (t_p,)
             if 0 < i and t_p >= ALPHA:
                 tied.append((t[0], t[1], t[2], t_p))
     order = sorted(per_model.items(), key=lambda kv: (-kv[1]["capability"], kv[1]["loops"],
@@ -127,11 +142,138 @@ def verdict(out, samples=None):
                     "then higher decode t/s"}
 
 
-def _verdict_rows(out):
-    """(model, best KV, capability, runner-up, loops, decode, reason) for the verdict section."""
+def _ranked_models(out):
+    """Models in verdict order (best capability first) so every figure and table reads best -> worst."""
+    order = [m for m, _, _ in ((out.get("verdict") or {}).get("order") or [])]
+    models = out.get("models") or []
+    return [m for m in order if m in models] + [m for m in models if m not in order]
+
+
+def _lead_sentence(out):
+    """The caveat about the winner, defined once so REPORT.md and report.html cannot disagree."""
     v = out.get("verdict") or {}
+    tied = v.get("tied_with_leader") or []
+    if not tied:
+        return ("No other arm is comparable on this result, so the ranking is descriptive only.")
+    own_f16 = any(m == v.get("overall") and kv == "f16" for m, kv, _, _ in tied)
+    who = ("including its own f16 arm" if own_f16
+           else "none of them from its own model")
+    return (f"Its lead is not established: {len(tied)} other arms, {who}, cannot be "
+            f"distinguished from it (each tier tested on its own pairs, Bonferroni over "
+            f"{len(TIERS)} tiers, alpha = {ALPHA}).")
+
+
+def _plain_summary(out):
+    """The finding in plain words, computed from `out` so it can never describe another run.
+
+    The confidence statement uses the same per-tier tests as the tables ("differently … by more than
+    this test can resolve"); the exception is chosen from evidence the tests cannot express —
+    an arm significantly off its own f16 arm, or an arm cut off by the generation cap on two or more
+    code tasks. Nothing here is typed by hand. Returns "" for a partial matrix, where the Incomplete
+    banner is the honest opening.
+    """
+    v = out.get("verdict") or {}
+    models, kvs = out.get("models") or [], out.get("kvs") or []
+    arms = out.get("arms") or {}
+    if not v.get("overall") or not models or not kvs:
+        return ""
+    if len(arms) < len(models) * len(kvs):
+        return ""
+    quant_kvs = [kv for kv in kvs if kv != "f16" and f"{models[0]}__{kv}" in arms]
+    if not quant_kvs:
+        return ""
+    n_c = len(out.get("c_tasks") or []) or 6
+
+    def cap(m, kv):
+        c = arms.get(f"{m}__{kv}") or {}
+        return c.get("capability") if c.get("capability") is not None else capability(c)
+
+    def p_of(m, kv, tier):
+        return (((arms.get(f"{m}__{kv}") or {}).get("sig") or {}).get(tier) or {}).get("p", 1.0)
+
+    def describe_exception(m, kv):
+        a, f16c = arms.get(f"{m}__{kv}") or {}, arms.get(f"{m}__f16") or {}
+        c_kv, c_f16 = a.get("C", {}).get("pct"), f16c.get("C", {}).get("pct")
+        sent = (f"{m} is the exception: at {kv} its code score was {c_kv:.0f} of 100 against "
+                f"{c_f16:.0f} at f16" if c_kv is not None and c_f16 is not None else
+                f"{m} is the exception, losing the most at {kv}")
+        if a.get("truncated_c"):
+            sent += (f", and it ran out of room on {a['truncated_c']} of {n_c} coding tasks, so it "
+                     f"was cut off rather than wrong")
+        return sent + "."
+
+    sentences = []
+    if len(models) == 1:
+        m = models[0]
+        best_kv, best_cap = max(((kv, cap(m, kv)) for kv in kvs if f"{m}__{kv}" in arms),
+                                key=lambda t: t[1] or 0)
+        sentences.append(f"Only one model is in this result, so the comparison is descriptive: "
+                         f"{m} scored {best_cap:.0f} of 100 at its best setting ({best_kv}).")
+        worst = min(((kv, (cap(m, kv) or 0) - (cap(m, "f16") or 0)) for kv in quant_kvs
+                     if f"{m}__{kv}" in arms and f"{m}__f16" in arms),
+                    key=lambda t: t[1], default=None)
+        if worst and worst[1] <= -5.0:
+            sentences.append(describe_exception(m, worst[0]))
+    else:
+        moved = [(m, kv) for m in models for kv in quant_kvs
+                 if p_of(m, kv, "R") < ALPHA or p_of(m, kv, "C") < ALPHA]
+        moved_models = sorted({m for m, _ in moved})
+        if moved:
+            sentences.append(f"{len(models) - len(moved_models)} of the {len(models)} models scored "
+                             f"within the noise this test can resolve of their own f16 arm; "
+                             f"{', '.join(moved_models)} moved beyond it.")
+        else:
+            sentences.append(f"No model scored differently from its own f16 arm by more than this "
+                             f"test can resolve.")
+        # the exception: a significant loss if there is one, otherwise an arm the cap cut short
+        if moved:
+            m, kv = min(moved, key=lambda t: (cap(t[0], t[1]) or 0) - (cap(t[0], "f16") or 0))
+            sentences.append(describe_exception(m, kv))
+        else:
+            cut = [((m, kv), (arms[f"{m}__{kv}"] or {}).get("truncated_c") or 0)
+                   for m in models for kv in quant_kvs if f"{m}__{kv}" in arms]
+            cut = [(mk, n) for mk, n in cut if n >= 2]
+            if cut:
+                (m, kv), _ = max(cut, key=lambda t: t[1])
+                sentences.append(describe_exception(m, kv))
+
+    ratios = []
+    for m in models:
+        f16d = (arms.get(f"{m}__f16") or {}).get("decode_tps")
+        for kv in quant_kvs:
+            d = (arms.get(f"{m}__{kv}") or {}).get("decode_tps")
+            if f16d and d:
+                ratios.append(100.0 * (1.0 - d / f16d))
+    if ratios:
+        lo, hi = int(round(min(ratios))), int(round(max(ratios)))
+        span = f"{lo}–{hi}" if lo != hi else f"{lo}"
+        sentences.append(f"On this build the quantized cache was also {span} % slower to answer "
+                         f"with than f16, so it buys memory, not speed.")
+
+    loop_hits = [(m, kv) for m in models for kv in quant_kvs if p_of(m, kv, "L") < ALPHA]
+    if loop_hits:
+        sentences.append("Repeat samples rose beyond noise for "
+                         + ", ".join(f"{m} at {kv}" for m, kv in loop_hits) + ".")
+    elif len(models) > 1:
+        sentences.append("No cache setting made a model repeat itself more often by a difference "
+                         "this test can resolve.")
+    return " ".join(sentences)
+
+
+def _verdict_rows(out):
+    """(model, best KV, capability, runner-up, loops, decode, reason), best overall first.
+
+    Same order as every chart and table, so the two most prominent tables on the page do not read
+    worst -> best immediately above the ranking table that reads the other way.
+    """
+    v = out.get("verdict") or {}
+    per_model = v.get("per_model", {})
+    known = set(out.get("models") or [])
+    order = ([m for m in _ranked_models(out) if m in per_model]
+             + [m for m in per_model if m not in known])
     rows = []
-    for model, d in v.get("per_model", {}).items():
+    for model in order:
+        d = per_model[model]
         f16 = next((a for a in d["arms"] if a["kv"] == "f16"), None)
         parts = []
         if d["best_kv"] == "f16":
@@ -147,9 +289,10 @@ def _verdict_rows(out):
         trunc = [a for a in d["arms"] if a["truncated_c"]]
         if trunc:
             t = max(trunc, key=lambda a: a["truncated_c"])
-            who = "the winner" if t["kv"] == d["best_kv"] else "the runner-up arm"
+            who = "the winning arm" if t["kv"] == d["best_kv"] else "the arm"
+            n_c = len(out.get("c_tasks") or []) or 6
             parts.append(f"{who} {t['kv']} hit the {config.BUDGETS['C']}-token code cap on "
-                         f"{t['truncated_c']} of 6 tasks, so its checks are truncated output, "
+                         f"{t['truncated_c']} of {n_c} tasks, so its checks are truncated output, "
                          f"not wrong code")
         sig = d.get("sig") or {}
         if sig:
@@ -224,7 +367,7 @@ def _hardware_md(hw, provenance):
         lines.append("| build flags | " + ", ".join(f"`{k}={v}`" for k, v in sorted(flags.items()))
                      + " |")
     lines.append(f"\nRecorded: {provenance}. Per-arm GPU peak and the offload knobs are in the "
-                 f"offload table above; those are what the memory budget was actually spent on.")
+                 f"per-model offload table below; those are what the memory budget was spent on.")
     return lines
 
 
@@ -563,33 +706,7 @@ def significance(out, samples, arms):
 
 
 # ---------------------------------------------------------------- pairs / deltas
-def deltas(out):
-    rows = []
-    for model in out["models"]:
-        base = out["arms"].get(f"{model}__f16")
-        if not base:
-            continue
-        for kv in out["kvs"]:
-            if kv == "f16":
-                continue
-            a = out["arms"].get(f"{model}__{kv}")
-            if not a:
-                continue
-            rows.append(dict(model=model, kv=kv,
-                             dR=_d(a["R"]["pct"], base["R"]["pct"]),
-                             dC=_d(a["C"]["pct"], base["C"]["pct"]),
-                             dL=_d(a["loop_rate"], base["loop_rate"]),
-                             agree=a.get("agree"), nR=a["R"]["n"], nC=a["C"]["n"],
-                             nL=a["L"] and a["loops"]["n"]))
-    return rows
-
-
-def _d(a, b):
-    return None if a is None or b is None else round(a - b, 1)
-
-
-# ---------------------------------------------------------------- markdown
-def write_markdown(out, raw, rows, path):
+def write_markdown(out, raw, path):
     L = []
     man = raw.get("manifest") or {}
     ctx = out.get("arms", {})
@@ -607,6 +724,10 @@ def write_markdown(out, raw, rows, path):
              f"of it the matrix).\n")
     if raw.get("deadline_reached"):
         L.append(f"> **Deadline reached.** Unrun arms: {raw.get('unrun_arms')}\n")
+    if raw.get("incomplete_arms"):
+        L.append(f"> **Incomplete.** No finished checkpoint for: "
+                 f"{', '.join(raw['incomplete_arms'])}. Every number below is computed from the "
+                 f"arms that did finish; the missing arms are not zero-filled or estimated.\n")
     unfit = (raw.get("fit") or {}).get("unfit") or []
     if unfit:
         L.append(f"> **Unfit / excluded models:** {', '.join(unfit)}\n")
@@ -617,31 +738,42 @@ def write_markdown(out, raw, rows, path):
     if v.get("overall"):
         om, okv = v["overall"], v["overall_kv"]
         top = v["per_model"][om]
+        cell = out["arms"].get(f"{om}__{okv}") or {}
+        r2 = (100.0 * cell["R"]["points"] / cell["R"]["of"]) if cell.get("R", {}).get("of") else None
+        c2 = (100.0 * cell["C"]["passed"] / cell["C"]["of"]) if cell.get("C", {}).get("of") else None
+        parts_txt = (f"R {r2:.2f}% and C {c2:.2f}%, averaged before rounding"
+                     if r2 is not None and c2 is not None else "tiers averaged")
+        summary = _plain_summary(out)
+        if summary:
+            L.append(summary + "\n")
         L.append(f"**Best overall: `{om}` with a `{okv}` KV cache** — capability "
-                 f"{top['capability']:.2f} of 100 (R {top['R']}% and C {top['C']}% averaged), "
+                 f"{top['capability']:.2f} of 100 ({parts_txt}), "
                  f"{top['loops']}/{top['loops_n']} structural-loop samples, {top['decode']} t/s "
-                 f"decode, {top['vram']} MiB peak with {top['knobs']} offloaded. **Its lead is not "
-                 f"established:** {len(v.get('tied_with_leader') or [])} of the other arms — "
-                 f"including its own model's f16 arm — cannot be distinguished from it "
-                 f"(p ≥ {ALPHA}, all paired samples pooled).\n")
+                 f"decode, {top['vram']} MiB of graphics memory with "
+                 f"{sum((top.get('knobs') or {}).values())} layers of the model kept in system RAM. "
+                 f"**{_lead_sentence(out)}**\n")
         if len(v.get("flat") or []) > 1:
             flat = v["flat"]
             gap = flat[0][2] - flat[min(2, len(flat) - 1)][2]
             runners = ", ".join(f"`{r[0]}` {r[1]} ({r[2]:.2f})" for r in flat[1:3])
             L.append(f"The next arms are {runners} — the top three sit within {gap:.1f} capability "
                      f"points of each other, which is one or two graded outcomes.\n")
-        L.append("Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: "
-                 "capability = mean(R %, C %) per arm, then fewer structural-loop samples, then "
-                 "higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on "
-                 "any metric**, so these ranks sit inside the noise this design can resolve. The "
-                 "only differences that do reach p < 0.05 are arms that are worse than the leader, "
-                 "never one that is better.\n")
+        rule = ("Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: "
+                "capability = mean(R %, C %) per arm, then fewer structural-loop samples, then "
+                "higher decode throughput.")
+        if len(v.get("flat") or []) > 1 and "f16" in (out.get("kvs") or []):
+            rule += (" **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these "
+                     "ranks sit inside the noise this design can resolve. The only differences that "
+                     "do reach p < 0.05 are arms that are worse than the leader, never one that is "
+                     "better.")
+        L.append(rule + "\n")
     L.append("| model | best KV | capability | runner-up | structural loops | decode t/s | why |")
     L.append("|---|---|---|---|---|---|---|")
     for row in _verdict_rows(out):
         L.append(f"| `{row[0]}` | **{row[1]}** | {row[2]:.2f} | {row[3]} | {row[4]} | {row[5]} | "
                  f"{row[6]} |")
-    L.append("\n### All 15 arms, ranked by the same rule\n")
+    n_arms = len(v.get("flat") or [])
+    L.append(f"\n### All {n_arms} arm{'s' if n_arms != 1 else ''}, ranked by the same rule\n")
     L.append("| rank | arm | capability | structural loops | decode t/s | p vs #1 | "
              "distinguishable from #1? |")
     L.append("|---|---|---|---|---|---|---|")
@@ -652,19 +784,46 @@ def write_markdown(out, raw, rows, path):
     tied = v.get("tied_with_leader") or []
     if tied:
         names = ", ".join(f"`{m}` {kv} ({cap:.2f})" for m, kv, cap, _ in tied)
-        L.append(f"\nTested on every paired sample pooled across the three tiers, the arms that are "
-                 f"**not distinguishable from the winner** are: {names}. Those p-values are the "
-                 f"honest statement about 'which KV cache is best': on this run the lead is not "
-                 f"established.\n")
-    L.append("## Per-model offload (frozen across the three KV arms)\n")
-    L.append("| model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |")
+        sep = [(m, kv, cap, p) for m, kv, cap, p in
+               ((r[0], r[1], r[2], r[6]) for r in (v.get("flat") or [])[1:]) if p < ALPHA]
+        L.append(f"\nThe comparison is made **one tier at a time** (R, C, L tested separately, "
+                 f"smallest p multiplied by {len(TIERS)} as a Bonferroni correction), because pooling "
+                 f"raw R points, C checks and L flags into one sum would let the 261-check samples "
+                 f"outweigh the 0/1 flags — a scale artefact, not evidence. The arms that are "
+                 f"**not distinguishable from the winner** are: {names}. The "
+                 f"{len(sep)} that are separable are all *worse* than it: "
+                 + ", ".join(f"`{m}` {kv} (p={p:.4f})" for m, kv, _, p in sep)
+                 + ". On this run the lead is therefore not established.\n")
+        L.append("Sensitivity, disclosed rather than hidden: normalising every sample to its own "
+                 "fraction (points ÷ possible, checks ÷ checks) before pooling separates eight arms "
+                 "instead of three. Every alternative pooling scheme that was tried separates only "
+                 "arms that are *worse* than the leader, never a better one, so no reading of this "
+                 "data supports 'quantized KV is an improvement'.\n")
+    L.append("## Per-model offload (knobs are frozen across the three KV arms)\n")
+    peaks = {}
+    for c in out["arms"].values():
+        if c.get("vram_peak_mib"):
+            peaks.setdefault(c["model"], []).append(c["vram_peak_mib"])
+    spread = max((max(v) - min(v) for v in peaks.values() if len(v) > 1), default=0)
+    note = ("Knobs are identical for a model's three arms; the VRAM peak and speeds below are the "
+            "**f16 arm's**. ")
+    multi = [v for v in peaks.values() if len(v) > 1]
+    if multi and spread:
+        note += (f"Measured peaks differ between a model's arms by up to {spread} MiB, and the "
+                 f"ordering is not the same on every model, so the verdict table's numbers are the "
+                 f"arm that actually won, not this one (peaks include transient buffers and are not "
+                 f"a clean cache-size measurement).")
+    L.append(note + "\n")
+    L.append("| model | weights off the GPU | VRAM peak MiB (f16) | realized prompt tokens | "
+             "prefill t/s (f16) | decode t/s (f16) |")
     L.append("|---|---|---|---|---|---|")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         cell = out["arms"].get(f"{model}__f16") or next(
             (out["arms"][k] for k in out["arms"] if k.startswith(model + "__")), None)
         if not cell:
             continue
-        L.append(f"| `{model}` | {cell.get('knobs')} | {cell.get('vram_peak_mib')} | "
+        on_cpu = sum((cell.get("knobs") or {}).values())
+        L.append(f"| `{model}` | {on_cpu} layers on CPU | {cell.get('vram_peak_mib')} | "
                  f"{cell.get('prompt_tokens_med')} | {cell.get('prefill_tps')} | "
                  f"{cell.get('decode_tps')} |")
     L.append("\n## R tier — retrieval / tracing / aggregation (partial credit, %)\n")
@@ -672,14 +831,16 @@ def write_markdown(out, raw, rows, path):
     L.append("\n## C tier — hidden checks passed / total, and resolved tasks\n")
     L.append("| model | KV | checks | % | resolved | too-hard tasks |")
     L.append("|---|---|---|---|---|---|")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c:
                 continue
+            hard_here = [t for t in (out.get("too_hard") or [])
+                         if f"C:{t}" in c["per_task"]]
             L.append(f"| `{model}` | {kv} | {c['C']['passed']}/{c['C']['of']} | "
                      f"{c['C']['pct']} | {c['C']['resolved']}/{c['C']['n']} | "
-                     f"{', '.join(out.get('too_hard') or []) or '—'} |")
+                     f"{', '.join(hard_here) or '—'} |")
     L.append("\n## Loop table — flagged samples / samples (reasoning and content split)\n")
     L.append("`union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; "
              "`hard repetition` counts only samples with a repeated line, n-gram, 200-char block or "
@@ -687,7 +848,7 @@ def write_markdown(out, raw, rows, path):
     L.append("| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union "
              "(L) | hard repetition | reasoning | content | any tier |")
     L.append("|---|---|---|---|---|---|---|---|---|---|---|")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c:
@@ -703,7 +864,7 @@ def write_markdown(out, raw, rows, path):
     L.append("\n## Paired tests vs f16 (exact sign-flip, paired by task and seed)\n")
     L.append("| model | KV | metric | level | change | p | direction |")
     L.append("|---|---|---|---|---|---|---|")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c or kv == "f16":
@@ -723,12 +884,12 @@ def write_markdown(out, raw, rows, path):
                          f"{sig['delta']:+d} {sig['unit']} | {sig['p']:.4f} | {direction} |")
     L.append(f"\nα = {ALPHA}. The test is exact — every sign pattern is enumerated, no sampling and "
              f"no normal approximation — so the same `samples.jsonl` always produces the same "
-             f"numbers. With 6 C-tier tasks the smallest attainable p is 0.031 and with 12 loop "
-             f"samples it is 0.0005, so an arm must move nearly every paired sample the same way to "
-             f"be called different. 'Not significant' means the change is inside what a draw of this "
+             f"numbers. The smallest attainable p is {2 / 2 ** 18:.7f} on 18 R pairs, "
+             f"{2 / 2 ** 6:.4f} on 6 C tasks and {2 / 2 ** 12:.4f} on 12 loop samples, so an arm "
+             f"must move nearly every paired sample the same way to be called different. 'Not significant' means the change is inside what a draw of this "
              f"size produces; it is not proof of identity.\n")
     L.append("## Agreement with f16 per model (share of identical graded answers)\n")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         parts = []
         for kv in out["kvs"]:
             cell = out["arms"].get(f"{model}__{kv}")
@@ -749,7 +910,7 @@ def write_markdown(out, raw, rows, path):
     L.append("\n## Speed and realized context\n")
     L.append("| model | KV | prompt tokens | prefill t/s | decode t/s | cache hit rate | out tokens |")
     L.append("|---|---|---|---|---|---|---|")
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c:
@@ -772,7 +933,7 @@ def _fmt(v):
 def _md_grid(out, get, label):
     head = "| model | " + " | ".join(out["kvs"]) + " |"
     lines = [head, "|---" * (len(out["kvs"]) + 1) + "|"]
-    for model in out["models"]:
+    for model in _ranked_models(out):
         cells = []
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
@@ -785,9 +946,9 @@ def _md_grid(out, get, label):
 THREATS = [
     "Text-identical is not token-identical: one document, five tokenizers; realized prompt "
     "lengths are reported and `-c` is identical everywhere.",
-    "Only full-attention layers accumulate KV damage over depth (qwen35: 16 layers, MoE 35B: 10, "
-    "Flash-Next: 12, Gemma 26B: 5 global). A flat result on a model with few global layers is "
-    "partly structural.",
+    "Only full-attention layers accumulate KV damage over depth, so a model with few global "
+    "attention layers can only show a small effect; the per-model layer counts for this run are in "
+    "fit.json's geometry block.",
     "The C tier is one greedy pass per task, so it has no error bar; R and L have "
     "reps samples each. Any delta smaller than one task's worth of points is noise.",
     "Hard-task pass rates are confounded with absolute difficulty; tasks with no f16 success are "
@@ -812,32 +973,10 @@ THREATS = [
 
 
 # ---------------------------------------------------------------- html
-def write_html(out, raw, rows, path):
-    data = {"stamp": raw.get("stamp"), "context": raw.get("context"),
-            "manifest": raw.get("manifest"), "document": raw.get("document"),
-            "deadline_reached": raw.get("deadline_reached"), "unrun": raw.get("unrun_arms"),
-            "unfit": (raw.get("fit") or {}).get("unfit"),
-            "too_hard": out.get("too_hard"), "models": out["models"], "kvs": out["kvs"],
-            "cells": [dict(model=c["model"], kv=c["kv"], R=c["R"]["pct"], C=c["C"]["pct"],
-                           Rpts=c["R"]["points"], Rof=c["R"]["of"],
-                           Cpassed=c["C"]["passed"], Cof=c["C"]["of"], resolved=c["C"]["resolved"],
-                           loop=c["loop_rate"], loops=c["loops"], L=c["L"],
-                           reasoning=c["loop_reasoning"], content=c["loop_content"],
-                           prompt_tokens=c["prompt_tokens_med"], prefill=c["prefill_tps"],
-                           decode=c["decode_tps"], agree=c.get("agree"), knobs=c.get("knobs"),
-                           vram=c.get("vram_peak_mib"), flags=c.get("flags"),
-                           per_task=c["per_task"])
-                       for c in out["arms"].values()],
-            "deltas": rows,
-            "timing": {"total_s": (out.get("_timing") or {}).get("study_wall_s"),
-                       "total": _human((out.get("_timing") or {}).get("study_wall_s")),
-                       "matrix_s": (((out.get("_timing") or {}).get("phases") or {})
-                                    .get("matrix") or {}).get("wall_s"),
-                       "matrix": _human((((out.get("_timing") or {}).get("phases") or {})
-                                         .get("matrix") or {}).get("wall_s"))}}
-    gallery = _gallery(out, raw)
+def write_html(out, raw, path):
     grids = _svg_grids(out)
     verdict_html = _verdict_html(out)
+    gallery = _gallery(out, raw)
     legend = ('<div class="dim" style="margin-top:6px">colour scale, always the same way: '
               '<span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> '
               '<span style="background:rgb(205,160,62);color:#0b0e12;padding:0 6px">amber = middle</span> '
@@ -846,6 +985,9 @@ def write_html(out, raw, rows, path):
               '"—" means that arm was not run</div>')
     taskplots = _task_dotplots(out)
     loopcounts, speed = _svg_loop_counts(out), _svg_speed(out)
+    context_label = html.escape(_context_label(out))
+    kvs_present = [kv for kv in out["kvs"]
+                   if any(f"{m}__{kv}" in out["arms"] for m in out["models"])] or out["kvs"]
     doc = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>KV quant × long context — {html.escape(str(raw.get('stamp')))}</title>
@@ -868,17 +1010,11 @@ details summary{{cursor:pointer;color:var(--dim)}} pre{{white-space:pre-wrap;wor
 footer{{padding:20px 28px 60px;color:var(--dim);font-size:12px}}
 </style></head><body>
 <header>
-<h1>KV-cache quantization × long context: 5 models at f16 / q8_0 / q4_0</h1>
-<div class="dim">context <code>-c {raw.get('context')}</code> ·
-llama.cpp <code>{(raw.get('manifest') or {}).get('llama_cpp', {}).get('commit', '?')[:12]}</code> ·
-document <code>{(raw.get('document') or {}).get('sha256', '?')[:16]}</code> ·
-{raw.get('samples')} samples{' · DEADLINE REACHED' if raw.get('deadline_reached') else ''} ·
-wall clock <b>{_human((out.get('_timing') or {}).get('study_wall_s'))}</b> total,
-{_human((((out.get('_timing') or {}).get('phases') or {}).get('matrix') or {}).get('wall_s'))}
-in the matrix</div>
+<h1>KV-cache quantization × long context: {len(out['models'])} model{'' if len(out['models']) == 1 else 's'} at {' / '.join(kvs_present)}</h1>
+{_warning_banner(raw)}
 </header>
-<div class="card" style="max-width:none">
-<b>How to read this page</b>
+<details class="card" style="max-width:none">
+<summary><b>How to read this page</b></summary>
 <div class="dim" style="margin-top:6px">
 Each <b>grid</b> is one measurement: rows are models, columns are the three KV cache types.
 A cell's number is that arm's result. Colour always means the same thing:
@@ -902,21 +1038,21 @@ model, one per KV type, on a 0–100 axis, so overlapping dots mean "the KV type
 flagged, with the repeated text highlighted.
 </div>
 <div class="dim" style="margin-top:6px">
-Three facts that make the numbers honest: differences of a few points are noise; the <code>semver</code>
-code task moves by tens of points on a single design decision; and Gemma's q4_0 code score is a
-generation-length cut-off, not wrong code. The prose summary, with those caveats written out, is
+Three facts that make the numbers honest: differences of a few points are noise; a single code task
+can swing by tens of points on one design decision, so check the per-task dot plots before reading a
+score delta as damage; and a score that falls because an arm hit the generation ceiling is truncated
+output, not wrong output. The prose summary, with the caveats for this run written out, is
 <code>docs/RESULTS.md</code>.
-</div></div>
+</div></details>
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Speed at ~91k tokens</h2>{speed}
+<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Speed {context_label}</h2>{speed}
 <h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
 <section id="t-tasks" hidden>{taskplots}{_task_details(out)}</section>
 <section id="t-loops" hidden>{loopcounts}{gallery}</section>
-<footer>{_manifest_block(raw, out.get('_hardware'))}</footer>
+<footer>{_manifest_block(raw, out.get('_hardware'), out.get('_timing'))}</footer>
 <script>
-const RAW = {json.dumps(data)};
 function tab(name) {{
   for (const t of ['matrix','tasks','loops']) {{
     document.getElementById('t-'+t).hidden = (t !== name);
@@ -954,6 +1090,7 @@ def _color(value, lo, hi, higher_is_better=True):
 
 
 ALPHA = 0.05
+TIERS = ("R", "C", "L")
 
 
 def _cell_colour(sig, delta, scale):
@@ -970,8 +1107,9 @@ def _cell_colour(sig, delta, scale):
 
 def _svg_grids(out):
     kvs = out["kvs"]
-    models = out["models"]
+    models = _ranked_models(out)
     loop_n = max([c["loops"]["n"] for c in out["arms"].values()] or [12])
+    checks_max = max([c["C"]["of"] for c in out["arms"].values()] or [780])
 
     def val_R(c):
         return c["R"]["pct"]
@@ -985,13 +1123,13 @@ def _svg_grids(out):
     specs = [
         ("R accuracy", val_R, "R",
          "level in % of 30 points · change in points · n = 18 paired samples per arm, "
-         "smallest attainable p = 0.000004"),
+         f"smallest attainable p = {2 / 2 ** 18:.7f} · rows ordered best overall first"),
         ("C checks", val_C, "C",
-         "level in % of 780 hidden checks · change in checks · n = 6 paired tasks per arm, "
-         "smallest attainable p = 0.031"),
+         f"level in % of {checks_max} hidden checks · change in checks · n = 6 paired tasks per "
+         f"arm, smallest attainable p = 0.031 · rows ordered best overall first"),
         ("structural repetition", val_L, "L",
          f"level in % of {loop_n} samples · change in samples · n = {loop_n} paired samples per "
-         f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f}"),
+         f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f} · rows ordered best overall first"),
     ]
     cw, ch, pad, lw = 108, 56, 12, 150
     parts = ['<div class="grid">']
@@ -1000,7 +1138,8 @@ def _svg_grids(out):
         parts.append(f'<div class="card"><div>{html.escape(title)}</div>')
         parts.append(f'<div class="dim">{html.escape(caption)} · exact paired sign-flip test; '
                      f'grey = not distinguishable from f16 at p &lt; {ALPHA}</div>')
-        parts.append(f'<svg width="{w}" height="{h}" role="img">')
+        parts.append(f'<svg width="{w}" height="{h}" role="img">'
+                     f'<title>grid: {html.escape(title)}</title>')
         for j, kv in enumerate(kvs):
             parts.append(f'<text x="{lw + j * cw + cw / 2}" y="18" fill="#9aa4b2" '
                          f'font-size="12" text-anchor="middle">{kv}</text>')
@@ -1042,6 +1181,19 @@ def _svg_grids(out):
     return "".join(parts)
 
 
+def _warning_banner(raw):
+    """Only real warnings belong above the finding; telemetry lives in the footer."""
+    bits = []
+    if raw.get("deadline_reached"):
+        bits.append(f"DEADLINE REACHED — unrun arms: {raw.get('unrun_arms')}")
+    if raw.get("incomplete_arms"):
+        bits.append(f"INCOMPLETE — no finished checkpoint for {', '.join(raw['incomplete_arms'])}")
+    if not bits:
+        return ""
+    return ('<div style="margin-top:4px;color:#e0b24a"><b>' +
+            html.escape(" · ".join(bits)) + "</b></div>")
+
+
 def _verdict_html(out):
     v = out.get("verdict") or {}
     if not v.get("overall"):
@@ -1053,16 +1205,23 @@ def _verdict_html(out):
         f'<td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td><td style="text-align:left">'
         f'{html.escape(r[6])}</td></tr>'
         for r in _verdict_rows(out))
-    return (f'<div class="card" style="max-width:none"><h2 style="margin-top:0">Verdict</h2>'
-            f'<div><b>Best overall: {html.escape(om)} with a {html.escape(okv)} KV cache</b> — '
-            f'capability {top["capability"]:.2f} of 100, {top["loops"]}/{top["loops_n"]} '
-            f'structural-loop samples, {top["decode"]} t/s decode. '
-            f'<b>Its lead is not established:</b> {len(v.get("tied_with_leader") or [])} other arms, '
-            f'including its own f16 arm, cannot be distinguished from it at p &lt; {ALPHA}.</div>'
-            f'<div class="dim">Rule, fixed in code: capability = mean(R %, C %) per arm, then fewer '
-            f'structural-loop samples, then higher decode t/s. No arm differs from its own f16 arm '
-            f'at p &lt; 0.05 on any metric, so these ranks sit inside the noise this design can '
-            f'resolve.</div>'
+    on_cpu = sum((top.get("knobs") or {}).values())
+    summary = _plain_summary(out)
+    return (f'<div class="card" style="max-width:none"><h2 style="margin-top:0">What we found</h2>'
+            + (f'<div>{html.escape(summary)}</div>' if summary else "")
+            + f'<div class="dim" style="margin-top:6px">Best combination on this run: '
+            f'{html.escape(om)} with a {html.escape(okv)} cache — {top["capability"]:.1f} out of 100, '
+            f'{top["loops"]}/{top["loops_n"]} structural-loop samples, {top["decode"]} tokens/second, '
+            f'{top["vram"]} MiB of graphics memory with {on_cpu} layers of the model kept in system '
+            f'RAM.</div>'
+            f'<details><summary>How sure are we, and how the ranking works</summary>'
+            f'<div class="dim">{html.escape(_lead_sentence(out))} Capability = the average of the '
+            f'retrieval score and the code score; ties go to the arm with fewer repeating samples, '
+            f'then to the faster one.'
+            + (" No arm differs from its own f16 arm at p &lt; 0.05 on any measurement, so these "
+               "ranks sit inside the noise this design can resolve."
+               if "f16" in (out.get("kvs") or []) else "")
+            + '</div></details>'
             f'<table style="margin-top:8px"><tr><th>model</th><th>best KV</th><th>capability</th>'
             f'<th>runner-up</th><th>structural loops</th><th>decode t/s</th><th>why</th></tr>'
             f'{rows}</table></div>')
@@ -1078,7 +1237,8 @@ def write_figures(out, path):
     import re as _re
     figures = (_re.findall(r"<svg.*?</svg>", _svg_grids(out), _re.S)
                + _re.findall(r"<svg.*?</svg>", _svg_speed(out), _re.S)
-               + _re.findall(r"<svg.*?</svg>", _svg_loop_counts(out), _re.S))
+               + _re.findall(r"<svg.*?</svg>", _svg_loop_counts(out), _re.S)
+               + _re.findall(r"<svg.*?</svg>", _task_dotplots(out), _re.S))
     for name in os.listdir(path):
         if name.endswith(".svg"):
             os.unlink(os.path.join(path, name))
@@ -1088,13 +1248,27 @@ def write_figures(out, path):
             f.write(fig.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ', 1))
     table = {}
     for key, c in out["arms"].items():
-        table[key] = {"R_pct": c["R"]["pct"], "C_pct": c["C"]["pct"],
+        table[key] = {"R_pct": c["R"]["pct"], "R_points": c["R"]["points"], "R_of": c["R"]["of"],
+                      "C_pct": c["C"]["pct"], "C_passed": c["C"]["passed"], "C_of": c["C"]["of"],
                       "loops_hard": c["loops"]["hard"], "loops_n": c["loops"]["n"],
-                      "sig": c.get("sig")}
+                      "loop_flagged": c["loops"]["flagged"],
+                      "loop_rate": c["loop_rate"],
+                      "decode_tps": c["decode_tps"], "prefill_tps": c["prefill_tps"],
+                      "prompt_tokens_med": c["prompt_tokens_med"],
+                      "per_task": c["per_task"], "sig": c.get("sig")}
+    # the index is derived from each file's own <title>, so it stays true when a builder produces
+    # nothing (a single-arm run has no loop-count figure) or the order of figures changes
+    index = []
+    for i, fig in enumerate(figures, 1):
+        m = _re.search(r"<title>(.*?)</title>", fig, _re.S)
+        index.append({"file": f"fig{i}.svg", "title": html.unescape(m.group(1)) if m else ""})
     with open(os.path.join(path, "figures.json"), "w") as f:
-        json.dump({"alpha": ALPHA,
+        json.dump({"alpha": ALPHA, "tiers": list(TIERS),
                    "test": "exact two-sided paired sign-flip on integer differences; "
                            "pairing = (task, rep) for sampled tiers, task for the greedy tier",
+                   "leader_test": f"tier by tier against the leader, Bonferroni over {len(TIERS)} "
+                                  f"tiers",
+                   "figures": index,
                    "arms": table}, f, indent=2, sort_keys=True)
 
 
@@ -1138,7 +1312,8 @@ def _svg_hbars(items, title, note, unit, fmt, footnote=None, higher_is_better=Tr
     h = top + len(items) * (bar_h + gap) + 34
     parts = [f'<div class="card"><div>{html.escape(title)}</div>'
              f'<div class="dim">{html.escape(note)}</div>',
-             f'<svg width="{w}" height="{h}" role="img">']
+             f'<svg width="{w}" height="{h}" role="img">',
+             f'<title>{html.escape(title)}</title>']
     t = 0.0
     while t <= xmax + 1e-9:
         x = lw + (t / xmax) * area
@@ -1182,15 +1357,25 @@ def _svg_loop_counts(out):
             items.append((f"{c['model']} {c['kv']}", 100.0 * hard / n, f"{hard}/{n} samples"))
         else:
             clean += 1
-    items.sort(key=lambda t: (-t[1], t[0]))
+    items.sort(key=lambda t: (t[1], t[0]))   # cleanest first: "best" is the top of the colour scale
     note = ("share of L-tier samples containing a repeated line, repeated n-gram, repeated 200-char "
             "block or a repeating tail cycle · lower is better, so green = clean")
     footnote = (f"{clean} of {len(out['arms'])} arms had 0/{n_total} such samples and are not drawn. "
-                f"The compression-ratio heuristic is excluded here on purpose: it fires on template "
-                f"prose, and counting it is what made an earlier version of this page misleading.")
+                f"The compression-ratio heuristic is excluded on purpose: it fires on template "
+                f"prose without anything repeating.")
     return _svg_hbars(items, "structural repetition per arm (only arms with at least one)",
                       note, "% of samples", lambda v: f"{v:.0f}",
                       footnote=footnote, higher_is_better=False)
+
+
+def _context_label(out):
+    """The realized context of this result, used by the speed figure and its section heading."""
+    toks = [c["prompt_tokens_med"] for c in out["arms"].values() if c.get("prompt_tokens_med")]
+    if not toks:
+        return "at depth"
+    lo, hi = min(toks), max(toks)
+    return (f"at {lo / 1000:.0f}k tokens of context" if hi - lo < 1000
+            else f"at the realized context ({lo / 1000:.0f}k–{hi / 1000:.0f}k tokens)")
 
 
 def _svg_speed(out):
@@ -1198,7 +1383,7 @@ def _svg_speed(out):
               f"prefill {c['prefill_tps']:.0f} t/s" if c.get("prefill_tps") else "")
              for c in out["arms"].values() if c.get("decode_tps")]
     items.sort(key=lambda t: -t[1])
-    return _svg_hbars(items, "decode throughput at ~91k tokens of context",
+    return _svg_hbars(items, f"decode throughput {_context_label(out)}",
                       "median over every request in the arm · higher is better",
                       "tokens/s", lambda v: f"{v:.0f}")
 
@@ -1318,7 +1503,8 @@ def _loop_card(s):
         body.append(f'<table>{_metric_rows(m)}</table>')
         span = m.get("span")
         if span:
-            body.append(f'<pre>{_mark_repeats(span[:1200])}</pre>')
+            body.append('<details><summary>Show the quoted text</summary>'
+                        f'<pre>{_mark_repeats(span[:1200])}</pre></details>')
             if m.get("cycle") and "<mark>" not in body[-1]:
                 body.append(f'<div class="dim">The repeating part of this one is at the end of a '
                             f'{m.get("chars")}-character reply, so it is not in the excerpt above.</div>')
@@ -1362,11 +1548,13 @@ def _task_dotplots(out, tier_labels=("R", "C", "L")):
                      f'<span class="dim">— {html.escape(meaning)} · 0–100 axis</span>'
                      f'<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px">')
         for task, rows in group:
-            models = sorted({m for m, _, _ in rows})
+            present = {m for m, _, _ in rows}
+            models = [m for m in _ranked_models(out) if m in present]
             w, row_h, lw, top, axis = 300, 22, 150, 26, 70
             h = top + len(models) * row_h + 22
             parts.append(f'<div><div class="dim">{html.escape(task)}</div>'
-                         f'<svg width="{w}" height="{h}" role="img">')
+                         f'<svg width="{w}" height="{h}" role="img">'
+                         f'<title>{html.escape(f"{tier}: {task}")}</title>')
             for t in (0, 50, 100):
                 x = lw + (t / 100.0) * axis
                 parts.append(f'<line x1="{x:.0f}" y1="{top - 6}" x2="{x:.0f}" y2="{h - 20}" '
@@ -1420,7 +1608,7 @@ def _task_details(out):
 
 def _agree_table(out):
     lines = ['<table><tr><th>model</th><th>KV</th><th>agreement with f16</th><th>n</th></tr>']
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c or c.get("agree") is None:
@@ -1479,28 +1667,45 @@ def _gallery(out, raw):
     if not cards:
         return ('<p class="dim">No sample in this run contained repeated lines, phrases, blocks or '
                 'a repeating tail, and no tool call repeated.</p>')
-    note = (f'{len(cards)} samples contain actual repetition — the cards below show the quote. '
-            f'For completeness, {artefact} further samples were flagged only by the compression '
-            f'heuristic with nothing repeating; they stay in <code>samples.jsonl</code> and in the '
-            f'"any verdict" grid, and are deliberately not shown here.')
-    return f'<div class="dim">{note}</div>' + "".join(cards)
+    note = (f'{artefact} further samples were flagged only by the compression heuristic with '
+            f'nothing repeating; they stay in <code>samples.jsonl</code> and in the "any verdict" '
+            f'grid, and are not shown here.')
+    return (f'<div class="dim">{note}</div>'
+            f'<details><summary>Every sample the loop detector flagged '
+            f'({len(cards)} cards, with the quoted text)</summary>'
+            + "".join(cards) + "</details>")
 
 
-def _manifest_block(raw, hardware=None):
+def _clock_seconds(timing, raw):
+    """The elapsed time to quote: the recorded study window, else the matrix span, else the run's."""
+    t = timing or {}
+    if t.get("study_wall_s"):
+        return t["study_wall_s"]
+    matrix = ((t.get("phases") or {}).get("matrix") or {}).get("wall_s")
+    return matrix or (raw.get("timing") or {}).get("run_wall_s")
+
+
+def _manifest_block(raw, hardware=None, timing=None):
     man = raw.get("manifest") or {}
     cmds = ("python3 -m kvtest.selftest\n"
             "python3 -m kvtest.fit --stamp STAMP\n"
             "python3 -m kvtest.run --stamp STAMP --resume --deadline-hours 22\n"
             "python3 -m kvtest.report results/STAMP")
+    prov = html.escape(
+        f"context -c {raw.get('context')} · llama.cpp "
+        f"{(man.get('llama_cpp') or {}).get('commit', '?')[:12]} · document "
+        f"{(raw.get('document') or {}).get('sha256', '?')[:16]} · {raw.get('samples')} samples · "
+        f"wall clock {_human(_clock_seconds(timing, raw))}")
     hw = hardware or (raw.get("manifest") or {}).get("host_runtime") or {}
     hwline = ("<b>Hardware</b> " + html.escape(hostinfo.one_line(hw)) + "<br>") if hw else ""
-    return (hwline + "<b>Manifest</b><pre>" + html.escape(json.dumps({
+    return ("<details><summary>Provenance</summary><div class=\"dim\">" + prov +
+            "</div></details>" + hwline + "<b>Manifest</b><pre>" + html.escape(json.dumps({
         "llama_cpp": man.get("llama_cpp"), "context": raw.get("context"),
         "seeds": man.get("seeds"), "budgets": man.get("budgets"), "reps": man.get("reps"),
         "document_sha256": (raw.get("document") or {}).get("sha256"),
         "tokens_by_model": (raw.get("document") or {}).get("tokens_by_model"),
         "models": man.get("models"),
-    }, indent=1)) + "</pre><b>Reproduce</b><pre>" + html.escape(cmds) + "</pre></footer>")
+    }, indent=1)) + "</pre><b>Reproduce</b><pre>" + html.escape(cmds) + "</pre>")
 
 
 # ---------------------------------------------------------------- csv
@@ -1524,12 +1729,25 @@ def write_csv(out, path):
 
 
 def write_readme_headline(out, readme_path):
-    """Keep the README's headline table honest: regenerated from the same aggregation."""
+    """Keep the README's headline table honest: regenerated from the same aggregation.
+
+    Only ever called on explicit request (``--update-readme``), and refuses to write a headline for
+    a partial matrix: a smoke run or a deadline-cut run must not replace the documented result with
+    one arm of mock-scale data.
+    """
     if not os.path.exists(readme_path):
         return
-    lines = ["| model | KV | R accuracy | C checks | C resolved | loop rate | "
+    expected = len(config.MODELS) * len(config.KV_ARMS)
+    have = len(out.get("arms") or {})
+    if out.get("_incomplete_arms") or have < expected:
+        extra = (f", incomplete: {', '.join(out['_incomplete_arms'])}"
+                 if out.get("_incomplete_arms") else "")
+        print(f"README headline not updated: {have} of {expected} arms{extra}. The documented "
+              f"headline must come from a complete matrix.")
+        return
+    lines = ["| model | KV | R accuracy | C checks | C resolved | structural loops | "
              "agreement with f16 |", "|---|---|---|---|---|---|---|"]
-    for model in out["models"]:
+    for model in _ranked_models(out):
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
             if not c:
@@ -1549,19 +1767,20 @@ def write_readme_headline(out, readme_path):
         f.write(head + start + "\n" + "\n".join(lines) + "\n" + end + tail)
 
 
-def build(out_dir):
+def build(out_dir, readme_path=None):
     raw, samples, arms = load(out_dir)
     out = agg(raw, samples, arms)
     out["_stamp"] = raw.get("stamp") or os.path.basename(out_dir.rstrip("/"))
     out["_timing"] = load_timing(out_dir, raw)
+    out["_incomplete_arms"] = raw.get("incomplete_arms") or []
     out["_hardware"], out["_hardware_provenance"] = load_hardware(out_dir, raw)
     out["_samples_path"] = os.path.join(out_dir, "samples.jsonl")
-    rows = deltas(out)
-    write_markdown(out, raw, rows, os.path.join(out_dir, "REPORT.md"))
-    write_html(out, raw, rows, os.path.join(out_dir, "report.html"))
+    write_markdown(out, raw, os.path.join(out_dir, "REPORT.md"))
+    write_html(out, raw, os.path.join(out_dir, "report.html"))
     write_csv(out, os.path.join(out_dir, "matrix.csv"))
     write_figures(out, os.path.join(out_dir, "figures"))
-    write_readme_headline(out, os.path.join(config.ROOT, "README.md"))
+    if readme_path:
+        write_readme_headline(out, readme_path)
     return out, raw
 
 
@@ -1571,7 +1790,11 @@ def main(argv=None):
     if not args:
         raise SystemExit("usage: python3 -m kvtest.report results/<stamp>")
     out_dir = args[0]
-    out, raw = build(out_dir)
+    update = "--update-readme" in args
+    args = [a for a in args if a != "--update-readme"]
+    if not args:
+        raise SystemExit("usage: python3 -m kvtest.report results/<stamp> [--update-readme]")
+    out, raw = build(out_dir, os.path.join(config.ROOT, "README.md") if update else None)
     print(f"wrote {out_dir}/REPORT.md, report.html, matrix.csv "
           f"({len(out['arms'])} arms, {raw.get('samples')} samples, "
           f"total {_human((out.get('_timing') or {}).get('study_wall_s'))})")

@@ -17,85 +17,91 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 | llama.cpp | 2a667032dc78 (clean working tree) |
 | build flags | `CMAKE_BUILD_TYPE=Release`, `CMAKE_CUDA_ARCHITECTURES=86`, `GGML_CUDA=ON`, `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=OFF`, `GGML_CUDA_FA_QUANTS=q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`, `GGML_CUDA_NO_VMM=OFF`, `GGML_NATIVE=ON` |
 
-Recorded: captured on the same machine, recorded in hardware.json. Per-arm GPU peak and the offload knobs are in the offload table above; those are what the memory budget was actually spent on.
+Recorded: captured on the same machine, recorded in hardware.json. Per-arm GPU peak and the offload knobs are in the per-model offload table below; those are what the memory budget was spent on.
 
 ## Verdict
 
-**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.95 of 100 (R 80.0% and C 89.9% averaged), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB peak with {'ncmoe': 48} offloaded. **Its lead is not established:** 11 of the other arms — including its own model's f16 arm — cannot be distinguished from it (p ≥ 0.05, all paired samples pooled).
+No model scored differently from its own f16 arm by more than this test can resolve. gemma4-26b-a4b is the exception: at q4_0 its code score was 41 of 100 against 89 at f16, and it ran out of room on 3 of 6 coding tasks, so it was cut off rather than wrong. On this build the quantized cache was also 17–28 % slower to answer with than f16, so it buys memory, not speed. No cache setting made a model repeat itself more often by a difference this test can resolve.
 
-The next arms are `qwen38-flash` f16 (83.35), `qwen38-27b` q8_0 (83.35) — the top three sit within 1.6 capability points of each other, which is one or two graded outcomes.
+**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.94 of 100 (R 80.00% and C 89.87%, averaged before rounding), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB of graphics memory with 48 layers of the model kept in system RAM. **Its lead is not established: 11 other arms, including its own f16 arm, cannot be distinguished from it (each tier tested on its own pairs, Bonferroni over 3 tiers, alpha = 0.05).**
+
+The next arms are `qwen38-flash` f16 (83.33), `qwen38-27b` q8_0 (83.33) — the top three sit within 1.6 capability points of each other, which is one or two graded outcomes.
 
 Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve. The only differences that do reach p < 0.05 are arms that are worse than the leader, never one that is better.
 
 | model | best KV | capability | runner-up | structural loops | decode t/s | why |
 |---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | **f16** | 62.85 | q8_0 | 3/12 | 46.9 | f16 keeps the lead; q4_0 loses 29.1 capability points; the runner-up arm q4_0 hit the 6144-token code cap on 3 of 6 tasks, so its checks are truncated output, not wrong code; 3/12 structural-loop samples, 46.9 t/s decode |
-| `ornith-35b` | **f16** | 66.80 | q8_0 | 0/12 | 48.8 | f16 keeps the lead; q4_0 loses 6.3 capability points; 0/12 structural-loop samples, 48.8 t/s decode |
-| `qwen36-35b` | **q4_0** | 82.25 | f16 | 0/12 | 30.8 | q4_0 beats its own f16 arm on capability (82.2 vs 79.0); the runner-up arm f16 hit the 6144-token code cap on 1 of 6 tasks, so its checks are truncated output, not wrong code; vs f16: R Δ+2 points (p=0.500), C Δ-2 checks (p=0.750); 0/12 structural-loop samples, 30.8 t/s decode |
-| `qwen38-27b` | **q8_0** | 83.35 | q4_0 | 0/12 | 10.3 | q8_0 beats its own f16 arm on capability (83.3 vs 75.3); vs f16: R Δ+2 points (p=0.500), C Δ+73 checks (p=0.500); 0/12 structural-loop samples, 10.3 t/s decode |
-| `qwen38-flash` | **q4_0** | 84.95 | f16 | 0/12 | 12.3 | q4_0 beats its own f16 arm on capability (85.0 vs 83.3); vs f16: R Δ+1 points (p=1.000), C Δ-1 checks (p=1.000); 0/12 structural-loop samples, 12.3 t/s decode |
+| `qwen38-flash` | **q4_0** | 84.94 | f16 | 0/12 | 12.3 | q4_0 beats its own f16 arm on capability (84.9 vs 83.3); vs f16: R Δ+1 points (p=1.000), C Δ-1 checks (p=1.000); 0/12 structural-loop samples, 12.3 t/s decode |
+| `qwen38-27b` | **q8_0** | 83.33 | q4_0 | 0/12 | 10.3 | q8_0 beats its own f16 arm on capability (83.3 vs 75.3); vs f16: R Δ+2 points (p=0.500), C Δ+73 checks (p=0.500); 0/12 structural-loop samples, 10.3 t/s decode |
+| `qwen36-35b` | **q4_0** | 82.24 | f16 | 0/12 | 30.8 | q4_0 beats its own f16 arm on capability (82.2 vs 79.0); the arm f16 hit the 6144-token code cap on 1 of 6 tasks, so its checks are truncated output, not wrong code; vs f16: R Δ+2 points (p=0.500), C Δ-2 checks (p=0.750); 0/12 structural-loop samples, 30.8 t/s decode |
+| `ornith-35b` | **f16** | 66.79 | q8_0 | 0/12 | 48.8 | f16 keeps the lead; q4_0 loses 6.3 capability points; 0/12 structural-loop samples, 48.8 t/s decode |
+| `gemma4-26b-a4b` | **f16** | 62.82 | q8_0 | 3/12 | 46.9 | f16 keeps the lead; q4_0 loses 29.1 capability points; the arm q4_0 hit the 6144-token code cap on 3 of 6 tasks, so its checks are truncated output, not wrong code; 3/12 structural-loop samples, 46.9 t/s decode |
 
 ### All 15 arms, ranked by the same rule
 
 | rank | arm | capability | structural loops | decode t/s | p vs #1 | distinguishable from #1? |
 |---|---|---|---|---|---|---|
-| 1 | `qwen38-flash` **q4_0** | 84.95 | 0/12 | 12.3 | 1.0000 | no — tied |
-| 2 | `qwen38-flash` **f16** | 83.35 | 0/12 | 16.6 | 1.0000 | no — tied |
-| 3 | `qwen38-27b` **q8_0** | 83.35 | 0/12 | 10.3 | 1.0000 | no — tied |
-| 4 | `qwen36-35b` **q4_0** | 82.25 | 0/12 | 30.8 | 0.7969 | no — tied |
-| 5 | `qwen38-flash` **q8_0** | 80.40 | 0/12 | 12.6 | 0.8125 | no — tied |
-| 6 | `qwen36-35b` **f16** | 79.05 | 0/12 | 38.7 | 0.9961 | no — tied |
-| 7 | `qwen36-35b` **q8_0** | 76.15 | 1/12 | 31.2 | 0.2891 | no — tied |
-| 8 | `qwen38-27b` **q4_0** | 75.65 | 0/12 | 9.7 | 0.5938 | no — tied |
-| 9 | `qwen38-27b` **f16** | 75.30 | 0/12 | 12.4 | 0.3750 | no — tied |
-| 10 | `ornith-35b` **f16** | 66.80 | 0/12 | 48.8 | 0.0781 | no — tied |
-| 11 | `ornith-35b` **q8_0** | 63.20 | 1/12 | 35.7 | 0.1475 | no — tied |
-| 12 | `gemma4-26b-a4b` **f16** | 62.85 | 3/12 | 46.9 | 0.0468 | yes |
-| 13 | `ornith-35b` **q4_0** | 60.45 | 0/12 | 35.2 | 0.0078 | yes |
-| 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 | 0.1886 | no — tied |
-| 15 | `gemma4-26b-a4b` **q4_0** | 33.75 | 3/12 | 34.3 | 0.0034 | yes |
+| 1 | `qwen38-flash` **q4_0** | 84.94 | 0/12 | 12.3 | 1.0000 | no — tied |
+| 2 | `qwen38-flash` **f16** | 83.33 | 0/12 | 16.6 | 1.0000 | no — tied |
+| 3 | `qwen38-27b` **q8_0** | 83.33 | 0/12 | 10.3 | 1.0000 | no — tied |
+| 4 | `qwen36-35b` **q4_0** | 82.24 | 0/12 | 30.8 | 0.7500 | no — tied |
+| 5 | `qwen38-flash` **q8_0** | 80.38 | 0/12 | 12.6 | 1.0000 | no — tied |
+| 6 | `qwen36-35b` **f16** | 79.04 | 0/12 | 38.7 | 0.1875 | no — tied |
+| 7 | `qwen36-35b` **q8_0** | 76.15 | 1/12 | 31.2 | 0.3750 | no — tied |
+| 8 | `qwen38-27b` **q4_0** | 75.64 | 0/12 | 9.7 | 1.0000 | no — tied |
+| 9 | `qwen38-27b` **f16** | 75.32 | 0/12 | 12.4 | 1.0000 | no — tied |
+| 10 | `ornith-35b` **f16** | 66.79 | 0/12 | 48.8 | 0.3750 | no — tied |
+| 11 | `ornith-35b` **q8_0** | 63.21 | 1/12 | 35.7 | 0.0938 | no — tied |
+| 12 | `gemma4-26b-a4b` **f16** | 62.82 | 3/12 | 46.9 | 0.0059 | yes |
+| 13 | `ornith-35b` **q4_0** | 60.45 | 0/12 | 35.2 | 0.1875 | no — tied |
+| 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 | 0.0007 | yes |
+| 15 | `gemma4-26b-a4b` **q4_0** | 33.72 | 3/12 | 34.3 | 0.0007 | yes |
 
-Tested on every paired sample pooled across the three tiers, the arms that are **not distinguishable from the winner** are: `qwen38-flash` f16 (83.35), `qwen38-27b` q8_0 (83.35), `qwen36-35b` q4_0 (82.25), `qwen38-flash` q8_0 (80.40), `qwen36-35b` f16 (79.05), `qwen36-35b` q8_0 (76.15), `qwen38-27b` q4_0 (75.65), `qwen38-27b` f16 (75.30), `ornith-35b` f16 (66.80), `ornith-35b` q8_0 (63.20), `gemma4-26b-a4b` q8_0 (56.60). Those p-values are the honest statement about 'which KV cache is best': on this run the lead is not established.
+The comparison is made **one tier at a time** (R, C, L tested separately, smallest p multiplied by 3 as a Bonferroni correction), because pooling raw R points, C checks and L flags into one sum would let the 261-check samples outweigh the 0/1 flags — a scale artefact, not evidence. The arms that are **not distinguishable from the winner** are: `qwen38-flash` f16 (83.33), `qwen38-27b` q8_0 (83.33), `qwen36-35b` q4_0 (82.24), `qwen38-flash` q8_0 (80.38), `qwen36-35b` f16 (79.04), `qwen36-35b` q8_0 (76.15), `qwen38-27b` q4_0 (75.64), `qwen38-27b` f16 (75.32), `ornith-35b` f16 (66.79), `ornith-35b` q8_0 (63.21), `ornith-35b` q4_0 (60.45). The 3 that are separable are all *worse* than it: `gemma4-26b-a4b` f16 (p=0.0059), `gemma4-26b-a4b` q8_0 (p=0.0007), `gemma4-26b-a4b` q4_0 (p=0.0007). On this run the lead is therefore not established.
 
-## Per-model offload (frozen across the three KV arms)
+Sensitivity, disclosed rather than hidden: normalising every sample to its own fraction (points ÷ possible, checks ÷ checks) before pooling separates eight arms instead of three. Every alternative pooling scheme that was tried separates only arms that are *worse* than the leader, never a better one, so no reading of this data supports 'quantized KV is an improvement'.
 
-| model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |
+## Per-model offload (knobs are frozen across the three KV arms)
+
+Knobs are identical for a model's three arms; the VRAM peak and speeds below are the **f16 arm's**. Measured peaks differ between a model's arms by up to 3142 MiB, and the ordering is not the same on every model, so the verdict table's numbers are the arm that actually won, not this one (peaks include transient buffers and are not a clean cache-size measurement).
+
+| model | weights off the GPU | VRAM peak MiB (f16) | realized prompt tokens | prefill t/s (f16) | decode t/s (f16) |
 |---|---|---|---|---|---|
-| `gemma4-26b-a4b` | {'ncmoe': 8} | 13757 | 81845 | 34.5 | 46.9 |
-| `ornith-35b` | {'ncmoe': 16} | 15468 | 91357 | 67.4 | 48.8 |
-| `qwen36-35b` | {'ncmoe': 26} | 11619 | 91357 | 57.2 | 38.7 |
-| `qwen38-27b` | {'ncffn': 8} | 15899 | 91357 | 17.9 | 12.4 |
-| `qwen38-flash` | {'ncmoe': 48} | 11295 | 91357 | 21.5 | 16.6 |
+| `qwen38-flash` | 48 layers on CPU | 11295 | 91357 | 21.5 | 16.6 |
+| `qwen38-27b` | 8 layers on CPU | 15899 | 91357 | 17.9 | 12.4 |
+| `qwen36-35b` | 26 layers on CPU | 11619 | 91357 | 57.2 | 38.7 |
+| `ornith-35b` | 16 layers on CPU | 15468 | 91357 | 67.4 | 48.8 |
+| `gemma4-26b-a4b` | 8 layers on CPU | 13757 | 81845 | 34.5 | 46.9 |
 
 ## R tier — retrieval / tracing / aggregation (partial credit, %)
 
 | model | f16 | q8_0 | q4_0 |
 |---|---|---|---|
-| `gemma4-26b-a4b` | 36.7 | 23.3 | 26.7 |
-| `ornith-35b` | 63.3 | 53.3 | 60.0 |
-| `qwen36-35b` | 60.0 | 63.3 | 66.7 |
-| `qwen38-27b` | 70.0 | 76.7 | 70.0 |
 | `qwen38-flash` | 76.7 | 80.0 | 80.0 |
+| `qwen38-27b` | 70.0 | 76.7 | 70.0 |
+| `qwen36-35b` | 60.0 | 63.3 | 66.7 |
+| `ornith-35b` | 63.3 | 53.3 | 60.0 |
+| `gemma4-26b-a4b` | 36.7 | 23.3 | 26.7 |
 
 ## C tier — hidden checks passed / total, and resolved tasks
 
 | model | KV | checks | % | resolved | too-hard tasks |
 |---|---|---|---|---|---|
-| `gemma4-26b-a4b` | f16 | 694/780 | 89.0 | 4/6 | — |
-| `gemma4-26b-a4b` | q8_0 | 701/780 | 89.9 | 3/6 | — |
-| `gemma4-26b-a4b` | q4_0 | 318/780 | 40.8 | 3/6 | — |
-| `ornith-35b` | f16 | 548/780 | 70.3 | 4/6 | — |
-| `ornith-35b` | q8_0 | 570/780 | 73.1 | 3/6 | — |
-| `ornith-35b` | q4_0 | 475/780 | 60.9 | 3/6 | — |
-| `qwen36-35b` | f16 | 765/780 | 98.1 | 4/6 | — |
-| `qwen36-35b` | q8_0 | 694/780 | 89.0 | 3/6 | — |
-| `qwen36-35b` | q4_0 | 763/780 | 97.8 | 3/6 | — |
-| `qwen38-27b` | f16 | 629/780 | 80.6 | 4/6 | — |
-| `qwen38-27b` | q8_0 | 702/780 | 90.0 | 4/6 | — |
-| `qwen38-27b` | q4_0 | 634/780 | 81.3 | 4/6 | — |
 | `qwen38-flash` | f16 | 702/780 | 90.0 | 4/6 | — |
 | `qwen38-flash` | q8_0 | 630/780 | 80.8 | 4/6 | — |
 | `qwen38-flash` | q4_0 | 701/780 | 89.9 | 3/6 | — |
+| `qwen38-27b` | f16 | 629/780 | 80.6 | 4/6 | — |
+| `qwen38-27b` | q8_0 | 702/780 | 90.0 | 4/6 | — |
+| `qwen38-27b` | q4_0 | 634/780 | 81.3 | 4/6 | — |
+| `qwen36-35b` | f16 | 765/780 | 98.1 | 4/6 | — |
+| `qwen36-35b` | q8_0 | 694/780 | 89.0 | 3/6 | — |
+| `qwen36-35b` | q4_0 | 763/780 | 97.8 | 3/6 | — |
+| `ornith-35b` | f16 | 548/780 | 70.3 | 4/6 | — |
+| `ornith-35b` | q8_0 | 570/780 | 73.1 | 3/6 | — |
+| `ornith-35b` | q4_0 | 475/780 | 60.9 | 3/6 | — |
+| `gemma4-26b-a4b` | f16 | 694/780 | 89.0 | 4/6 | — |
+| `gemma4-26b-a4b` | q8_0 | 701/780 | 89.9 | 3/6 | — |
+| `gemma4-26b-a4b` | q4_0 | 318/780 | 40.8 | 3/6 | — |
 
 ## Loop table — flagged samples / samples (reasoning and content split)
 
@@ -103,66 +109,66 @@ Tested on every paired sample pooled across the three tiers, the arms that are *
 
 | model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union (L) | hard repetition | reasoning | content | any tier |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | f16 | 1/3 | 0/3 | 2/3 | 1/3 | 4/12 | 3/12 | 1 | 3 | 14 |
-| `gemma4-26b-a4b` | q8_0 | 0/3 | 0/3 | 2/3 | 0/3 | 2/12 | 2/12 | 0 | 2 | 13 |
-| `gemma4-26b-a4b` | q4_0 | 0/3 | 0/3 | 3/3 | 0/3 | 3/12 | 3/12 | 0 | 3 | 16 |
-| `ornith-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
-| `ornith-35b` | q8_0 | 3/3 | 0/3 | 1/3 | 0/3 | 4/12 | 1/12 | 0 | 4 | 4 |
-| `ornith-35b` | q4_0 | 3/3 | 0/3 | 0/3 | 0/3 | 3/12 | 0/12 | 0 | 3 | 5 |
-| `qwen36-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
-| `qwen36-35b` | q8_0 | 2/3 | 0/3 | 1/3 | 0/3 | 3/12 | 1/12 | 0 | 3 | 4 |
-| `qwen36-35b` | q4_0 | 0/3 | 0/3 | 0/3 | 0/3 | 0/12 | 0/12 | 0 | 0 | 2 |
-| `qwen38-27b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
-| `qwen38-27b` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
-| `qwen38-27b` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
 | `qwen38-flash` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
 | `qwen38-flash` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
 | `qwen38-flash` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
+| `qwen38-27b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
+| `qwen38-27b` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
+| `qwen38-27b` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
+| `qwen36-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
+| `qwen36-35b` | q8_0 | 2/3 | 0/3 | 1/3 | 0/3 | 3/12 | 1/12 | 0 | 3 | 4 |
+| `qwen36-35b` | q4_0 | 0/3 | 0/3 | 0/3 | 0/3 | 0/12 | 0/12 | 0 | 0 | 2 |
+| `ornith-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
+| `ornith-35b` | q8_0 | 3/3 | 0/3 | 1/3 | 0/3 | 4/12 | 1/12 | 0 | 4 | 4 |
+| `ornith-35b` | q4_0 | 3/3 | 0/3 | 0/3 | 0/3 | 3/12 | 0/12 | 0 | 3 | 5 |
+| `gemma4-26b-a4b` | f16 | 1/3 | 0/3 | 2/3 | 1/3 | 4/12 | 3/12 | 1 | 3 | 14 |
+| `gemma4-26b-a4b` | q8_0 | 0/3 | 0/3 | 2/3 | 0/3 | 2/12 | 2/12 | 0 | 2 | 13 |
+| `gemma4-26b-a4b` | q4_0 | 0/3 | 0/3 | 3/3 | 0/3 | 3/12 | 3/12 | 0 | 3 | 16 |
 
 ## Paired tests vs f16 (exact sign-flip, paired by task and seed)
 
 | model | KV | metric | level | change | p | direction |
 |---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | q8_0 | R | 23.3 % of 30 points | -4 points | 0.4062 | lower · not significant |
-| `gemma4-26b-a4b` | q8_0 | C | 89.9 % of 780 checks | +7 checks | 0.7500 | higher · not significant |
-| `gemma4-26b-a4b` | q8_0 | L | 16.7 % of 12 samples | -1 samples | 1.0000 | lower · not significant |
-| `gemma4-26b-a4b` | q4_0 | R | 26.7 % of 30 points | -3 points | 0.5625 | lower · not significant |
-| `gemma4-26b-a4b` | q4_0 | C | 40.8 % of 780 checks | -376 checks | 0.2500 | lower · not significant |
-| `gemma4-26b-a4b` | q4_0 | L | 25.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
-| `ornith-35b` | q8_0 | R | 53.3 % of 30 points | -3 points | 0.5000 | lower · not significant |
-| `ornith-35b` | q8_0 | C | 73.1 % of 780 checks | +22 checks | 1.0000 | higher · not significant |
-| `ornith-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
-| `ornith-35b` | q4_0 | R | 60.0 % of 30 points | -1 points | 1.0000 | lower · not significant |
-| `ornith-35b` | q4_0 | C | 60.9 % of 780 checks | -73 checks | 0.5000 | lower · not significant |
-| `ornith-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
-| `qwen36-35b` | q8_0 | R | 63.3 % of 30 points | +1 points | 1.0000 | higher · not significant |
-| `qwen36-35b` | q8_0 | C | 89.0 % of 780 checks | -71 checks | 0.6250 | lower · not significant |
-| `qwen36-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
-| `qwen36-35b` | q4_0 | R | 66.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
-| `qwen36-35b` | q4_0 | C | 97.8 % of 780 checks | -2 checks | 0.7500 | lower · not significant |
-| `qwen36-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
-| `qwen38-27b` | q8_0 | R | 76.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
-| `qwen38-27b` | q8_0 | C | 90.0 % of 780 checks | +73 checks | 0.5000 | higher · not significant |
-| `qwen38-27b` | q8_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
-| `qwen38-27b` | q4_0 | R | 70.0 % of 30 points | +0 points | 1.0000 | equal · not significant |
-| `qwen38-27b` | q4_0 | C | 81.3 % of 780 checks | +5 checks | 1.0000 | higher · not significant |
-| `qwen38-27b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
 | `qwen38-flash` | q8_0 | R | 80.0 % of 30 points | +1 points | 1.0000 | higher · not significant |
 | `qwen38-flash` | q8_0 | C | 80.8 % of 780 checks | -72 checks | 1.0000 | lower · not significant |
 | `qwen38-flash` | q8_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
 | `qwen38-flash` | q4_0 | R | 80.0 % of 30 points | +1 points | 1.0000 | higher · not significant |
 | `qwen38-flash` | q4_0 | C | 89.9 % of 780 checks | -1 checks | 1.0000 | lower · not significant |
 | `qwen38-flash` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-27b` | q8_0 | R | 76.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
+| `qwen38-27b` | q8_0 | C | 90.0 % of 780 checks | +73 checks | 0.5000 | higher · not significant |
+| `qwen38-27b` | q8_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-27b` | q4_0 | R | 70.0 % of 30 points | +0 points | 1.0000 | equal · not significant |
+| `qwen38-27b` | q4_0 | C | 81.3 % of 780 checks | +5 checks | 1.0000 | higher · not significant |
+| `qwen38-27b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen36-35b` | q8_0 | R | 63.3 % of 30 points | +1 points | 1.0000 | higher · not significant |
+| `qwen36-35b` | q8_0 | C | 89.0 % of 780 checks | -71 checks | 0.6250 | lower · not significant |
+| `qwen36-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
+| `qwen36-35b` | q4_0 | R | 66.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
+| `qwen36-35b` | q4_0 | C | 97.8 % of 780 checks | -2 checks | 0.7500 | lower · not significant |
+| `qwen36-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `ornith-35b` | q8_0 | R | 53.3 % of 30 points | -3 points | 0.5000 | lower · not significant |
+| `ornith-35b` | q8_0 | C | 73.1 % of 780 checks | +22 checks | 1.0000 | higher · not significant |
+| `ornith-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
+| `ornith-35b` | q4_0 | R | 60.0 % of 30 points | -1 points | 1.0000 | lower · not significant |
+| `ornith-35b` | q4_0 | C | 60.9 % of 780 checks | -73 checks | 0.5000 | lower · not significant |
+| `ornith-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `gemma4-26b-a4b` | q8_0 | R | 23.3 % of 30 points | -4 points | 0.4062 | lower · not significant |
+| `gemma4-26b-a4b` | q8_0 | C | 89.9 % of 780 checks | +7 checks | 0.7500 | higher · not significant |
+| `gemma4-26b-a4b` | q8_0 | L | 16.7 % of 12 samples | -1 samples | 1.0000 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | R | 26.7 % of 30 points | -3 points | 0.5625 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | C | 40.8 % of 780 checks | -376 checks | 0.2500 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | L | 25.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
 
-α = 0.05. The test is exact — every sign pattern is enumerated, no sampling and no normal approximation — so the same `samples.jsonl` always produces the same numbers. With 6 C-tier tasks the smallest attainable p is 0.031 and with 12 loop samples it is 0.0005, so an arm must move nearly every paired sample the same way to be called different. 'Not significant' means the change is inside what a draw of this size produces; it is not proof of identity.
+α = 0.05. The test is exact — every sign pattern is enumerated, no sampling and no normal approximation — so the same `samples.jsonl` always produces the same numbers. The smallest attainable p is 0.0000076 on 18 R pairs, 0.0312 on 6 C tasks and 0.0005 on 12 loop samples, so an arm must move nearly every paired sample the same way to be called different. 'Not significant' means the change is inside what a draw of this size produces; it is not proof of identity.
 
 ## Agreement with f16 per model (share of identical graded answers)
 
-- `gemma4-26b-a4b` — q8_0: 0.2 of 5 samples; q4_0: 0.2 of 5 samples
-- `ornith-35b` — q8_0: 0.5 of 18 samples; q4_0: 0.706 of 17 samples
-- `qwen36-35b` — q8_0: 0.722 of 18 samples; q4_0: 0.556 of 18 samples
-- `qwen38-27b` — q8_0: 0.722 of 18 samples; q4_0: 0.722 of 18 samples
 - `qwen38-flash` — q8_0: 0.611 of 18 samples; q4_0: 0.667 of 18 samples
+- `qwen38-27b` — q8_0: 0.722 of 18 samples; q4_0: 0.722 of 18 samples
+- `qwen36-35b` — q8_0: 0.722 of 18 samples; q4_0: 0.556 of 18 samples
+- `ornith-35b` — q8_0: 0.5 of 18 samples; q4_0: 0.706 of 17 samples
+- `gemma4-26b-a4b` — q8_0: 0.2 of 5 samples; q4_0: 0.2 of 5 samples
 
 ## Cross-model answer agreement (same R task + seed, same KV)
 
@@ -216,21 +222,21 @@ Tested on every paired sample pooled across the three tiers, the arms that are *
 
 | model | KV | prompt tokens | prefill t/s | decode t/s | cache hit rate | out tokens |
 |---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | f16 | 81845 | 34.5 | 46.9 | 1.0 | 121371 |
-| `gemma4-26b-a4b` | q8_0 | 81845 | 43.6 | 33.8 | 1.0 | 135175 |
-| `gemma4-26b-a4b` | q4_0 | 81845 | 51.7 | 34.3 | 1.0 | 153433 |
-| `ornith-35b` | f16 | 91357 | 67.4 | 48.8 | 1.0 | 47391 |
-| `ornith-35b` | q8_0 | 91357 | 59.6 | 35.7 | 1.0 | 48370 |
-| `ornith-35b` | q4_0 | 91357 | 59.7 | 35.2 | 1.0 | 45415 |
-| `qwen36-35b` | f16 | 91357 | 57.2 | 38.7 | 1.0 | 49725 |
-| `qwen36-35b` | q8_0 | 91357 | 50.8 | 31.2 | 1.0 | 48413 |
-| `qwen36-35b` | q4_0 | 91357 | 51.6 | 30.8 | 1.0 | 49339 |
-| `qwen38-27b` | f16 | 91357 | 17.9 | 12.4 | 1.0 | 42855 |
-| `qwen38-27b` | q8_0 | 91357 | 16.3 | 10.3 | 1.0 | 42139 |
-| `qwen38-27b` | q4_0 | 91357 | 15.6 | 9.7 | 1.0 | 43006 |
 | `qwen38-flash` | f16 | 91357 | 21.5 | 16.6 | 1.0 | 43678 |
 | `qwen38-flash` | q8_0 | 91357 | 20.4 | 12.6 | 1.0 | 43793 |
 | `qwen38-flash` | q4_0 | 91357 | 21.2 | 12.3 | 1.0 | 39776 |
+| `qwen38-27b` | f16 | 91357 | 17.9 | 12.4 | 1.0 | 42855 |
+| `qwen38-27b` | q8_0 | 91357 | 16.3 | 10.3 | 1.0 | 42139 |
+| `qwen38-27b` | q4_0 | 91357 | 15.6 | 9.7 | 1.0 | 43006 |
+| `qwen36-35b` | f16 | 91357 | 57.2 | 38.7 | 1.0 | 49725 |
+| `qwen36-35b` | q8_0 | 91357 | 50.8 | 31.2 | 1.0 | 48413 |
+| `qwen36-35b` | q4_0 | 91357 | 51.6 | 30.8 | 1.0 | 49339 |
+| `ornith-35b` | f16 | 91357 | 67.4 | 48.8 | 1.0 | 47391 |
+| `ornith-35b` | q8_0 | 91357 | 59.6 | 35.7 | 1.0 | 48370 |
+| `ornith-35b` | q4_0 | 91357 | 59.7 | 35.2 | 1.0 | 45415 |
+| `gemma4-26b-a4b` | f16 | 81845 | 34.5 | 46.9 | 1.0 | 121371 |
+| `gemma4-26b-a4b` | q8_0 | 81845 | 43.6 | 33.8 | 1.0 | 135175 |
+| `gemma4-26b-a4b` | q4_0 | 81845 | 51.7 | 34.3 | 1.0 | 153433 |
 
 ## How long this took
 
@@ -271,7 +277,7 @@ Per-arm wall clock (includes the document prefill and the server load):
 ## Threats to validity (literal)
 
 - Text-identical is not token-identical: one document, five tokenizers; realized prompt lengths are reported and `-c` is identical everywhere.
-- Only full-attention layers accumulate KV damage over depth (qwen35: 16 layers, MoE 35B: 10, Flash-Next: 12, Gemma 26B: 5 global). A flat result on a model with few global layers is partly structural.
+- Only full-attention layers accumulate KV damage over depth, so a model with few global attention layers can only show a small effect; the per-model layer counts for this run are in fit.json's geometry block.
 - The C tier is one greedy pass per task, so it has no error bar; R and L have reps samples each. Any delta smaller than one task's worth of points is noise.
 - Hard-task pass rates are confounded with absolute difficulty; tasks with no f16 success are labelled too_hard_for_matrix and excluded from the delta read.
 - `repeat_penalty 1.0` in the L tier is more permissive than the production 1.05, so measured loop rates are an upper bound for production settings.

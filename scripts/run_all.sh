@@ -38,7 +38,7 @@ trap restore_gpu_holder EXIT
 if [[ "$MODE" == "--smoke" ]]; then
   python3 -m kvtest.selftest || exit 1
   python3 -m kvtest.run --smoke --resume || exit 1
-  python3 -m kvtest.report results/smoke || exit 1
+  python3 -m kvtest.report results/smoke || exit 1   # no --update-readme: a smoke run is one arm
   echo "smoke OK: results/smoke/report.html"
   exit 0
 fi
@@ -80,5 +80,5 @@ nvidia-smi --query-gpu=memory.used --format=csv,noheader | tee "$ROOT/results/$S
 python3 -m kvtest.fit --stamp "$STAMP" --ladder 102400 || exit 1
 python3 -m kvtest.run --stamp "$STAMP" --resume --deadline-hours "$DEADLINE_HOURS" \
   > "$ROOT/results/$STAMP/run.out" 2>&1
-python3 -m kvtest.report "results/$STAMP"
+python3 -m kvtest.report "results/$STAMP" --update-readme
 echo "done: results/$STAMP/REPORT.md and report.html"

@@ -91,7 +91,10 @@ the task is simply beyond every arm.
 change against that model's own f16 arm, and the change is coloured only if an exact two-sided paired
 sign-flip test rejects at α = 0.05 (all 2ⁿ sign patterns enumerated over integer differences — no
 sampling, no normal approximation, so the same `samples.jsonl` always yields the same p). Each figure
-states its n and the smallest p attainable at that n (R: 2⁻¹⁸, C: 2/2⁶, L: 2/2¹²). Where a stored
+states its n and the smallest p attainable at that n (R: 2/2¹⁸, C: 2/2⁶, L: 2/2¹²), and the
+leader comparison in the verdict tests each tier separately with a Bonferroni factor of 3 rather than
+pooling R points, C checks and L flags — pooling incommensurable units would let the 261-check
+samples outweigh the 0/1 flags. Where a stored
 `timing.json` is absent, the per-arm times come from the arm checkpoints.
 
 **Agreement matrix.** Beyond pass/fail: for graded R samples, the share of answers where q4_0 gives

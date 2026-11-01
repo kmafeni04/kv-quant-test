@@ -38,6 +38,8 @@ nohup python3 -m kvtest.run --stamp STAMP --resume --deadline-hours 22 \
 
 # 6. artifacts (idempotent, no GPU, no models)
 python3 -m kvtest.report results/STAMP
+#    add --update-readme only for a full matrix: it rewrites the headline table in README.md,
+#    and refuses to do so for a result with fewer than 5 arms.
 ```
 
 `./scripts/run_all.sh` runs all of it and restores whatever was holding the GPU when it started.
@@ -75,7 +77,7 @@ Never the scoring rules.
 | `raw.json` | merged provenance + arms + counts (rebuildable from the two above) |
 | `matrix.csv` | one row per model × KV: R %, C %/resolved, loop rate, speeds, VRAM, knobs |
 | `REPORT.md`, `report.html` | the write-up and the three-tab browser artifact |
-| `figures/` | every figure as a standalone SVG plus `figures.json` with the numbers behind it |
+| `figures/` | **every** SVG in `report.html` (the three grids, the speed chart, the loop-count chart and all per-task dot plots), plus `figures.json` carrying the numbers behind them — per-arm R/C levels, loop counts, decode/prefill rates, realized prompt tokens and the full `per_task` breakdown, so a saved figure can be checked without the HTML |
 | `hardware.json` | GPU, VRAM, driver, CUDA, CPU, RAM, OS/kernel, llama.cpp commit and build flags, captured by `kvtest/hostinfo.py` when the run starts; the same block is printed under "Hardware and build this ran on" in `REPORT.md` and is embedded in `raw.json` as `manifest.host_runtime` |
 | `logs/<model>__<kv>.log` | full llama-server stderr including the exact command line |
 

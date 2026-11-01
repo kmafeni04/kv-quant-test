@@ -1,8 +1,9 @@
 # Results
 
 Run: `results/2026-11-01/`. One shared context, `-c 102400`, five models × three symmetric KV types
-(f16 / q8_0 / q4_0), **540 graded samples** (36 per arm, plus 39 re-runs at a larger budget where a
-sample hit the cap), 15/15 arms complete, zero failed requests, no deadline cut. Document sha256 `944bb825ead422d7…` (305,234 chars, 91,284 tokens on the
+(f16 / q8_0 / q4_0), **540 samples** (36 per arm, of which 495 carry a graded outcome — the 45
+tool-episode samples are graded from their transcript instead — plus 39 re-runs at a larger budget
+where a sample hit the cap), 15/15 arms complete, zero failed requests, no deadline cut. Document sha256 `944bb825ead422d7…` (305,234 chars, 91,284 tokens on the
 Qwen tokenizer, 81,765 on Gemma's). llama.cpp `2a667032dc78` (build 11698), `-fa on`, no speculative
 decoding.
 
@@ -18,18 +19,20 @@ retrieval points), then **fewer structural-loop samples**, then **higher decode 
 
 | model | best KV | capability | runner-up | structural loops | decode t/s | why |
 |---|---|---|---|---|---|---|
-| `qwen38-flash` | **q4_0** | 84.95 | f16 (83.35) | 0/12 | 12.3 | best overall; +1 R point and −1 check vs its own f16 arm (p = 1.000): a tie resolved by nothing more than a one-outcome difference |
-| `qwen38-27b` | **q8_0** | 83.35 | q4_0 (75.65) | 0/12 | 10.3 | +2 R points, +73 checks vs f16 (p = 0.500) — the +73 is the `semver` bit, not a trend |
-| `qwen36-35b` | **q4_0** | 82.25 | f16 (79.05) | 0/12 | 30.8 | +2 R points, −2 checks vs f16 (p = 0.500/0.750); its f16 arm was the one truncated once at the code cap |
-| `ornith-35b` | **f16** | 66.80 | q8_0 (63.20) | 0/12 | 48.8 | q4_0 loses 6.3 capability points; its one structural loop is at q8_0 |
-| `gemma4-26b-a4b` | **f16** | 62.85 | q8_0 (56.60) | 3/12 | 46.9 | q4_0 loses 29.1 points because it hit the 6,144-token code cap on 3 of 6 tasks — truncated output, not wrong code; Gemma loops at every KV type |
+| `qwen38-flash` | **q4_0** | 84.94 | f16 (83.33) | 0/12 | 12.3 | best overall; +1 R point and −1 check vs its own f16 arm (p = 1.000): a tie resolved by nothing more than a one-outcome difference |
+| `qwen38-27b` | **q8_0** | 83.33 | q4_0 (75.64) | 0/12 | 10.3 | +2 R points, +73 checks vs f16 (p = 0.500) — the +73 is the `semver` bit, not a trend |
+| `qwen36-35b` | **q4_0** | 82.24 | f16 (79.04) | 0/12 | 30.8 | +2 R points, −2 checks vs f16 (p = 0.500/0.750); its f16 arm was the one truncated once at the code cap |
+| `ornith-35b` | **f16** | 66.79 | q8_0 (63.21) | 0/12 | 48.8 | q4_0 loses 6.3 capability points; its one structural loop is at q8_0 |
+| `gemma4-26b-a4b` | **f16** | 62.82 | q8_0 (56.60) | 3/12 | 46.9 | q4_0 loses 29.1 points because it hit the 6,144-token code cap on 3 of 6 tasks — truncated output, not wrong code; Gemma loops at every KV type |
 
-**Best overall: `qwen38-flash` with a q4_0 KV cache** (84.95/100, 0/12 structural loops, 12.3 t/s
-decode, 9.1 GiB peak with 48 MoE layers on the CPU). **Its lead is not established.** Testing every
-arm against it on all paired samples pooled across the three tiers, 11 of the other 14 arms cannot be
-distinguished from it (p ≥ 0.05) — including `qwen38-flash` f16, which differs by one retrieval
-sub-value. The only arms that *are* separable are separable as **worse**: Gemma f16 (p = 0.047),
-Gemma q4_0 (p = 0.0034) and Ornith q4_0 (p = 0.0078). So the run establishes that **q4_0 is not a
+**Best overall: `qwen38-flash` with a q4_0 KV cache** (84.94/100, 0/12 structural loops, 12.3 t/s
+decode, 9.1 GiB peak with 48 MoE layers on the CPU). **Its lead is not established.** Each arm was tested against it one tier at a time (R, C and L
+tested separately, smallest p multiplied by three as a Bonferroni correction — pooling raw points,
+checks and flags into one sum would let the 261-check samples outweigh the 0/1 flags, which is a
+scale artefact rather than evidence). 11 of the other 14 arms cannot be distinguished from it
+(p ≥ 0.05), including `qwen38-flash` f16, which differs by one retrieval sub-value. The three that
+*are* separable are separable as **worse**: Gemma f16 (p = 0.0059), Gemma q8_0 (p = 0.0007) and
+Gemma q4_0 (p = 0.0007). So the run establishes that **q4_0 is not a
 downgrade on four of five models** and that Gemma's q4_0 failure is verbosity/truncation rather than
 wrong answers — not that any KV type is better than f16.
 
@@ -68,7 +71,7 @@ difference on 30 points is not that evidence, and the report says so wherever th
 of these five models — the differences are the same size as the noise the code tier is known to
 carry — and quantizing the KV cache did not make any model loop more. The one large effect is
 Gemma-4-26B-A4B at q4_0, and it is not a wrong answer: the model ran past the generation cap on
-three code tasks, so the arm produced truncated output. On this build, quantized KV is also 10–28 %
+three code tasks, so the arm produced truncated output. On this build, quantized KV is also 17–28 %
 *slower* to decode at this depth than f16, so the reason to use it is context headroom, not speed.**
 
 ## R tier — retrieval, tracing, aggregation (30 points per arm, 3 reps)
@@ -90,7 +93,7 @@ The task breakdown explains why this tier barely separates anything:
 
 | task | behaviour |
 |---|---|
-| `niah_multi`, `vt_trace` | saturated at 9/9 and 6/6 for all four non-Gemma models in all three arms |
+| `niah_multi`, `vt_trace` | `niah_multi` is 9/9 in all 15 arms; `vt_trace` is 6/6 in 14 arms (ornith q8_0: 4/6) |
 | `niah_deep`, `count_proj` | 3/3 and 1–3/3 for four of five models — one model's misses are stable across arms |
 | `agg_sum` (count+sum over 120 ledger rows) | floor: 0/6 in 11 of 15 arms; 1–4 of 6 only in the Flash arms and once for the 27B at q8_0 |
 | `fwe_count` (exact token count with decoys) | floor: 0/3 in 13 of 15 arms (1/3 for 27B q8_0 and Flash f16) |
@@ -123,8 +126,9 @@ Two things dominate these numbers, and neither is a KV effect:
    *budget interaction*, not proved wrong code, and the other 12 arms show nothing like it.
 
 The four modules that did not saturate at 100 % everywhere (`csvlite`, `fixedpoint`, `intervals`,
-`statistics`) never differ by more than one or two checks between arms of the same model — e.g.
-`fixedpoint` 45/45 in 11 arms, 39–42 in the other four; `intervals` 162/162 in 14 arms.
+`statistics`) stay within two checks between arms of the same model except two: `csvlite` moves by up
+to 14 of 29 (ornith 29 → 15 → 15, qwen36 29 → 21 → 29) and `fixedpoint` by up to 5 of 45 (qwen36
+41 → 45 → 40). `intervals` is 162/162 in 14 arms, `statistics` never below 227/229.
 
 `repo_fix` (54 hidden checks + the visible test) is the one task with a visible 0-vs-54 spread, and
 it tracks *format compliance*: the arms that scored 0 emitted no parseable `### FILE:` block
@@ -158,8 +162,8 @@ it". The samples say otherwise:
 
 - The f16 and q8_0 verdicts are all `gen_manual` samples flagged *only* by the zlib ratio, at
   0.424 / 0.420 (f16) and 0.421 / 0.429 (q8_0) against a 0.42 threshold. No repeated line, no
-  repeated n-gram, no cycle: those three samples have `line_run=1` and `word_run_4=1`, i.e. nothing
-  repeats. A 12-paragraph manual generated from twelve fixed rules is formulaic by construction, so
+  repeated n-gram, no cycle: those four samples (f16 reps 0 and 2, q8_0 reps 1 and 2) all have
+  `line_run=1` and `word_run_4=1`, i.e. nothing repeats. A 12-paragraph manual generated from twelve fixed rules is formulaic by construction, so
   it compresses to ~0.42 whether or not anything is wrong.
 - q4_0's manuals landed at 0.419 / 0.416 / 0.391 — three thousandths under the line, from **longer**
   text (6,354–9,245 characters vs 4,803–6,149 at f16). Longer, more varied text compresses less, so
@@ -174,17 +178,20 @@ threshold as a heuristic with a measured false-positive rate on templated text.
 
 What the flags actually are matters more than the rate:
 
-- **One model loops, and it is Gemma.** 8 of the 10 hard repetition events in the whole run are
-  Gemma on `enumerate_shards`: identical lines repeated up to 159× in a row, 200-char blocks
-  repeated 4×, 3-cycles of 105–300 characters in the tail. It does this at f16 (2 of 3 reps),
+- **One model loops, and it is Gemma.** 7 of the 10 hard repetition events in the whole run are
+  Gemma on `enumerate_shards` (the 8th Gemma event is the reasoning 3-cycle in its `tool_episode`,
+  mentioned below): identical lines repeated up to 159× in a row, 200-char blocks repeated up to
+  15×, 3-cycles of 105–300 characters in the tail. It does this at f16 (2 of 3 reps),
   q8_0 (2 of 3) and q4_0 (3 of 3) alike, and it fails the task while doing it (4–11 of 40 shards
   correct vs 39/40 for the other models). This is a model property, not a quantization effect.
 - Single cycles also appear once each in ornith-35b q8_0 and qwen36-35b q8_0 on the same task.
-- **25 of the 45 `gen_manual` samples cross the compression threshold** (zip ratio 0.42–0.44) with
-  no line, n-gram or cycle signal. A 12-paragraph manual written from twelve fixed rules is
-  formulaic by construction, so this is a threshold artefact of a templated task, and it is
-  distributed evenly across arms (2–3 of 3 everywhere) — it inflates the "loop rate" to
-  17–25 % uniformly without carrying any KV signal. It is left in the table, raw numbers beside the
+- **25 of the 45 `gen_manual` samples cross the compression threshold** (zip ratio 0.420–0.469) with
+  no line, n-gram or cycle signal. A 12-paragraph manual written from twelve fixed rules is formulaic
+  by construction, so this is a threshold artefact of a templated task. It is *not* uniform across
+  arms — 3/3 for both Ornith quant arms, 2/3 for most Qwen arms, 1/3 / 0/3 / 0/3 for Gemma (f16,
+  q8_0, q4_0) and 0/3 for `qwen36-35b` q4_0. Gemma's manuals are 4,619–6,919 characters and compress
+  to 0.395–0.431, i.e. just under the line, so only its f16 rep 0 at 0.431 crosses. The union loop
+  rate therefore ranges from 0 % to 33 % and is not a KV signal in either direction. It is left in the table, raw numbers beside the
   verdict, so a reader can discount it.
 - **Tool episodes: 45/45 clean.** Every episode used exactly 5 calls (4 `read_shard` + 1
   `submit_report`), every report was accepted, and no identical-consecutive call, no triple call and
@@ -225,7 +232,8 @@ experiment.
 | `qwen38-flash` | 21.5 | 16.6 → 12.6 → 12.3 |
 | `qwen38-27b` | 17.9 | 12.4 → 10.3 → 9.7 |
 
-**f16 is the fastest KV type to decode at this depth, on every model**, by 10–28 %; q8_0 and q4_0
+**f16 is the fastest KV type to decode at this depth, on every model**, by 17–28 % (f16 → q8_0) and
+20–28 % (f16 → q4_0); q8_0 and q4_0
 are within ~3 % of each other. Prefill is flat. This is a property of the pinned build's CUDA
 flash-attention kernels (the f16 path is the hot one), not a property of quantization in general,
 but it is what a user of this build would measure. Prompt cache reuse was 100 % (prefix hits of

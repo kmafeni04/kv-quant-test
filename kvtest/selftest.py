@@ -16,12 +16,15 @@ import threading
 
 from . import client, codegraders, config, loops, longctx, report, tasks
 
-OK = []
+OK, FAILED = [], []
 
 
 def check(name, cond, detail=""):
+    """Record instead of raising: one environment miss must not hide every later group."""
     if not cond:
-        raise AssertionError(f"{name}: {detail}")
+        FAILED.append(f"{name}: {detail}")
+        print(f"  FAIL {name}")
+        return
     OK.append(name)
     print(f"  ok  {name}")
 
@@ -330,8 +333,12 @@ def test_runner_end_to_end(tmp):
           os.path.exists(os.path.join(out_dir, "hardware.json")), os.listdir(out_dir))
     hw = json.load(open(os.path.join(out_dir, "hardware.json")))
     from . import hostinfo
+    gpu = hw.get("gpu") or {}
     check("hardware capture names the GPU, the CPU and the build flags",
-          bool((hw.get("gpu") or {}).get("name")) and bool((hw.get("cpu") or {}).get("model"))
+          # a machine without a driver reports {"error": ...} rather than a name; the selftest is
+          # documented as needing no GPU, so that is a pass as long as the failure was recorded
+          (bool(gpu.get("name")) or bool(gpu.get("error")))
+          and bool((hw.get("cpu") or {}).get("model"))
           and (hw.get("llama_cpp") or {}).get("flags"), hostinfo.one_line(hw))
     check("raw.json has one arm and a manifest",
           len(raw["arms"]) == 1 and "llama_cpp" in raw["manifest"])
@@ -385,16 +392,34 @@ def test_report(tmp, runner_out):
                             for m in models for kv in config.KV_ARMS},
                    "samples": len(samples), "document": {"sha256": "0" * 64},
                    "deadline_reached": False, "unrun_arms": []}, f)
+    readme_before = open(os.path.join(config.ROOT, "README.md")).read()
     out_dir, raw = report.build(out)
+    check("report.build does not rewrite README unless asked",
+          open(os.path.join(config.ROOT, "README.md")).read() == readme_before,
+          "README changed as a side effect of building a report")
     page = open(os.path.join(out, "report.html")).read()
     check("report html has the three tabs",
           all(f'id="t-{t}"' in page for t in ("matrix", "tasks", "loops")))
     check("report html has 3 figures of 15 cells", page.count('rx="4"') == 45,
           page.count('rx="4"'))
     figs = os.path.join(out, "figures")
-    check("report exported standalone figures",
-          sorted(os.listdir(figs)) == [f"fig{i}.svg" for i in range(1, 6)] + ["figures.json"],
-          os.listdir(figs) if os.path.isdir(figs) else "missing")
+    svg_count = page.count("<svg")
+    check("every figure on the page is exported",
+          set(os.listdir(figs)) == {f"fig{i}.svg" for i in range(1, svg_count + 1)}
+          | {"figures.json"}, (len(os.listdir(figs)), svg_count))
+    check("every exported figure names itself",
+          all("<title>" in open(os.path.join(figs, f)).read()
+              for f in os.listdir(figs) if f.endswith(".svg")),
+          [f for f in sorted(os.listdir(figs)) if f.endswith(".svg")
+           and "<title>" not in open(os.path.join(figs, f)).read()])
+    fj = json.load(open(os.path.join(figs, "figures.json")))
+    check("figures.json carries the numbers behind every figure",
+          fj.get("per_task") is None and all(
+              {"per_task", "decode_tps", "prefill_tps", "loops_hard", "R_pct", "C_pct"}
+              <= set(v) for v in fj["arms"].values())
+          and len(fj["figures"]) == svg_count
+          and all(f.get("title") for f in fj["figures"]),
+          (len(fj.get("figures") or []), svg_count, fj.get("figures")))
     before = open(os.path.join(figs, "fig1.svg")).read()
     report.build(out)
     check("figure export is byte-identical on rebuild",
@@ -404,7 +429,8 @@ def test_report(tmp, runner_out):
           and report.perm_p([0] * 6)[1] == 1.0
           and report.perm_p([1, -1])[1] == 1.0
           and report.perm_p([-1, -1, -1, -1, -1, -1])[1] == 2 / 64)
-    check("report html embeds the raw data", "const RAW =" in page)
+    check("report html is self-contained (no external references)",
+          not [u for u in __import__("re").findall(r'(?:src|href)="(?!#)([^"]+)"', page)])
     check("report markdown is non-empty and has the tables",
           os.path.getsize(os.path.join(out, "REPORT.md")) > 1500
           and "## Loop table" in open(os.path.join(out, "REPORT.md")).read())
@@ -428,6 +454,84 @@ def test_report(tmp, runner_out):
     check("report falls back to hardware.json when raw.json predates capture",
           "hardware.json" in md or "captured at matrix start" in md,
           [ln for ln in md.splitlines() if "Recorded:" in ln][:1])
+
+
+def _leader_fixture(tmp, name, r_shift, c_pairs, l_flags):
+    """Write a two-arm fixture (f16 reference vs q4_0) and return (built report, pooled p)."""
+    out = os.path.join(tmp, "results", name)
+    os.makedirs(out, exist_ok=True)
+    tasks_r = ("niah_multi", "niah_deep", "vt_trace", "agg_sum", "count_proj", "fwe_count")
+    tasks_l = ("gen_manual", "copy_ledgers", "enumerate_shards", "tool_episode")
+    samples = []
+    for kv in ("f16", "q4_0"):
+        i = 0
+        for rep in range(3):
+            for task in tasks_r:
+                pts = 2 if kv == "f16" else 2 + r_shift
+                i += 1
+                samples.append({"stamp": name, "model": "m", "kv": kv, "tier": "R", "task": task,
+                                "rep": rep, "seed": 1001 + rep, "error": None, "flagged": False,
+                                "out_tokens": 900, "loops": {},
+                                "grade": {"points": max(0, pts), "of": 3, "ok": True,
+                                          "answer": "A"}})
+        for k, task in enumerate(("cg_csvlite", "cg_fixedpoint", "cg_intervals", "cg_semver",
+                                  "cg_statistics", "repo_fix")):
+            passed = c_pairs[k][0] if kv == "f16" else c_pairs[k][1]
+            samples.append({"stamp": name, "model": "m", "kv": kv, "tier": "C", "task": task,
+                            "rep": 0, "seed": 1001, "error": None, "flagged": False,
+                            "out_tokens": 900, "loops": {},
+                            "grade": {"passed": passed, "of": 261, "resolved": False,
+                                      "lines": 60}})
+        for j, (rep, task) in enumerate((rep, task) for rep in range(3) for task in tasks_l):
+            flagged = (kv == "q4_0" and j in l_flags)
+            samples.append({"stamp": name, "model": "m", "kv": kv, "tier": "L", "task": task,
+                            "rep": rep, "seed": 1001 + rep, "error": None, "flagged": flagged,
+                            "out_tokens": 900, "loops": {}, "grade": {"ok": True, "score": 1.0}})
+    with open(os.path.join(out, "samples.jsonl"), "w") as f:
+        for row in samples:
+            f.write(json.dumps(row) + "\n")
+    with open(os.path.join(out, "raw.json"), "w") as f:
+        json.dump({"manifest": config.build_manifest(), "stamp": name, "context": 8192,
+                   "arms": {f"m__{kv}": {"model": "m", "kv": kv, "ctx": 8192, "knobs": {}}
+                            for kv in ("f16", "q4_0")},
+                   "samples": len(samples), "document": {"sha256": "0" * 64},
+                   "deadline_reached": False, "unrun_arms": [], "incomplete_arms": []}, f)
+    built, _ = report.build(out)
+    per_arm = report._paired_scores(samples)
+    lead, cur = per_arm["m__f16"], per_arm["m__q4_0"]
+    pooled = report.perm_p([cur[k] - lead[k] for k in sorted(cur) if k in lead])[1]
+    return built, pooled
+
+
+def test_leader_test_is_per_tier(tmp):
+    """The leader test must be per tier: neither magnitude-weighted nor diluted.
+
+    Two fixtures, each of which the old pooled method gets wrong in the opposite direction:
+
+    * a 200-check C gap with R and L flat -> pooled weights those six pairs above thirty 0/1 pairs
+      and looks significant; per-tier sees 3 x 2/2**6 = 0.094 and says tied;
+    * a uniform 1-point R gap with a noisy +/-200 C spread -> pooling drowns the real R difference
+      in C magnitude and says tied; per-tier sees 3 x 2/2**18 = 2.3e-05 and separates.
+    """
+    built_c, pooled_c = _leader_fixture(tmp, "leadertest_c", r_shift=0,
+                                        c_pairs=[(261, 61)] * 6, l_flags=())
+    row_c = next(r for r in built_c["verdict"]["flat"] if r[1] == "q4_0")
+    check("a C-only gap is reported as tied (per-tier test)",
+          row_c[6] >= report.ALPHA, (row_c[6], row_c))
+    check("that same C-only gap would look significant if the tiers were pooled",
+          pooled_c < report.ALPHA, pooled_c)
+    check("a tied arm is listed in tied_with_leader",
+          any(t[1] == "q4_0" for t in built_c["verdict"]["tied_with_leader"]),
+          built_c["verdict"]["tied_with_leader"])
+
+    built_r, pooled_r = _leader_fixture(
+        tmp, "leadertest_r", r_shift=-1,
+        c_pairs=[(261, 61), (61, 261), (261, 61), (61, 261), (261, 61), (61, 261)], l_flags=())
+    row_r = next(r for r in built_r["verdict"]["flat"] if r[1] == "q4_0")
+    check("a real R gap is not diluted by C noise (per-tier test)",
+          row_r[6] < report.ALPHA, (row_r[6], row_r))
+    check("that same R gap would be hidden if the tiers were pooled",
+          pooled_r >= report.ALPHA, pooled_r)
 
 
 def main():
@@ -454,9 +558,13 @@ def main():
         runner_out = test_runner_end_to_end(tmp)
         print("- report")
         test_report(tmp, runner_out)
+        print("- leader test is per tier")
+        test_leader_test_is_per_tier(tmp)
     finally:
         mocksrv.shutdown()
         shutil.rmtree(tmp, ignore_errors=True)
+    if FAILED:
+        raise AssertionError(f"{len(FAILED)} check(s) failed: " + " | ".join(FAILED))
     print(f"\nselftest OK ({len(OK)} checks)")
 
 

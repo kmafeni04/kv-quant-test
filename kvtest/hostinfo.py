@@ -23,16 +23,28 @@ def _run(cmd, timeout=10):
         return ""
 
 
+def _parse_gpu(out):
+    """nvidia-smi CSV -> dict, or {} when the line cannot be parsed (toolkit without a driver)."""
+    lines = [ln for ln in (out or "").splitlines() if ln.strip()]
+    if not lines:
+        return {}
+    parts = [p.strip() for p in lines[0].split(",")]
+    if len(parts) < 5 or not parts[0]:
+        return {}
+    return {"name": parts[0], "memory_total_mib": _int(parts[1]),
+            "memory_used_mib": _int(parts[2]), "driver": parts[3],
+            "compute_capability": parts[4]}
+
+
 def gpu():
+    """Never returns a bare {}: either it names the GPU, or it says why it could not."""
     out = _run(["nvidia-smi", "--query-gpu=name,memory.total,memory.used,driver_version,"
                                "compute_cap", "--format=csv,noheader"])
     if not out.strip():
-        return {"error": "nvidia-smi unavailable"}
-    parts = [p.strip() for p in out.strip().splitlines()[0].split(",")]
-    rec = {}
-    if len(parts) >= 5:
-        rec = {"name": parts[0], "memory_total_mib": _int(parts[1]), "memory_used_mib": _int(parts[2]),
-               "driver": parts[3], "compute_capability": parts[4]}
+        return {"error": "nvidia-smi unavailable (no tool, or no reachable driver)"}
+    rec = _parse_gpu(out)
+    if not rec.get("name"):
+        return {"error": "nvidia-smi produced no parsable GPU line", "raw": out.strip()[:200]}
     rec["usable_budget_note"] = ("the study leaves ~1 GiB for the display/driver; the fit probe "
                                  "records the peak actually reached per arm")
     return rec

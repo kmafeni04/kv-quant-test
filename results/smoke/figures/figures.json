@@ -2,12 +2,207 @@
   "alpha": 0.05,
   "arms": {
     "qwen36-35b__q4_0": {
+      "C_of": 780,
+      "C_passed": 721,
       "C_pct": 92.4,
+      "R_of": 10,
       "R_pct": 70.0,
+      "R_points": 7,
+      "decode_tps": 45.6,
+      "loop_flagged": 0,
+      "loop_rate": 0.0,
       "loops_hard": 0,
       "loops_n": 4,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 44.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 158.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 261.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 1,
+          "n": 1,
+          "of": 54,
+          "score": 0.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 1,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 1,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 0,
+          "n": 1,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 1,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 1,
+          "of": 2,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 1,
+          "of": 1,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 1,
+          "of": 1,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 1,
+          "of": 1,
+          "score": 1.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 1,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 1,
+          "of": 2,
+          "score": 2.0
+        }
+      },
+      "prefill_tps": 642.6,
+      "prompt_tokens_med": 10679,
       "sig": null
     }
   },
-  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier"
+  "figures": [
+    {
+      "file": "fig1.svg",
+      "title": "grid: R accuracy"
+    },
+    {
+      "file": "fig2.svg",
+      "title": "grid: C checks"
+    },
+    {
+      "file": "fig3.svg",
+      "title": "grid: structural repetition"
+    },
+    {
+      "file": "fig4.svg",
+      "title": "decode throughput at 11k tokens of context"
+    },
+    {
+      "file": "fig5.svg",
+      "title": "R: agg_sum"
+    },
+    {
+      "file": "fig6.svg",
+      "title": "R: count_proj"
+    },
+    {
+      "file": "fig7.svg",
+      "title": "R: fwe_count"
+    },
+    {
+      "file": "fig8.svg",
+      "title": "R: niah_deep"
+    },
+    {
+      "file": "fig9.svg",
+      "title": "R: niah_multi"
+    },
+    {
+      "file": "fig10.svg",
+      "title": "R: vt_trace"
+    },
+    {
+      "file": "fig11.svg",
+      "title": "C: cg_csvlite"
+    },
+    {
+      "file": "fig12.svg",
+      "title": "C: cg_fixedpoint"
+    },
+    {
+      "file": "fig13.svg",
+      "title": "C: cg_intervals"
+    },
+    {
+      "file": "fig14.svg",
+      "title": "C: cg_semver"
+    },
+    {
+      "file": "fig15.svg",
+      "title": "C: cg_statistics"
+    },
+    {
+      "file": "fig16.svg",
+      "title": "C: repo_fix"
+    },
+    {
+      "file": "fig17.svg",
+      "title": "L: copy_ledgers"
+    },
+    {
+      "file": "fig18.svg",
+      "title": "L: enumerate_shards"
+    },
+    {
+      "file": "fig19.svg",
+      "title": "L: gen_manual"
+    },
+    {
+      "file": "fig20.svg",
+      "title": "L: tool_episode"
+    }
+  ],
+  "leader_test": "tier by tier against the leader, Bonferroni over 3 tiers",
+  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier",
+  "tiers": [
+    "R",
+    "C",
+    "L"
+  ]
 }

@@ -2,17 +2,231 @@
   "alpha": 0.05,
   "arms": {
     "gemma4-26b-a4b__f16": {
+      "C_of": 780,
+      "C_passed": 694,
       "C_pct": 89.0,
+      "R_of": 30,
       "R_pct": 36.7,
+      "R_points": 11,
+      "decode_tps": 46.9,
+      "loop_flagged": 4,
+      "loop_rate": 0.333,
       "loops_hard": 3,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 182.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 47.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 1,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 1,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 3,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_multi": {
+          "flagged": 1,
+          "n": 3,
+          "of": 9,
+          "score": 4.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 34.5,
+      "prompt_tokens_med": 81845,
       "sig": null
     },
     "gemma4-26b-a4b__q4_0": {
+      "C_of": 780,
+      "C_passed": 318,
       "C_pct": 40.8,
+      "R_of": 30,
       "R_pct": 26.7,
+      "R_points": 8,
+      "decode_tps": 34.3,
+      "loop_flagged": 3,
+      "loop_rate": 0.25,
       "loops_hard": 3,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 1,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 15.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 0.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 1,
+          "n": 1,
+          "of": 54,
+          "score": 0.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 3,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 3,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 3,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:fwe_count": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 6.0
+        },
+        "R:vt_trace": {
+          "flagged": 2,
+          "n": 3,
+          "of": 6,
+          "score": 2.0
+        }
+      },
+      "prefill_tps": 51.7,
+      "prompt_tokens_med": 81845,
       "sig": {
         "C": {
           "delta": -376,
@@ -35,10 +249,117 @@
       }
     },
     "gemma4-26b-a4b__q8_0": {
+      "C_of": 780,
+      "C_passed": 701,
       "C_pct": 89.9,
+      "R_of": 30,
       "R_pct": 23.3,
+      "R_points": 7,
+      "decode_tps": 33.8,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 2,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 23.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 190.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 227.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 54.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 3,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 3,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:fwe_count": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 5.0
+        },
+        "R:vt_trace": {
+          "flagged": 2,
+          "n": 3,
+          "of": 6,
+          "score": 2.0
+        }
+      },
+      "prefill_tps": 43.6,
+      "prompt_tokens_med": 81845,
       "sig": {
         "C": {
           "delta": 7,
@@ -61,17 +382,231 @@
       }
     },
     "ornith-35b__f16": {
+      "C_of": 780,
+      "C_passed": 548,
       "C_pct": 70.3,
+      "R_of": 30,
       "R_pct": 63.3,
+      "R_points": 19,
+      "decode_tps": 48.8,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 83.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 1,
+          "n": 1,
+          "of": 54,
+          "score": 0.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 67.4,
+      "prompt_tokens_med": 91357,
       "sig": null
     },
     "ornith-35b__q4_0": {
+      "C_of": 780,
+      "C_passed": 475,
       "C_pct": 60.9,
+      "R_of": 30,
       "R_pct": 60.0,
+      "R_points": 18,
+      "decode_tps": 35.2,
+      "loop_flagged": 3,
+      "loop_rate": 0.25,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 15.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 24.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 1,
+          "n": 1,
+          "of": 54,
+          "score": 0.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 3,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 2.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 59.7,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": -73,
@@ -94,10 +629,117 @@
       }
     },
     "ornith-35b__q8_0": {
+      "C_of": 780,
+      "C_passed": 570,
       "C_pct": 73.1,
+      "R_of": 30,
       "R_pct": 53.3,
+      "R_points": 16,
+      "decode_tps": 35.7,
+      "loop_flagged": 4,
+      "loop_rate": 0.333,
       "loops_hard": 1,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 15.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 39.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 71.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 54.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 1,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 3,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 2.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 4.0
+        }
+      },
+      "prefill_tps": 59.6,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": 22,
@@ -120,17 +762,231 @@
       }
     },
     "qwen36-35b__f16": {
+      "C_of": 780,
+      "C_passed": 765,
       "C_pct": 98.1,
+      "R_of": 30,
       "R_pct": 60.0,
+      "R_points": 18,
+      "decode_tps": 38.7,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 41.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 261.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 43.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 57.2,
+      "prompt_tokens_med": 91357,
       "sig": null
     },
     "qwen36-35b__q4_0": {
+      "C_of": 780,
+      "C_passed": 763,
       "C_pct": 97.8,
+      "R_of": 30,
       "R_pct": 66.7,
+      "R_points": 20,
+      "decode_tps": 30.8,
+      "loop_flagged": 0,
+      "loop_rate": 0.0,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 40.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 253.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 50.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 2.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 51.6,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": -2,
@@ -153,10 +1009,117 @@
       }
     },
     "qwen36-35b__q8_0": {
+      "C_of": 780,
+      "C_passed": 694,
       "C_pct": 89.0,
+      "R_of": 30,
       "R_pct": 63.3,
+      "R_points": 19,
+      "decode_tps": 31.2,
+      "loop_flagged": 3,
+      "loop_rate": 0.25,
       "loops_hard": 1,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 21.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 187.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 50.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 1,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 50.8,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": -71,
@@ -179,17 +1142,231 @@
       }
     },
     "qwen38-27b__f16": {
+      "C_of": 780,
+      "C_passed": 629,
       "C_pct": 80.6,
+      "R_of": 30,
       "R_pct": 70.0,
+      "R_points": 21,
+      "decode_tps": 12.4,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 21.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 118.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 54.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 2,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 17.9,
+      "prompt_tokens_med": 91357,
       "sig": null
     },
     "qwen38-27b__q4_0": {
+      "C_of": 780,
+      "C_passed": 634,
       "C_pct": 81.3,
+      "R_of": 30,
       "R_pct": 70.0,
+      "R_points": 21,
+      "decode_tps": 9.7,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 42.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 118.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 54.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 0.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 1,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 15.6,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": 5,
@@ -212,10 +1389,117 @@
       }
     },
     "qwen38-27b__q8_0": {
+      "C_of": 780,
+      "C_passed": 702,
       "C_pct": 90.0,
+      "R_of": 30,
       "R_pct": 76.7,
+      "R_points": 23,
+      "decode_tps": 10.3,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 190.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 47.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 1.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 16.3,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": 73,
@@ -238,17 +1522,231 @@
       }
     },
     "qwen38-flash__f16": {
+      "C_of": 780,
+      "C_passed": 702,
       "C_pct": 90.0,
+      "R_of": 30,
       "R_pct": 76.7,
+      "R_points": 23,
+      "decode_tps": 16.6,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 190.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 47.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 1.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 1.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 21.5,
+      "prompt_tokens_med": 91357,
       "sig": null
     },
     "qwen38-flash__q4_0": {
+      "C_of": 780,
+      "C_passed": 701,
       "C_pct": 89.9,
+      "R_of": 30,
       "R_pct": 80.0,
+      "R_points": 24,
+      "decode_tps": 12.3,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 28.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 190.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 47.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 3.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 21.2,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": -1,
@@ -271,10 +1769,117 @@
       }
     },
     "qwen38-flash__q8_0": {
+      "C_of": 780,
+      "C_passed": 630,
       "C_pct": 80.8,
+      "R_of": 30,
       "R_pct": 80.0,
+      "R_points": 24,
+      "decode_tps": 12.6,
+      "loop_flagged": 2,
+      "loop_rate": 0.167,
       "loops_hard": 0,
       "loops_n": 12,
+      "per_task": {
+        "C:cg_csvlite": {
+          "flagged": 0,
+          "n": 1,
+          "of": 29,
+          "score": 29.0
+        },
+        "C:cg_fixedpoint": {
+          "flagged": 0,
+          "n": 1,
+          "of": 45,
+          "score": 45.0
+        },
+        "C:cg_intervals": {
+          "flagged": 0,
+          "n": 1,
+          "of": 162,
+          "score": 162.0
+        },
+        "C:cg_semver": {
+          "flagged": 0,
+          "n": 1,
+          "of": 261,
+          "score": 118.0
+        },
+        "C:cg_statistics": {
+          "flagged": 0,
+          "n": 1,
+          "of": 229,
+          "score": 229.0
+        },
+        "C:repo_fix": {
+          "flagged": 0,
+          "n": 1,
+          "of": 54,
+          "score": 47.0
+        },
+        "L:copy_ledgers": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:enumerate_shards": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:gen_manual": {
+          "flagged": 2,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "L:tool_episode": {
+          "flagged": 0,
+          "n": 3,
+          "of": 0,
+          "score": 0.0
+        },
+        "R:agg_sum": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 4.0
+        },
+        "R:count_proj": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 3.0
+        },
+        "R:fwe_count": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 0.0
+        },
+        "R:niah_deep": {
+          "flagged": 0,
+          "n": 3,
+          "of": 3,
+          "score": 2.0
+        },
+        "R:niah_multi": {
+          "flagged": 0,
+          "n": 3,
+          "of": 9,
+          "score": 9.0
+        },
+        "R:vt_trace": {
+          "flagged": 0,
+          "n": 3,
+          "of": 6,
+          "score": 6.0
+        }
+      },
+      "prefill_tps": 20.4,
+      "prompt_tokens_med": 91357,
       "sig": {
         "C": {
           "delta": -72,
@@ -297,5 +1902,97 @@
       }
     }
   },
-  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier"
+  "figures": [
+    {
+      "file": "fig1.svg",
+      "title": "grid: R accuracy"
+    },
+    {
+      "file": "fig2.svg",
+      "title": "grid: C checks"
+    },
+    {
+      "file": "fig3.svg",
+      "title": "grid: structural repetition"
+    },
+    {
+      "file": "fig4.svg",
+      "title": "decode throughput at the realized context (82k\u201391k tokens)"
+    },
+    {
+      "file": "fig5.svg",
+      "title": "structural repetition per arm (only arms with at least one)"
+    },
+    {
+      "file": "fig6.svg",
+      "title": "R: agg_sum"
+    },
+    {
+      "file": "fig7.svg",
+      "title": "R: count_proj"
+    },
+    {
+      "file": "fig8.svg",
+      "title": "R: fwe_count"
+    },
+    {
+      "file": "fig9.svg",
+      "title": "R: niah_deep"
+    },
+    {
+      "file": "fig10.svg",
+      "title": "R: niah_multi"
+    },
+    {
+      "file": "fig11.svg",
+      "title": "R: vt_trace"
+    },
+    {
+      "file": "fig12.svg",
+      "title": "C: cg_csvlite"
+    },
+    {
+      "file": "fig13.svg",
+      "title": "C: cg_fixedpoint"
+    },
+    {
+      "file": "fig14.svg",
+      "title": "C: cg_intervals"
+    },
+    {
+      "file": "fig15.svg",
+      "title": "C: cg_semver"
+    },
+    {
+      "file": "fig16.svg",
+      "title": "C: cg_statistics"
+    },
+    {
+      "file": "fig17.svg",
+      "title": "C: repo_fix"
+    },
+    {
+      "file": "fig18.svg",
+      "title": "L: copy_ledgers"
+    },
+    {
+      "file": "fig19.svg",
+      "title": "L: enumerate_shards"
+    },
+    {
+      "file": "fig20.svg",
+      "title": "L: gen_manual"
+    },
+    {
+      "file": "fig21.svg",
+      "title": "L: tool_episode"
+    }
+  ],
+  "leader_test": "tier by tier against the leader, Bonferroni over 3 tiers",
+  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier",
+  "tiers": [
+    "R",
+    "C",
+    "L"
+  ]
 }
