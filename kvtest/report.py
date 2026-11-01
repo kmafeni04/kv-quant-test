@@ -109,7 +109,8 @@ def _timing_lines(t, arms, cells=None):
     rows = [
         ("harness self-test + smoke runs", ph.get("harness_selftest_and_smoke")),
         ("fit probe (context + offload + depth)", ph.get("fit_probe")),
-        ("matrix: 15 arms, 540 graded samples", m),
+        (f"matrix: {len(arms)} arms, "
+         f"{sum(len(a.get('done') or []) for a in arms.values())} requests", m),
         ("report generation", ph.get("report")),
     ]
     for name, d in rows:
@@ -124,9 +125,8 @@ def _timing_lines(t, arms, cells=None):
     out.append("")
     if m.get("arm_wall_sum_s"):
         out.append(f"Summed per-arm time is {_human(m['arm_wall_sum_s'])} inside a "
-                   f"{_human(m.get('wall_s'))} matrix window: the difference is model loads, "
-                   f"the prefill of the 91k-token document once per arm, and one interrupted "
-                   f"stretch that was resumed from checkpoints.")
+                   f"{_human(m.get('wall_s'))} matrix window: the difference is model load time "
+                   f"and the one-off prefill of the shared document in every arm.")
     if m.get("note"):
         out.append(f"\n{m['note']}.")
     if t.get("provenance"):

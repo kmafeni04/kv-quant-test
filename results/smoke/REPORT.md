@@ -51,9 +51,9 @@ A 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreemen
 
 | phase | wall clock | when (UTC) |
 |---|---|---|
-| matrix: 15 arms, 540 graded samples | 13 m 12 s | 2026-11-01T02:01 → 2026-11-01T02:14 |
+| matrix: 1 arms, 16 requests | 13 m 12 s | 2026-11-01T02:01 → 2026-11-01T02:14 |
 
-Summed per-arm time is 13 m 11 s inside a 13 m 12 s matrix window: the difference is model loads, the prefill of the 91k-token document once per arm, and one interrupted stretch that was resumed from checkpoints.
+Summed per-arm time is 13 m 11 s inside a 13 m 12 s matrix window: the difference is model load time and the one-off prefill of the shared document in every arm.
 
 Per-arm wall clock (includes the document prefill and the server load):
 

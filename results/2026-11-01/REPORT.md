@@ -163,11 +163,11 @@ A 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreemen
 |---|---|---|
 | harness self-test + smoke runs | 40 m 00 s | 2026-11-01T00:02 → 2026-11-01T03:15 |
 | fit probe (context + offload + depth) | 35 m 29 s | 2026-11-01T00:02 → 2026-11-01T03:50 |
-| matrix: 15 arms, 540 graded samples | 14 h 12 m | 2026-11-01T03:53 → 2026-11-01T18:05 |
+| matrix: 15 arms, 540 requests | 14 h 12 m | 2026-11-01T03:53 → 2026-11-01T18:05 |
 | report generation | 1 m 00 s | — → — |
 | **total test time (phases summed, provisioning excluded)** | **15 h 27 m** | 2026-11-01T00:02 → 2026-11-01T18:05 |
 
-Summed per-arm time is 13 h 47 m inside a 14 h 12 m matrix window: the difference is model loads, the prefill of the 91k-token document once per arm, and one interrupted stretch that was resumed from checkpoints.
+Summed per-arm time is 13 h 47 m inside a 14 h 12 m matrix window: the difference is model load time and the one-off prefill of the shared document in every arm.
 
 run1 (03:53Z) was stopped by an arm-start failure at 09:19Z; run2 resumed the 9 unfinished arms from their per-arm checkpoints, so no sample was regenerated.
 
