@@ -1,6 +1,9 @@
 results/*/logs/
 results/*/scratch/
 results/*/document.txt
-results/*.out
+results/*/arms/
+results/*/samples.jsonl
+results/*/run*.out
+results/*/run*-recovered.log
 __pycache__/
 *.pyc
