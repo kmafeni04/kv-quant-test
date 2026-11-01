@@ -25,11 +25,13 @@ retrieval points), then **fewer structural-loop samples**, then **higher decode 
 | `gemma4-26b-a4b` | **f16** | 62.85 | q8_0 (56.60) | 3/12 | 46.9 | q4_0 loses 29.1 points because it hit the 6,144-token code cap on 3 of 6 tasks — truncated output, not wrong code; Gemma loops at every KV type |
 
 **Best overall: `qwen38-flash` with a q4_0 KV cache** (84.95/100, 0/12 structural loops, 12.3 t/s
-decode, 9.1 GiB peak with 48 MoE layers on the CPU). The top three arms — flash q4_0, flash f16 and
-27B q8_0 — sit inside 1.6 capability points of each other, so treat "which single combination wins"
-as a near-tie; what the run does establish is that **q4_0 is not a downgrade on four of five
-models**, and that the one model where it clearly is (Gemma) fails by running long, not by answering
-wrong.
+decode, 9.1 GiB peak with 48 MoE layers on the CPU). **Its lead is not established.** Testing every
+arm against it on all paired samples pooled across the three tiers, 11 of the other 14 arms cannot be
+distinguished from it (p ≥ 0.05) — including `qwen38-flash` f16, which differs by one retrieval
+sub-value. The only arms that *are* separable are separable as **worse**: Gemma f16 (p = 0.047),
+Gemma q4_0 (p = 0.0034) and Ornith q4_0 (p = 0.0078). So the run establishes that **q4_0 is not a
+downgrade on four of five models** and that Gemma's q4_0 failure is verbosity/truncation rather than
+wrong answers — not that any KV type is better than f16.
 
 ## The one-line answer
 

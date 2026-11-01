@@ -7,11 +7,11 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 
 ## Verdict
 
-**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.95 of 100 (R 80.0% and C 89.9% averaged), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB peak with {'ncmoe': 48} offloaded.
+**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.95 of 100 (R 80.0% and C 89.9% averaged), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB peak with {'ncmoe': 48} offloaded. **Its lead is not established:** 11 of the other arms — including its own model's f16 arm — cannot be distinguished from it (p ≥ 0.05, all paired samples pooled).
 
 The next arms are `qwen38-flash` f16 (83.35), `qwen38-27b` q8_0 (83.35) — the top three sit within 1.6 capability points of each other, which is one or two graded outcomes.
 
-Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve — the reasons column says what the numbers actually support.
+Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve. The only differences that do reach p < 0.05 are arms that are worse than the leader, never one that is better.
 
 | model | best KV | capability | runner-up | structural loops | decode t/s | why |
 |---|---|---|---|---|---|---|
@@ -23,23 +23,26 @@ Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capa
 
 ### All 15 arms, ranked by the same rule
 
-| rank | arm | capability | structural loops | decode t/s |
-|---|---|---|---|---|
-| 1 | `qwen38-flash` **q4_0** | 84.95 | 0/12 | 12.3 |
-| 2 | `qwen38-flash` **f16** | 83.35 | 0/12 | 16.6 |
-| 3 | `qwen38-27b` **q8_0** | 83.35 | 0/12 | 10.3 |
-| 4 | `qwen36-35b` **q4_0** | 82.25 | 0/12 | 30.8 |
-| 5 | `qwen38-flash` **q8_0** | 80.40 | 0/12 | 12.6 |
-| 6 | `qwen36-35b` **f16** | 79.05 | 0/12 | 38.7 |
-| 7 | `qwen36-35b` **q8_0** | 76.15 | 1/12 | 31.2 |
-| 8 | `qwen38-27b` **q4_0** | 75.65 | 0/12 | 9.7 |
-| 9 | `qwen38-27b` **f16** | 75.30 | 0/12 | 12.4 |
-| 10 | `ornith-35b` **f16** | 66.80 | 0/12 | 48.8 |
-| 11 | `ornith-35b` **q8_0** | 63.20 | 1/12 | 35.7 |
-| 12 | `gemma4-26b-a4b` **f16** | 62.85 | 3/12 | 46.9 |
-| 13 | `ornith-35b` **q4_0** | 60.45 | 0/12 | 35.2 |
-| 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 |
-| 15 | `gemma4-26b-a4b` **q4_0** | 33.75 | 3/12 | 34.3 |
+| rank | arm | capability | structural loops | decode t/s | p vs #1 | distinguishable from #1? |
+|---|---|---|---|---|---|---|
+| 1 | `qwen38-flash` **q4_0** | 84.95 | 0/12 | 12.3 | 1.0000 | no — tied |
+| 2 | `qwen38-flash` **f16** | 83.35 | 0/12 | 16.6 | 1.0000 | no — tied |
+| 3 | `qwen38-27b` **q8_0** | 83.35 | 0/12 | 10.3 | 1.0000 | no — tied |
+| 4 | `qwen36-35b` **q4_0** | 82.25 | 0/12 | 30.8 | 0.7969 | no — tied |
+| 5 | `qwen38-flash` **q8_0** | 80.40 | 0/12 | 12.6 | 0.8125 | no — tied |
+| 6 | `qwen36-35b` **f16** | 79.05 | 0/12 | 38.7 | 0.9961 | no — tied |
+| 7 | `qwen36-35b` **q8_0** | 76.15 | 1/12 | 31.2 | 0.2891 | no — tied |
+| 8 | `qwen38-27b` **q4_0** | 75.65 | 0/12 | 9.7 | 0.5938 | no — tied |
+| 9 | `qwen38-27b` **f16** | 75.30 | 0/12 | 12.4 | 0.3750 | no — tied |
+| 10 | `ornith-35b` **f16** | 66.80 | 0/12 | 48.8 | 0.0781 | no — tied |
+| 11 | `ornith-35b` **q8_0** | 63.20 | 1/12 | 35.7 | 0.1475 | no — tied |
+| 12 | `gemma4-26b-a4b` **f16** | 62.85 | 3/12 | 46.9 | 0.0468 | yes |
+| 13 | `ornith-35b` **q4_0** | 60.45 | 0/12 | 35.2 | 0.0078 | yes |
+| 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 | 0.1886 | no — tied |
+| 15 | `gemma4-26b-a4b` **q4_0** | 33.75 | 3/12 | 34.3 | 0.0034 | yes |
+
+Tested on every paired sample pooled across the three tiers, the arms that are **not distinguishable from the winner** are: `qwen38-flash` f16 (83.35), `qwen38-27b` q8_0 (83.35), `qwen36-35b` q4_0 (82.25), `qwen38-flash` q8_0 (80.40), `qwen36-35b` f16 (79.05), `qwen36-35b` q8_0 (76.15), `qwen38-27b` q4_0 (75.65), `qwen38-27b` f16 (75.30), `ornith-35b` f16 (66.80), `ornith-35b` q8_0 (63.20), `gemma4-26b-a4b` q8_0 (56.60). Those p-values are the honest statement about 'which KV cache is best': on this run the lead is not established.
+
 ## Per-model offload (frozen across the three KV arms)
 
 | model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |

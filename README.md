@@ -28,7 +28,8 @@ Full study: `./scripts/run_all.sh` — see [docs/REPRODUCE.md](docs/REPRODUCE.md
 ## Headline
 
 **Best overall: `qwen38-flash` @ q4_0** (capability 84.95/100, 0/12 structural-loop samples, 12.3 t/s
-decode) — with the top three arms inside 1.6 points, i.e. a near-tie. Per model the best KV type is
+decode) — but its lead is **not established**: 11 other arms, including its own f16 arm, cannot be
+distinguished from it (p ≥ 0.05 on all paired samples). Per model the best KV type is
 q4_0 for Flash and the 35B, q8_0 for the dense 27B, f16 for Gemma and Ornith; **no arm differs from
 its own f16 arm at p < 0.05 on any metric**. Rule and reasons: `REPORT.md` §Verdict.
 

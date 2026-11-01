@@ -7,9 +7,9 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 
 ## Verdict
 
-**Best overall: `qwen36-35b` with a `q4_0` KV cache** — capability 81.20 of 100 (R 70.0% and C 92.4% averaged), 0/4 structural-loop samples, 45.6 t/s decode, 9541 MiB peak with {'ncmoe': 26} offloaded.
+**Best overall: `qwen36-35b` with a `q4_0` KV cache** — capability 81.20 of 100 (R 70.0% and C 92.4% averaged), 0/4 structural-loop samples, 45.6 t/s decode, 9541 MiB peak with {'ncmoe': 26} offloaded. **Its lead is not established:** 0 of the other arms — including its own model's f16 arm — cannot be distinguished from it (p ≥ 0.05, all paired samples pooled).
 
-Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve — the reasons column says what the numbers actually support.
+Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve. The only differences that do reach p < 0.05 are arms that are worse than the leader, never one that is better.
 
 | model | best KV | capability | runner-up | structural loops | decode t/s | why |
 |---|---|---|---|---|---|---|
@@ -17,9 +17,9 @@ Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capa
 
 ### All 15 arms, ranked by the same rule
 
-| rank | arm | capability | structural loops | decode t/s |
-|---|---|---|---|---|
-| 1 | `qwen36-35b` **q4_0** | 81.20 | 0/4 | 45.6 |
+| rank | arm | capability | structural loops | decode t/s | p vs #1 | distinguishable from #1? |
+|---|---|---|---|---|---|---|
+| 1 | `qwen36-35b` **q4_0** | 81.20 | 0/4 | 45.6 | 1.0000 | no — tied |
 ## Per-model offload (frozen across the three KV arms)
 
 | model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |

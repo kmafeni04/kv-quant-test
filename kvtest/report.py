@@ -67,7 +67,7 @@ def _rank_key(c):
     return (-(capability(c) or 0.0), c["loops"]["hard"], -(c["decode_tps"] or 0.0))
 
 
-def verdict(out):
+def verdict(out, samples=None):
     per_model = {}
     for model in out["models"]:
         arms = [(kv, out["arms"][f"{model}__{kv}"]) for kv in out["kvs"]
@@ -98,9 +98,27 @@ def verdict(out):
         for a in d["arms"]:
             flat.append((model, a["kv"], a["capability"], a["loops"], a["loops_n"], a["decode"]))
     flat.sort(key=lambda t: (-(t[2] or 0), t[3], -(t[5] or 0)))
+    # every other arm tested against the leader on all paired samples (R + C + L together)
+    per_arm = _paired_scores(samples or [])
+    tied = []
+    if flat:
+        lead_key = f"{flat[0][0]}__{flat[0][1]}"
+        lead = per_arm.get(lead_key) or {}
+        for i, t in enumerate(flat):
+            key = f"{t[0]}__{t[1]}"
+            cur = per_arm.get(key) or {}
+            diffs = [cur[k] - lead[k] for k in sorted(cur) if k in lead]
+            if i == 0:
+                t_p = 1.0
+            else:
+                _, t_p = perm_p(diffs)
+            t_p = round(t_p, 4)
+            flat[i] = t + (round(t_p, 4),)
+            if 0 < i and t_p >= ALPHA:
+                tied.append((t[0], t[1], t[2], t_p))
     order = sorted(per_model.items(), key=lambda kv: (-kv[1]["capability"], kv[1]["loops"],
                                                      -(kv[1]["decode"] or 0)))
-    return {"per_model": per_model,
+    return {"tied_with_leader": tied, "per_model": per_model,
             "overall": order[0][0] if order else None,
             "overall_kv": order[0][1]["best_kv"] if order else None,
             "order": [(m, d["best_kv"], d["capability"]) for m, d in order],
@@ -357,7 +375,7 @@ def agg(raw, samples, arms):
     out["reps"] = reps
     if any(s.get("kv") == "f16" for s in samples):
         significance(out, samples, arms)
-    out["verdict"] = verdict(out)
+    out["verdict"] = verdict(out, samples)
     _agreement(out, samples, arms)
     _cross_agreement(out, samples)
     _too_hard(out, samples)
@@ -466,18 +484,24 @@ def _sample_score(s):
     return (1 if hard else 0), 1
 
 
+def _paired_scores(samples):
+    """{(model,kv): {(tier, task, rep): integer outcome}} — the same pairs every comparison uses."""
+    per_arm = defaultdict(dict)
+    for s in samples:
+        if not s.get("grade") and s.get("tier") != "L":
+            continue
+        per_arm[f"{s['model']}__{s['kv']}"][(s["tier"], s["task"], s.get("rep") or 0)] = \
+            _sample_score(s)[0]
+    return per_arm
+
+
 def significance(out, samples, arms):
     """Paired comparison of every arm against its own model's f16 arm, per tier.
 
     Pairing is by (task, rep) for the sampled tiers and by task for the greedy tier, so the two
     sides of each pair saw the same prompt, the same seed and the same document prefix.
     """
-    per_arm = defaultdict(dict)
-    for s in samples:
-        if not s.get("grade") and s.get("tier") != "L":
-            continue
-        key = (s["tier"], s["task"], s.get("rep") or 0)
-        per_arm[f"{s['model']}__{s['kv']}"][key] = _sample_score(s)[0]
+    per_arm = _paired_scores(samples)
     for model in out["models"]:
         base = per_arm.get(f"{model}__f16") or {}
         for kv in out["kvs"]:
@@ -552,28 +576,42 @@ def write_markdown(out, raw, rows, path):
         L.append(f"**Best overall: `{om}` with a `{okv}` KV cache** — capability "
                  f"{top['capability']:.2f} of 100 (R {top['R']}% and C {top['C']}% averaged), "
                  f"{top['loops']}/{top['loops_n']} structural-loop samples, {top['decode']} t/s "
-                 f"decode, {top['vram']} MiB peak with {top['knobs']} offloaded.\n")
+                 f"decode, {top['vram']} MiB peak with {top['knobs']} offloaded. **Its lead is not "
+                 f"established:** {len(v.get('tied_with_leader') or [])} of the other arms — "
+                 f"including its own model's f16 arm — cannot be distinguished from it "
+                 f"(p ≥ {ALPHA}, all paired samples pooled).\n")
         if len(v.get("flat") or []) > 1:
             flat = v["flat"]
             gap = flat[0][2] - flat[min(2, len(flat) - 1)][2]
-            runners = ", ".join(f"`{m}` {kv} ({c:.2f})" for m, kv, c, _, _, _ in flat[1:3])
+            runners = ", ".join(f"`{r[0]}` {r[1]} ({r[2]:.2f})" for r in flat[1:3])
             L.append(f"The next arms are {runners} — the top three sit within {gap:.1f} capability "
                      f"points of each other, which is one or two graded outcomes.\n")
         L.append("Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: "
                  "capability = mean(R %, C %) per arm, then fewer structural-loop samples, then "
                  "higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on "
-                 "any metric**, so these ranks sit inside the noise this design can resolve — the "
-                 "reasons column says what the numbers actually support.\n")
+                 "any metric**, so these ranks sit inside the noise this design can resolve. The "
+                 "only differences that do reach p < 0.05 are arms that are worse than the leader, "
+                 "never one that is better.\n")
     L.append("| model | best KV | capability | runner-up | structural loops | decode t/s | why |")
     L.append("|---|---|---|---|---|---|---|")
     for row in _verdict_rows(out):
         L.append(f"| `{row[0]}` | **{row[1]}** | {row[2]:.2f} | {row[3]} | {row[4]} | {row[5]} | "
                  f"{row[6]} |")
     L.append("\n### All 15 arms, ranked by the same rule\n")
-    L.append("| rank | arm | capability | structural loops | decode t/s |")
-    L.append("|---|---|---|---|---|")
-    for i, (model, kv, cap, loops, loops_n, dec) in enumerate(v.get("flat") or [], 1):
-        L.append(f"| {i} | `{model}` **{kv}** | {cap:.2f} | {loops}/{loops_n} | {dec} |")
+    L.append("| rank | arm | capability | structural loops | decode t/s | p vs #1 | "
+             "distinguishable from #1? |")
+    L.append("|---|---|---|---|---|---|---|")
+    for i, row in enumerate(v.get("flat") or [], 1):
+        model, kv, cap, loops, loops_n, dec, pv = row
+        L.append(f"| {i} | `{model}` **{kv}** | {cap:.2f} | {loops}/{loops_n} | {dec} | "
+                 f"{pv:.4f} | {'yes' if pv < ALPHA else 'no — tied'} |")
+    tied = v.get("tied_with_leader") or []
+    if tied:
+        names = ", ".join(f"`{m}` {kv} ({cap:.2f})" for m, kv, cap, _ in tied)
+        L.append(f"\nTested on every paired sample pooled across the three tiers, the arms that are "
+                 f"**not distinguishable from the winner** are: {names}. Those p-values are the "
+                 f"honest statement about 'which KV cache is best': on this run the lead is not "
+                 f"established.\n")
     L.append("## Per-model offload (frozen across the three KV arms)\n")
     L.append("| model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |")
     L.append("|---|---|---|---|---|---|")
@@ -969,7 +1007,9 @@ def _verdict_html(out):
     return (f'<div class="card" style="max-width:none"><h2 style="margin-top:0">Verdict</h2>'
             f'<div><b>Best overall: {html.escape(om)} with a {html.escape(okv)} KV cache</b> — '
             f'capability {top["capability"]:.2f} of 100, {top["loops"]}/{top["loops_n"]} '
-            f'structural-loop samples, {top["decode"]} t/s decode.</div>'
+            f'structural-loop samples, {top["decode"]} t/s decode. '
+            f'<b>Its lead is not established:</b> {len(v.get("tied_with_leader") or [])} other arms, '
+            f'including its own f16 arm, cannot be distinguished from it at p &lt; {ALPHA}.</div>'
             f'<div class="dim">Rule, fixed in code: capability = mean(R %, C %) per arm, then fewer '
             f'structural-loop samples, then higher decode t/s. No arm differs from its own f16 arm '
             f'at p &lt; 0.05 on any metric, so these ranks sit inside the noise this design can '
