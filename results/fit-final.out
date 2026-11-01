@@ -1,0 +1,43 @@
+[fit] free VRAM 13 MiB
+[fit] geometry qwen36-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry qwen38-27b     arch=qwen35     layers=65 full_attn=16 kv_heads=4 B/token f16/q8_0/q4_0 = 65536/34816/18432
+[fit] geometry qwen38-flash   arch=qwen4exp   layers=48 full_attn=12 kv_heads=2 B/token f16/q8_0/q4_0 = 24576/13056/6912
+[fit] geometry gemma4-26b-a4b arch=gemma4     layers=30 full_attn=5 kv_heads=[8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2] B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry ornith-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] resuming: 4 models already probed
+[fit] probe document 98438 chars ~31367 tokens
+[fit] qwen36-35b: reusing ctx=102400 knobs={'ncmoe': 26} from previous probe
+[fit] qwen38-27b: reusing ctx=102400 knobs={'ncffn': 8} from previous probe
+[fit] qwen38-flash: reusing ctx=102400 knobs={'ncmoe': 48} from previous probe
+[fit] gemma4-26b-a4b: reusing ctx=102400 knobs={'ncmoe': 8} from previous probe
+[server] ornith-35b f16 ctx=102400 knobs={'ncmoe': 10} failed after 12s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx=102400 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=98304 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 98304 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=90112 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 90112 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=81920 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 81920 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=73728 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 73728 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=65536 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 65536 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=57344 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 57344 ncmoe= 10 FAILED to start (oom)
+[server] ornith-35b f16 ctx=49152 knobs={'ncmoe': 10} failed after 4s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx= 49152 ncmoe= 10 FAILED to start (oom)
+[fit] ornith-35b: UNFIT at every rung down to 49152, excluded
+[fit] common_ctx = 102400
+[fit] document 305234 chars sha256=944bb825ead422d7 tokens={'qwen36-35b': 91284, 'qwen38-27b': 91284, 'qwen38-flash': 91284, 'gemma4-26b-a4b': 81765, 'ornith-35b': 91284}
+[fit] gemma4-26b-a4b depth 81789 tok  prefill 948.3 t/s  decode 44.9 t/s  vram 13896 MiB
+[fit] qwen36-35b     depth 91302 tok  prefill 756.0 t/s  decode 38.0 t/s  vram 11770 MiB
+[fit] qwen38-27b     depth 91302 tok  prefill 423.2 t/s  decode 12.6 t/s  vram 15895 MiB
+[fit] qwen38-flash   depth 91302 tok  prefill 307.7 t/s  decode 17.5 t/s  vram 11259 MiB
+[fit] wrote /home/kome/Projects/kv-quant-test/results/2026-11-01/fit.json in 828.6s
+{
+  "common_ctx": 102400,
+  "unfit": [
+    "ornith-35b"
+  ],
+  "wall_s": 828.6
+}

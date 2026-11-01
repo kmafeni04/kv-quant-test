@@ -121,6 +121,17 @@ contract (hidden tests, FAIL_TO_PASS, partial credit) at zero provisioning cost.
    point gap, which the hidden check suite does not score. `repo_fix` records both the hidden
    checks and the visible test; `resolved` requires both, so a model that patches only `abuts` is
    scored on the hidden suite and marked unresolved.
-8. **Downloaded weights are pinned by sha256**; the three pre-existing GGUFs were already on this
+8. **Measured, after the fact, and kept in the report.** (a) `semver` behaved exactly as the prior
+   32k study predicted: one prerelease-ordering decision moves the module between 24 and 261 of 261
+   checks, so a C-tier delta of tens of points can be one bit. (b) A C-tier arm that hits the
+   generation ceiling produces *truncated* code, not wrong code — Gemma-4-26B-A4B at q4_0 truncated
+   on three tasks — so `out_tokens`, `finish_reason` and emitted line count are reported per sample
+   and every re-run at a larger budget is marked `budget_raised`. (c) The zlib-ratio loop threshold
+   fires on templated prose: 25 of 45 `gen_manual` samples cross 0.42 with no line/ngram/cycle
+   signal, uniformly across arms; the hard repetition counters are reported separately.
+9. **The GPU was left free.** The Strata service that had been holding it was already stopped by the
+   operator before this study began, so nothing was restarted at the end; the final state is
+   13 MiB used on the GPU and no `llama-server` process.
+10. **Downloaded weights are pinned by sha256**; the three pre-existing GGUFs were already on this
    host and their upstream provenance was not re-verified, but their digests are recorded and
    checked on every run.

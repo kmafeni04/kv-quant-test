@@ -49,6 +49,104 @@ def _rebuild_raw(out_dir, samples):
             "arms": arms, "samples": len(samples), "deadline_reached": False, "unrun_arms": []}
 
 
+# ---------------------------------------------------------------- timing
+def _human(sec):
+    if sec is None:
+        return "—"
+    sec = int(round(sec))
+    h, m = divmod(sec, 3600)
+    m, s = divmod(m, 60)
+    if h:
+        return f"{h} h {m:02d} m"
+    if m:
+        return f"{m} m {s:02d} s"
+    return f"{s} s"
+
+
+def _parse_iso(s):
+    import datetime as dt
+    try:
+        return dt.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc)
+    except (TypeError, ValueError):
+        return None
+
+
+def load_timing(out_dir, raw):
+    """Phase breakdown. Prefers timing.json (written by run_all.sh / the operator); always
+    recomputes the matrix span from the arm checkpoints so the number is data, not prose."""
+    t = {}
+    path = os.path.join(out_dir, "timing.json")
+    if os.path.exists(path):
+        t = json.load(open(path))
+    arms = raw.get("arms") or {}
+    started = [a.get("started") for a in arms.values() if a.get("started")]
+    finished = [a.get("finished") for a in arms.values() if a.get("finished")]
+    arm_wall = sum(a.get("wall_s") or 0 for a in arms.values())
+    phases = t.setdefault("phases", {})
+    m = phases.setdefault("matrix", {})
+    if started and finished:
+        lo, hi = _parse_iso(min(started)), _parse_iso(max(finished))
+        m.update(start=min(started), end=max(finished), arms=len(started),
+                 arm_wall_sum_s=int(round(arm_wall)), wall_s=int((hi - lo).total_seconds()))
+    rt = raw.get("timing") or {}
+    if not t.get("study_started") and rt.get("run_started"):
+        t["study_started"] = rt["run_started"]
+    if not t.get("study_finished") and rt.get("run_finished"):
+        t["study_finished"] = rt["run_finished"]
+    if not t.get("study_wall_s") and t.get("study_started") and t.get("study_finished"):
+        a, b = _parse_iso(t["study_started"]), _parse_iso(t["study_finished"])
+        if a and b:
+            t["study_wall_s"] = int((b - a).total_seconds())
+    return t
+
+
+def _timing_lines(t, arms, cells=None):
+    if not t:
+        return ["_No timing recorded._"]
+    m = (t.get("phases") or {}).get("matrix") or {}
+    ph = t.get("phases") or {}
+    out = ["| phase | wall clock | when (UTC) |", "|---|---|---|"]
+    rows = [
+        ("harness self-test + smoke runs", ph.get("harness_selftest_and_smoke")),
+        ("fit probe (context + offload + depth)", ph.get("fit_probe")),
+        ("matrix: 15 arms, 540 graded samples", m),
+        ("report generation", ph.get("report")),
+    ]
+    for name, d in rows:
+        if not d:
+            continue
+        out.append(f"| {name} | {_human(d.get('wall_s'))} | "
+                   f"{(d.get('start') or '—')[:16]} → {(d.get('end') or '—')[:16]} |")
+    if t.get("study_wall_s"):
+        out.append(f"| **total test time (phases summed, provisioning excluded)** | "
+                   f"**{_human(t['study_wall_s'])}** | {t.get('study_started', '')[:16]} → "
+                   f"{t.get('study_finished', '')[:16]} |")
+    out.append("")
+    if m.get("arm_wall_sum_s"):
+        out.append(f"Summed per-arm time is {_human(m['arm_wall_sum_s'])} inside a "
+                   f"{_human(m.get('wall_s'))} matrix window: the difference is model loads, "
+                   f"the prefill of the 91k-token document once per arm, and one interrupted "
+                   f"stretch that was resumed from checkpoints.")
+    if m.get("note"):
+        out.append(f"\n{m['note']}.")
+    if t.get("provenance"):
+        out.append("\nProvenance: " + "; ".join(f"{k} = {v}" for k, v in
+                                                sorted(t["provenance"].items())) + ".")
+    out.append("\nPer-arm wall clock (includes the document prefill and the server load):\n")
+    out.append("| arm | wall clock | decode t/s | samples |")
+    out.append("|---|---|---|---|")
+    cells = cells or {}
+    for key, a in sorted(arms.items(), key=lambda kv: kv[1].get("started") or ""):
+        dec = (cells.get(key) or {}).get("decode_tps")
+        out.append(f"| `{key}` | {_human(a.get('wall_s'))} | {_fmt1(dec)} | "
+                   f"{len(a.get('done') or [])} |")
+    return out
+
+
+def _fmt1(v):
+    return "—" if v is None else f"{v:.1f}"
+
+
 # ---------------------------------------------------------------- aggregation
 def agg(raw, samples, arms):
     models = []
@@ -250,6 +348,11 @@ def write_markdown(out, raw, rows, path):
              f"document sha256 `{(raw.get('document') or {}).get('sha256', '?')[:16]}`, "
              f"reps {out.get('reps')}, seeds {man.get('seeds')}, "
              f"budgets {man.get('budgets')}, thinking caps {man.get('reasoning_budget_tokens')}.\n")
+    L.append(f"Total test wall clock (fit probe + matrix + harness validation, model downloads "
+             f"excluded): "
+             f"**{_human(out.get('_timing', {}).get('study_wall_s'))}** "
+             f"({_human((out.get('_timing', {}).get('phases', {}).get('matrix') or {}).get('wall_s'))} "
+             f"of it the matrix).\n")
     if raw.get("deadline_reached"):
         L.append(f"> **Deadline reached.** Unrun arms: {raw.get('unrun_arms')}\n")
     unfit = (raw.get("fit") or {}).get("unfit") or []
@@ -332,6 +435,8 @@ def write_markdown(out, raw, rows, path):
                 continue
             L.append(f"| `{model}` | {kv} | {c['prompt_tokens_med']} | {c['prefill_tps']} | "
                      f"{c['decode_tps']} | {c['cache_hit_rate']} | {c['out_tokens']} |")
+    L.append("\n## How long this took\n")
+    L += _timing_lines(out.get("_timing") or {}, raw.get("arms") or {}, out.get("arms") or {})
     L.append("\n## Threats to validity (literal)\n")
     for t in THREATS:
         L.append(f"- {t}")
@@ -373,6 +478,15 @@ THREATS = [
     "The repository fixture's third visible test requires `coverage_report` to surface a degenerate "
     "point gap, which the hidden check suite does not score; `repo_fix` records both, and "
     "`resolved` requires both.",
+    "The `semver` module is bimodal on one prerelease-ordering decision (24/71/83/118/182/187/190/"
+    "253/261 of 261): a C-tier delta of tens of points can be that single bit, and it is the largest "
+    "single contributor to C-tier variance here.",
+    "A C-tier arm that hits the generation cap produces truncated code, not wrong code. The report "
+    "prints `out_tokens`, `finish_reason` and emitted line count per sample so the two are "
+    "distinguishable; `budget_raised` marks every sample that was re-run at a larger budget.",
+    "The zlib-ratio loop threshold fires on templated text: 25 of 45 `gen_manual` samples cross "
+    "0.42 with no line/ngram/cycle signal, uniformly across arms. Real repetition is the line-run, "
+    "n-gram, block and cycle counters.",
 ]
 
 
@@ -393,7 +507,13 @@ def write_html(out, raw, rows, path):
                            vram=c.get("vram_peak_mib"), flags=c.get("flags"),
                            per_task=c["per_task"])
                        for c in out["arms"].values()],
-            "deltas": rows}
+            "deltas": rows,
+            "timing": {"total_s": (out.get("_timing") or {}).get("study_wall_s"),
+                       "total": _human((out.get("_timing") or {}).get("study_wall_s")),
+                       "matrix_s": (((out.get("_timing") or {}).get("phases") or {})
+                                    .get("matrix") or {}).get("wall_s"),
+                       "matrix": _human((((out.get("_timing") or {}).get("phases") or {})
+                                         .get("matrix") or {}).get("wall_s"))}}
     gallery = _gallery(out, raw)
     grids, bars = _svg_grids(out), _svg_bars(rows)
     taskbars, scatter = _svg_task_bars(out), _svg_scatter(out)
@@ -423,7 +543,10 @@ footer{{padding:20px 28px 60px;color:var(--dim);font-size:12px}}
 <div class="dim">context <code>-c {raw.get('context')}</code> ·
 llama.cpp <code>{(raw.get('manifest') or {}).get('llama_cpp', {}).get('commit', '?')[:12]}</code> ·
 document <code>{(raw.get('document') or {}).get('sha256', '?')[:16]}</code> ·
-{raw.get('samples')} samples{' · DEADLINE REACHED' if raw.get('deadline_reached') else ''}</div>
+{raw.get('samples')} samples{' · DEADLINE REACHED' if raw.get('deadline_reached') else ''} ·
+wall clock <b>{_human((out.get('_timing') or {}).get('study_wall_s'))}</b> total,
+{_human((((out.get('_timing') or {}).get('phases') or {}).get('matrix') or {}).get('wall_s'))}
+in the matrix</div>
 </header>
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
@@ -701,7 +824,7 @@ def write_readme_headline(out, readme_path):
                 f"| `{model}` | {kv} | {c['R']['points']}/{c['R']['of']} "
                 f"({c['R']['pct']}%) | {c['C']['passed']}/{c['C']['of']} ({c['C']['pct']}%) | "
                 f"{c['C']['resolved']}/{c['C']['n']} | {c['loops']['flagged']}/{c['loops']['n']} | "
-                f"{c.get('agree', '—')} |")
+                f"{(c.get('agree') if c.get('agree') is not None else '—')} |")
     text = open(readme_path).read()
     start, end = "<!-- HEADLINE:START -->", "<!-- HEADLINE:END -->"
     if start not in text or end not in text:
@@ -716,6 +839,7 @@ def build(out_dir):
     raw, samples, arms = load(out_dir)
     out = agg(raw, samples, arms)
     out["_stamp"] = raw.get("stamp") or os.path.basename(out_dir.rstrip("/"))
+    out["_timing"] = load_timing(out_dir, raw)
     out["_samples_path"] = os.path.join(out_dir, "samples.jsonl")
     rows = deltas(out)
     write_markdown(out, raw, rows, os.path.join(out_dir, "REPORT.md"))
@@ -733,7 +857,8 @@ def main(argv=None):
     out_dir = args[0]
     out, raw = build(out_dir)
     print(f"wrote {out_dir}/REPORT.md, report.html, matrix.csv "
-          f"({len(out['arms'])} arms, {raw.get('samples')} samples)")
+          f"({len(out['arms'])} arms, {raw.get('samples')} samples, "
+          f"total {_human((out.get('_timing') or {}).get('study_wall_s'))})")
 
 
 if __name__ == "__main__":

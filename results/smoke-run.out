@@ -1,0 +1,19 @@
+[03:01:50] arm qwen36-35b__q4_0: up in 4.0s, knobs={'ncmoe': 26}, ctx=16384
+[03:02:20]   qwen36-35b__q4_0           R niah_multi     r0 3/3 out=749 dec=46.6 cache=0
+[03:02:43]   qwen36-35b__q4_0           R niah_deep      r0 1/1 out=1036 dec=46.3 cache=9628
+[03:03:08]   qwen36-35b__q4_0           R vt_trace       r0 2/2 out=1042 dec=46.0 cache=9628
+[03:03:32]   qwen36-35b__q4_0           R agg_sum        r0 0/2 out=1038 dec=46.0 cache=9651
+[03:03:56]   qwen36-35b__q4_0           R count_proj     r0 1/1 out=1032 dec=45.7 cache=9651
+[03:04:20]   qwen36-35b__q4_0           R fwe_count      r0 0/1 out=1033 dec=45.6 cache=9651
+[03:05:45]   qwen36-35b__q4_0           C cg_csvlite     r0 29/29 lines=90 out=3620
+[03:07:13]   qwen36-35b__q4_0           C cg_fixedpoint  r0 44/45 lines=80 out=3688
+[03:08:38]   qwen36-35b__q4_0           C cg_intervals   r0 158/162 lines=83 out=3595
+[03:10:15]   qwen36-35b__q4_0           C cg_semver      r0 261/261 lines=108 out=4101
+[03:11:44]   qwen36-35b__q4_0           C cg_statistics  r0 229/229 lines=80 out=3782
+[03:12:58]   qwen36-35b__q4_0           C repo_fix       r0 0/54 lines=0 out=3138
+[03:13:30]   qwen36-35b__q4_0           L gen_manual     r0 clean 
+[03:13:42]   qwen36-35b__q4_0           L copy_ledgers   r0 clean 
+[03:14:28]   qwen36-35b__q4_0           L enumerate_shards r0 clean 
+[03:14:57]   qwen36-35b__q4_0           L tool_episode   r0 clean 
+[03:14:58] arm qwen36-35b__q4_0: done in 791.2s, vram peak 9541 MiB
+[03:14:58] raw.json written: complete

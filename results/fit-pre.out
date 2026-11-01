@@ -1,0 +1,19 @@
+[fit] free VRAM 13 MiB
+[fit] geometry qwen36-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry qwen38-27b     arch=qwen35     layers=65 full_attn=16 kv_heads=4 B/token f16/q8_0/q4_0 = 65536/34816/18432
+[fit] geometry qwen38-flash   arch=qwen4exp   layers=48 full_attn=12 kv_heads=2 B/token f16/q8_0/q4_0 = 24576/13056/6912
+[fit] probe document 98438 chars ~31367 tokens
+[fit] qwen36-35b     ctx=102400 n-cpu-moe=  0 OK   probe prefill 804.6 t/s  vram 11619 MiB
+[fit] qwen38-flash   ctx=102400 n-cpu-moe=  0 OK   probe prefill 273.4 t/s  vram 11259 MiB
+[fit] qwen38-27b     ctx=102400 n-cpu-ffn=  0 OK   probe prefill 524.1 t/s  vram 15895 MiB
+[fit] common_ctx = 102400
+[fit] document 305234 chars sha256=944bb825ead422d7 tokens={'qwen36-35b': 91284, 'qwen38-flash': 91284, 'qwen38-27b': 91284}
+[fit] qwen36-35b     depth 91302 tok  prefill 749.5 t/s  decode 36.4 t/s  vram 11619 MiB
+[fit] qwen38-flash   depth 91302 tok  prefill 305.6 t/s  decode 17.4 t/s  vram 11259 MiB
+[fit] qwen38-27b     depth 91302 tok  prefill 420.1 t/s  decode 12.2 t/s  vram 15895 MiB
+[fit] wrote /home/kome/Projects/kv-quant-test/results/2026-11-01/fit.json in 938.1s
+{
+  "common_ctx": 102400,
+  "unfit": [],
+  "wall_s": 938.1
+}

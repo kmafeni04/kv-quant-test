@@ -32,7 +32,7 @@ Filled from `results/<stamp>/REPORT.md` after the run:
 <!-- HEADLINE:START -->
 | model | KV | R accuracy | C checks | C resolved | loop rate | agreement with f16 |
 |---|---|---|---|---|---|---|
-| `qwen38-27b` | q4_0 | 0/10 (0.0%) | 0/780 (0.0%) | 0/6 | 2/4 | None |
+| `qwen38-27b` | q4_0 | 0/10 (0.0%) | 0/780 (0.0%) | 0/6 | 2/4 | — |
 <!-- HEADLINE:END -->
 
 ## What is here

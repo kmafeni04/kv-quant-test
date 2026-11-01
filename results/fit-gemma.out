@@ -1,0 +1,17 @@
+[fit] free VRAM 13 MiB
+[fit] geometry qwen36-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry qwen38-27b     arch=qwen35     layers=65 full_attn=16 kv_heads=4 B/token f16/q8_0/q4_0 = 65536/34816/18432
+[fit] geometry qwen38-flash   arch=qwen4exp   layers=48 full_attn=12 kv_heads=2 B/token f16/q8_0/q4_0 = 24576/13056/6912
+[fit] geometry gemma4-26b-a4b arch=gemma4     layers=30 full_attn=5 kv_heads=[8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2] B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] resuming: 3 models already probed
+[fit] probe document 109738 chars ~31888 tokens
+[fit] gemma4-26b-a4b ctx=102400 ncmoe=  8 OK   probe prefill 1061.3 t/s  vram 13745 MiB
+[fit] common_ctx = 102400
+[fit] document 351755 chars sha256=f045b8b238e48525 tokens={'gemma4-26b-a4b': 93532}
+[fit] gemma4-26b-a4b depth 93556 tok  prefill 915.7 t/s  decode 44.9 t/s  vram 13743 MiB
+[fit] wrote /home/kome/Projects/kv-quant-test/results/2026-11-01/fit.json in 156.3s
+{
+  "common_ctx": 102400,
+  "unfit": [],
+  "wall_s": 156.3
+}

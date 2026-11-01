@@ -17,10 +17,30 @@
     "R:count_proj:0",
     "R:count_proj:1",
     "R:count_proj:2",
-    "R:fwe_count:0"
+    "R:fwe_count:0",
+    "R:fwe_count:1",
+    "R:fwe_count:2",
+    "C:cg_csvlite:0",
+    "C:cg_fixedpoint:0",
+    "C:cg_intervals:0",
+    "C:cg_semver:0",
+    "C:cg_statistics:0",
+    "C:repo_fix:0",
+    "L:gen_manual:0",
+    "L:gen_manual:1",
+    "L:gen_manual:2",
+    "L:copy_ledgers:0",
+    "L:copy_ledgers:1",
+    "L:copy_ledgers:2",
+    "L:enumerate_shards:0",
+    "L:enumerate_shards:1",
+    "L:enumerate_shards:2",
+    "L:tool_episode:0",
+    "L:tool_episode:1",
+    "L:tool_episode:2"
   ],
   "errors": [],
-  "finished": null,
+  "finished": "2026-11-01T16:50:37Z",
   "flags": {
     "reasoning_supported": true
   },
@@ -30,5 +50,7 @@
   "kv": "q4_0",
   "load_s": 4.0,
   "model": "gemma4-26b-a4b",
-  "started": "2026-11-01T09:24:25Z"
+  "started": "2026-11-01T09:24:25Z",
+  "vram_peak_mib": 12528,
+  "wall_s": 5709.1
 }

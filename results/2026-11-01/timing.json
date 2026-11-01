@@ -1,0 +1,43 @@
+{
+  "phases": {
+    "fit_probe": {
+      "end": "2026-11-01T03:50:00Z",
+      "invocations": 5,
+      "note": "context rung + offload knobs for 5 models, plus one 91k-token prefill per model at the resolved context",
+      "start": "2026-11-01T00:02:00Z",
+      "wall_s": 2129.3
+    },
+    "harness_selftest_and_smoke": {
+      "end": "2026-11-01T03:15:00Z",
+      "runs": {
+        "selftest": 6,
+        "smoke": 3
+      },
+      "start": "2026-11-01T00:02:00Z",
+      "wall_s": 2400
+    },
+    "matrix": {
+      "arm_wall_sum_s": 49647,
+      "arms": 15,
+      "end": "2026-11-01T18:05:43Z",
+      "note": "run1 (03:53Z) was stopped by an arm-start failure at 09:19Z; run2 resumed the 9 unfinished arms from their per-arm checkpoints, so no sample was regenerated",
+      "start": "2026-11-01T03:53:18Z",
+      "wall_s": 51145
+    },
+    "report": {
+      "wall_s": 60
+    }
+  },
+  "provenance": {
+    "fit_probe": "sum of wall_s over the five fit invocations (fit.json reports only the last)",
+    "harness_selftest_and_smoke": "three --smoke arm durations plus six selftest runs",
+    "matrix": "min(arm.started) -> max(arm.finished) over the 15 arm checkpoints",
+    "per_arm": "wall_s recorded by the orchestrator in each arm checkpoint",
+    "study_wall_s": "sum of the work phases below (they partially overlapped the excluded downloads)"
+  },
+  "scope": "the test itself: harness validation, the fit probe and the 15-arm matrix. Provisioning (downloading 36 GB of weights) is excluded.",
+  "study_finished": "2026-11-01T18:05:43Z",
+  "study_started": "2026-11-01T00:02:00Z",
+  "study_wall_s": 55674,
+  "timezone": "UTC"
+}

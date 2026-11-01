@@ -1,0 +1,20 @@
+[fit] free VRAM 13 MiB
+[fit] geometry qwen36-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry qwen38-27b     arch=qwen35     layers=65 full_attn=16 kv_heads=4 B/token f16/q8_0/q4_0 = 65536/34816/18432
+[fit] geometry qwen38-flash   arch=qwen4exp   layers=48 full_attn=12 kv_heads=2 B/token f16/q8_0/q4_0 = 24576/13056/6912
+[fit] geometry gemma4-26b-a4b arch=gemma4     layers=30 full_attn=5 kv_heads=[8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2, 8, 8, 8, 8, 8, 2] B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] geometry ornith-35b     arch=qwen35moe  layers=41 full_attn=10 kv_heads=2 B/token f16/q8_0/q4_0 = 20480/10880/5760
+[fit] resuming: 4 models already probed
+[fit] probe document 98438 chars ~31367 tokens
+[server] ornith-35b f16 ctx=102400 knobs={'ncmoe': 10} failed after 8s: {'status': 'process_exited', 'rc': 1}
+[fit] ornith-35b     ctx=102400 ncmoe= 10 FAILED to start (oom)
+[fit] ornith-35b     ctx=102400 ncmoe= 16 OK   probe prefill 1034.9 t/s  vram 15447 MiB
+[fit] common_ctx = 102400
+[fit] document 305234 chars sha256=944bb825ead422d7 tokens={'qwen36-35b': 91284, 'qwen38-27b': 91284, 'qwen38-flash': 91284, 'gemma4-26b-a4b': 81765, 'ornith-35b': 91284}
+[fit] ornith-35b     depth 91302 tok  prefill 912.5 t/s  decode 48.0 t/s  vram 15447 MiB
+[fit] wrote /home/kome/Projects/kv-quant-test/results/2026-11-01/fit.json in 178.0s
+{
+  "common_ctx": 102400,
+  "unfit": [],
+  "wall_s": 178.0
+}

@@ -84,6 +84,7 @@ Every number in `REPORT.md` is derived from `samples.jsonl`; no metric is writte
 ```bash
 python3 -c "import json;d=json.load(open('results/STAMP/raw.json'));\
 print(d['manifest']['llama_cpp']['commit'], d['context'])"
-grep -c '"flagged": true' results/STAMP/samples.jsonl
+grep -c '"flagged": true' results/STAMP/samples.jsonl   # samples the loop detector fired on
+grep -c '"loops"' results/STAMP/samples.jsonl           # every sample carries loop metrics
 python3 -m kvtest.report results/STAMP    # regenerates both artifacts, must not change content
 ```
