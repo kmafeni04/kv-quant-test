@@ -33,6 +33,35 @@ Gemma q4_0 (p = 0.0034) and Ornith q4_0 (p = 0.0078). So the run establishes tha
 downgrade on four of five models** and that Gemma's q4_0 failure is verbosity/truncation rather than
 wrong answers — not that any KV type is better than f16.
 
+## How a lossy cache can score higher than f16
+
+Three questions come up, and they have one answer each.
+
+**1. Can q4 hold *more* information than f16? No.** A quantized cache stores each number with fewer
+bits, so it is a slightly damaged copy of what the model computed at full precision. Nothing in it is
+sharper than f16. So "q4 beat f16" can only mean *the damaged copy produced a different, slightly
+lucky set of outputs* — never that it carried better information.
+
+**2. Then why does the score go up?** Because scores here are discrete and thin. One retrieval answer
+is 1 point out of 30; one code module is 261 checks that turn on a single design decision (`semver`
+scores 118, 190 or 261 depending on how prerelease ordering is implemented). A tiny numerical
+difference in the cache — invisible in the prose the model writes — can flip one of those decisions,
+either way, exactly like re-rolling a near-tied dice. When the flip lands well the arm looks better;
+when it lands badly it looks worse. Both happened in this run: `qwen38-flash` q4_0 beat its f16 arm by
+1 point out of 30, and `gemma` q4_0 fell 376 checks because it would not stop writing.
+
+**3. How do we tell luck from a real effect?** By testing it. Every arm was compared with its own
+f16 arm on matched samples (same task, same seed, same document prefix) with an exact paired test
+that asks "could a difference this big arise from nothing?". The answer here is **no arm is
+significantly better than f16 on anything** (all p ≥ 0.05). The only arm differences that survive the
+test are three arms that are significantly *worse* — Gemma f16, Gemma q4_0 and Ornith q4_0 — and even
+those are separations from the leader, not demonstrations that f16 is better than q4_0 in general.
+
+**What would count as evidence that q4 helps?** A repeat. Run the same arms with more seeds and more
+tasks and see whether the advantage survives; or measure the quantity that resolves it (KL/perplexity
+against the f16 distribution, which separated q4_0 at 32k in the earlier study). A single 1-point
+difference on 30 points is not that evidence, and the report says so wherever the number appears.
+
 ## The one-line answer
 
 **At ~91k tokens of context, q4_0 and q8_0 KV caches cost essentially nothing in capability on four

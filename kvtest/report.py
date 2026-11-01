@@ -949,7 +949,7 @@ def _svg_grids(out):
          f"level in % of {loop_n} samples · change in samples · n = {loop_n} paired samples per "
          f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f}"),
     ]
-    cw, ch, pad, lw = 104, 46, 12, 150
+    cw, ch, pad, lw = 108, 56, 12, 150
     parts = ['<div class="grid">']
     for title, get, tier, caption in specs:
         w, h = lw + cw * len(kvs) + pad, 40 + ch * len(models) + pad
@@ -961,7 +961,7 @@ def _svg_grids(out):
             parts.append(f'<text x="{lw + j * cw + cw / 2}" y="18" fill="#9aa4b2" '
                          f'font-size="12" text-anchor="middle">{kv}</text>')
         for i, model in enumerate(models):
-            parts.append(f'<text x="4" y="{40 + i * ch + 26}" fill="#e8ecf1" font-size="12">'
+            parts.append(f'<text x="4" y="{40 + i * ch + 30}" fill="#e8ecf1" font-size="12">'
                          f'{html.escape(model)}</text>')
             for j, kv in enumerate(kvs):
                 c = out["arms"].get(f"{model}__{kv}")
@@ -970,13 +970,13 @@ def _svg_grids(out):
                 sig = ((c or {}).get("sig") or {}).get(tier)
                 scale = max(1, int(abs((sig or {}).get("delta") or 1)) * 4)
                 if kv == "f16":
-                    sub, fill = "reference", "#2f3740"
+                    sub, sub2, fill = "reference", "", "#2f3740"
                 elif sig and v is not None:
                     d = sig["delta"]
-                    sub = f"Δ {d:+d} · p={sig['p']:.3f}"
+                    sub, sub2 = f"Δ {d:+d}", f"p={sig['p']:.3f}"
                     fill = _cell_colour(sig, d, scale)
                 else:
-                    sub, fill = "—", "#2a3138"
+                    sub, sub2, fill = "—", "", "#2a3138"
                 tip = level
                 if sig and v is not None:
                     tip = (f"{level} · Δ {sig['delta']:+d} {sig['unit']} vs f16 · "
@@ -986,10 +986,13 @@ def _svg_grids(out):
                              f'fill="{fill}"><title>{html.escape(model)} {kv}: '
                              f'{html.escape(tip)}</title></rect>')
                 tc = "#e8ecf1" if fill in ("#2f3740", "#2a3138", "#3a4149") else "#0b0e12"
-                parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 18}" fill="{tc}" '
+                parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 19}" fill="{tc}" '
                              f'font-size="13" text-anchor="middle">{level}</text>')
                 parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 33}" fill="{tc}" '
                              f'font-size="10" text-anchor="middle">{html.escape(sub)}</text>')
+                if sub2:
+                    parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 45}" fill="{tc}" '
+                                 f'font-size="10" text-anchor="middle">{html.escape(sub2)}</text>')
         parts.append("</svg></div>")
     parts.append("</div>")
     return "".join(parts)
@@ -1051,72 +1054,243 @@ def write_figures(out, path):
                    "arms": table}, f, indent=2, sort_keys=True)
 
 
-def _ticks(lo, hi, n=5):
-    step = (hi - lo) / float(n)
-    return [lo + i * step for i in range(n + 1)]
+def _axis(maxv, target=5):
+    """Round the axis up to a readable maximum and pick a step that gives <= target intervals."""
+    import math
+    if not maxv or maxv <= 0:
+        return 1, 0.25
+    for step in (0.5, 1, 2, 5, 10, 20, 25, 50, 100, 200, 250, 500, 1000):
+        if maxv / step <= target:
+            return math.ceil(maxv / step) * step, step
+    return maxv, maxv / target
 
 
-def _svg_hbars(items, title, note, unit, fmt, width=760, bar_h=18, gap=6, xmax=None,
-               higher_is_better=True):
-    """Horizontal bars with a real axis, gridlines, value labels and a labelled category column.
+def _tick_label(v, step):
+    return f"{v:.0f}" if step >= 1 else f"{v:.1f}"
 
-    items: [(label, value, badge)] sorted by the caller.
+
+def _svg_hbars(items, title, note, unit, fmt, footnote=None, higher_is_better=True,
+               bar_h=20, gap=8):
+    """Horizontal bars with a rounded axis, gridlines, and value labels that always fit.
+
+    Geometry is fixed to the card width: a label column, a bar area, and a right gutter wide enough
+    for the longest value label. If a label still would not fit outside the bar it is drawn inside
+    the bar, right-aligned, in dark text.
     """
     if not items:
         return ""
-    lw, pad, top = 210, 60, 46
-    xmax = xmax or max(v for _, v, _ in items) or 1
-    xmax = xmax * 1.08
-    h = top + len(items) * (bar_h + gap) + 30
-    w = width + lw + pad
+    lw, area, top = 185, 400, 52
+    xmax, step = _axis(max(v for _, v, _ in items))
+    texts = []
+    for label, value, badge in items:
+        t = f"{fmt(value)} {unit}"
+        if badge:
+            t += f" · {badge}"
+        texts.append(t)
+    char_px = 5.9
+    gutter = int(max(len(t) for t in texts) * char_px) + 14
+    gutter = max(120, min(gutter, 300))
+    w = lw + area + gutter
+    h = top + len(items) * (bar_h + gap) + 34
     parts = [f'<div class="card"><div>{html.escape(title)}</div>'
              f'<div class="dim">{html.escape(note)}</div>',
              f'<svg width="{w}" height="{h}" role="img">']
-    for t in _ticks(0, xmax, 4):
-        x = lw + (t / xmax) * width
-        parts.append(f'<line x1="{x:.0f}" y1="{top - 8}" x2="{x:.0f}" y2="{h - 26}" '
-                     f'stroke="#2b333c"/>')
-        parts.append(f'<text x="{x:.0f}" y="{h - 12}" fill="#9aa4b2" font-size="11" '
-                     f'text-anchor="middle">{fmt(t)}</text>')
+    t = 0.0
+    while t <= xmax + 1e-9:
+        x = lw + (t / xmax) * area
+        parts.append(f'<line x1="{x:.0f}" y1="{top - 12}" x2="{x:.0f}" y2="{h - 24}" '
+                     f'fill="none" stroke="#2b333c"/>')
+        parts.append(f'<text x="{x:.0f}" y="{h - 10}" fill="#9aa4b2" font-size="11" '
+                     f'text-anchor="middle">{_tick_label(t, step)}</text>')
+        t += step
     for i, (label, value, badge) in enumerate(items):
         y = top + i * (bar_h + gap)
-        bw = max(1.5, (value / xmax) * width)
-        colour = _color(value, 0, xmax, higher_is_better)
-        parts.append(f'<text x="4" y="{y + bar_h - 4}" fill="#e8ecf1" font-size="12">'
+        bw = max(2.0, (value / xmax) * area) if value else 2.0
+        parts.append(f'<text x="4" y="{y + bar_h - 5}" fill="#e8ecf1" font-size="12">'
                      f'{html.escape(label)}</text>')
         parts.append(f'<rect x="{lw}" y="{y}" width="{bw:.1f}" height="{bar_h}" rx="2" '
-                     f'fill="{colour}"><title>{html.escape(label)}: {fmt(value)} {unit}'
-                     f'{" · " + html.escape(badge) if badge else ""}</title></rect>')
-        parts.append(f'<text x="{lw + bw + 6:.0f}" y="{y + bar_h - 4}" fill="#e8ecf1" '
-                     f'font-size="11">{fmt(value)} {unit}'
-                     f'{" · " + html.escape(badge) if badge else ""}</text>')
-    parts.append(f'<text x="{lw + width / 2}" y="{h - 1}" fill="#9aa4b2" font-size="11" '
+                     f'fill="{_color(value, 0, xmax, higher_is_better)}">'
+                     f'<title>{html.escape(label)}: {html.escape(texts[i])}</title></rect>')
+        text_w = len(texts[i]) * char_px
+        if lw + bw + 6 + text_w <= w - 4:
+            parts.append(f'<text x="{lw + bw + 6:.0f}" y="{y + bar_h - 5}" fill="#e8ecf1" '
+                         f'font-size="11">{html.escape(texts[i])}</text>')
+        else:
+            parts.append(f'<text x="{lw + bw - 6:.0f}" y="{y + bar_h - 5}" fill="#0b0e12" '
+                         f'font-size="11" text-anchor="end">{html.escape(texts[i])}</text>')
+    parts.append(f'<text x="{lw + area / 2}" y="{h - 1}" fill="#9aa4b2" font-size="11" '
                  f'text-anchor="middle">{html.escape(unit)}</text>')
-    parts.append("</svg></div>")
+    parts.append("</svg>")
+    if footnote:
+        parts.append(f'<div class="dim" style="margin-top:6px">{html.escape(footnote)}</div>')
+    parts.append("</div>")
     return "".join(parts)
 
 
 def _svg_loop_counts(out):
-    items = []
+    items, clean = [], 0
+    n_total = 0
     for key, c in out["arms"].items():
         n = c["loops"]["n"] or 1
-        items.append((f"{c['model']} {c['kv']}", 100.0 * c["loops"]["hard"] / n,
-                      f"{c['loops']['hard']}/{n} samples"))
+        n_total = n
+        hard = c["loops"]["hard"]
+        if hard:
+            items.append((f"{c['model']} {c['kv']}", 100.0 * hard / n, f"{hard}/{n} samples"))
+        else:
+            clean += 1
     items.sort(key=lambda t: (-t[1], t[0]))
-    return _svg_hbars(items, "structural repetition per arm",
-                      "share of L-tier samples with a repeated line, n-gram, 200-char block or "
-                      "tail cycle · lower is better, so green bars are clean arms",
-                      "% of samples", lambda v: f"{v:.0f}", higher_is_better=False)
+    note = ("share of L-tier samples containing a repeated line, repeated n-gram, repeated 200-char "
+            "block or a repeating tail cycle · lower is better, so green = clean")
+    footnote = (f"{clean} of {len(out['arms'])} arms had 0/{n_total} such samples and are not drawn. "
+                f"The compression-ratio heuristic is excluded here on purpose: it fires on template "
+                f"prose, and counting it is what made an earlier version of this page misleading.")
+    return _svg_hbars(items, "structural repetition per arm (only arms with at least one)",
+                      note, "% of samples", lambda v: f"{v:.0f}",
+                      footnote=footnote, higher_is_better=False)
 
 
 def _svg_speed(out):
     items = [(f"{c['model']} {c['kv']}", c["decode_tps"] or 0.0,
-              f"prefill {c['prefill_tps']} t/s" if c.get("prefill_tps") else "")
+              f"prefill {c['prefill_tps']:.0f} t/s" if c.get("prefill_tps") else "")
              for c in out["arms"].values() if c.get("decode_tps")]
     items.sort(key=lambda t: -t[1])
     return _svg_hbars(items, "decode throughput at ~91k tokens of context",
                       "median over every request in the arm · higher is better",
                       "tokens/s", lambda v: f"{v:.0f}")
+
+
+PLAIN = [
+    ("identical_consecutive_call", "issued the same tool call twice in a row"),
+    ("identical_call_x3", "issued the same tool call three or more times"),
+    ("no_progress_after_4_turns", "made four tool calls that all failed"),
+    ("no_answer_after_long_gen", "generated a long reply without ever producing an answer"),
+]
+
+
+def _plain_why(s):
+    """One sentence a non-specialist can act on, derived from the stored verdict string."""
+    reason = s.get("flag_reason") or ""
+    metrics = {k: v.get("metrics") or {} for k, v in (s.get("loops") or {}).items()}
+    parts = []
+    for name, m in metrics.items():
+        where = "the visible answer" if name == "content" else (
+            "its reasoning text" if name == "reasoning_content" else "the tool transcript")
+        if m.get("line_run", 0) >= 5:
+            parts.append(f"one line of {where} repeats {m['line_run']} times in a row")
+        elif max(m.get("word_run_4", 0), m.get("word_run_8", 0)) >= 6:
+            parts.append(f"a short phrase in {where} repeats "
+                         f"{max(m.get('word_run_4', 0), m.get('word_run_8', 0))} times in a row")
+        elif m.get("cycle"):
+            parts.append(f"{where} ends with the same {m['cycle'][0]}-character block three times")
+        elif m.get("block"):
+            parts.append(f"a 200-character block appears {m['block'][1]} times in {where}")
+        elif m.get("zip_ratio", 0) >= 0.42 and (m.get("chars") or 0) >= 2048:
+            parts.append(f"{where} compresses to {m['zip_ratio']} (the cutoff is 0.42) although no "
+                         f"line, phrase or block repeats — a template-prose artefact, not a loop")
+    for key, phrase in PLAIN:
+        if key in reason:
+            parts.append(phrase)
+    if parts:
+        return "; ".join(parts) + "."
+    short = min((m.get("chars") or 0) for m in metrics.values()) if metrics else 0
+    if short and short < 2048:
+        return ("the reply was too short for the compression heuristic to say anything useful "
+                "(under 2,048 characters): keep it in the counts, ignore it as evidence.")
+    return "flagged by the repetition detector; see the numbers below."
+
+
+def _mark_repeats(text):
+    """Wrap the obviously repeated part of the quoted excerpt in <mark>.
+
+    Lines first (a list that repeats a row is the common failure); if no line run exists, mark the
+    longest consecutively repeated 4-word phrase, which is what a "phrase repeats 259 times" verdict
+    looks like in text.
+    """
+    lines = text.splitlines()
+    out, i, marked = [], 0, False
+    while i < len(lines):
+        j = i
+        while j + 1 < len(lines) and lines[j + 1].strip() == lines[i].strip():
+            j += 1
+        chunk = "\n".join(lines[i:j + 1])
+        if j - i >= 2 and lines[i].strip():
+            out.append(f"<mark>{html.escape(chunk)}</mark>")
+            marked = True
+        else:
+            out.append(html.escape(chunk))
+        i = j + 1
+    if marked:
+        return "\n".join(out)
+    words = text.split()
+    best = (0, 0, 4)
+    for k in (4, 2):
+        for a in range(len(words) - k):
+            gram = words[a:a + k]
+            reps, b = 1, a + k
+            while b + k <= len(words) and words[b:b + k] == gram:
+                reps += 1
+                b += k
+            if reps > best[0]:
+                best = (reps, a, k, b)
+    reps, a, k, b = best if len(best) == 4 else (0, 0, 4, 0)
+    if reps < 3:
+        return html.escape(text)
+    head = " ".join(words[:a])
+    mid = " ".join(words[a:b])
+    tail = " ".join(words[b:])
+    return (html.escape(head) + (" " if head else "") + f"<mark>{html.escape(mid)}</mark>" +
+            (" " if tail else "") + html.escape(tail))
+
+
+def _metric_rows(m):
+    rows = [("longest run of the same line", m.get("line_run")),
+            ("longest run of a repeated phrase (4 words)", m.get("word_run_4")),
+            ("largest repeated 200-character block", (m.get("block") or [None, 0])[1] or "none"),
+            ("repeating tail cycle", (f"{(m.get('cycle') or [0])[0]} characters × 3"
+                                      if m.get("cycle") else "none")),
+            ("compressibility (1.00 = plain text)", m.get("zip_ratio")),
+            ("characters", m.get("chars"))]
+    out = []
+    for label, value in rows:
+        if value in (None, 0) and label.startswith("longest"):
+            value = 1
+        out.append(f"<tr><td>{html.escape(label)}</td><td>{html.escape(str(value))}</td></tr>")
+    return "".join(out)
+
+
+def _loop_card(s):
+    head = (f'<div class="card"><b>{html.escape(s["model"])} · {s["kv"]} · '
+            f'{html.escape(str(s["tier"]))} · {html.escape(str(s["task"]))} · '
+            f'rep {s["rep"]}</b>')
+    why = f'<div style="margin:2px 0 6px">Why flagged: {html.escape(_plain_why(s))}</div>'
+    body = [head, why]
+    for part, v in (s.get("loops") or {}).items():
+        m = v.get("metrics") or {}
+        if not m:
+            continue
+        label = {"content": "visible answer", "reasoning_content": "reasoning text",
+                 "transcript": "tool transcript"}.get(part, part)
+        body.append(f'<div class="dim">where: {html.escape(label)}</div>')
+        body.append(f'<table>{_metric_rows(m)}</table>')
+        span = m.get("span")
+        if span:
+            body.append(f'<pre>{_mark_repeats(span[:1200])}</pre>')
+            if m.get("cycle") and "<mark>" not in body[-1]:
+                body.append(f'<div class="dim">The repeating part of this one is at the end of a '
+                            f'{m.get("chars")}-character reply, so it is not in the excerpt above.</div>')
+    if s.get("transcript"):
+        calls = "".join(f'<tr><td>{html.escape(str(c.get("tool")))}</td>'
+                        f'<td>{html.escape(json.dumps(c.get("args")))}</td>'
+                        f'<td>{"ok" if c.get("ok") else "failed"}</td></tr>'
+                        for c in s["transcript"])
+        body.append(f'<table><tr><th>tool</th><th>arguments</th><th>result</th></tr>{calls}</table>')
+    if s.get("grade") and s["tier"] in ("R", "C"):
+        g = s["grade"]
+        got = g.get("points", g.get("passed"))
+        body.append(f'<div class="dim">task outcome: {got}/{g.get("of")} '
+                    f'({html.escape(str(g.get("why") or "checks passed"))})</div>')
+    body.append("</div>")
+    return "".join(body)
 
 
 def _task_dotplots(out, tier_labels=("R", "C", "L")):
@@ -1234,6 +1408,7 @@ def _gallery(out, raw):
     path = out.get("_samples_path") or samples_path
     if not os.path.exists(path):
         return '<p class="dim">no samples.jsonl</p>'
+    artefact = 0
     with open(path) as f:
         for line in f:
             line = line.strip()
@@ -1245,27 +1420,26 @@ def _gallery(out, raw):
                 continue
             if not s.get("flagged"):
                 continue
+            mets = [v.get("metrics") or {} for v in (s.get("loops") or {}).values()]
+            structural = any((m.get("line_run") or 0) >= 5
+                             or max(m.get("word_run_1") or 0, m.get("word_run_4") or 0,
+                                    m.get("word_run_8") or 0) >= 6
+                             or (m.get("cycle") and m["cycle"][0] >= 8)
+                             or (m.get("block") and m["block"][1] >= 3)
+                             for m in mets)
+            transcript = bool((s.get("loops") or {}).get("transcript", {}).get("flagged"))
+            if not (structural or transcript):
+                artefact += 1
+                continue
             cards.append(_loop_card(s))
     if not cards:
-        return '<p class="dim">no sample was flagged as looping in this run.</p>'
-    return f'<div class="dim">{len(cards)} flagged samples</div>' + "".join(cards)
-
-
-def _loop_card(s):
-    out = [f'<div class="card"><b>{html.escape(s["model"])} · {s["kv"]} · {s["tier"]} · '
-           f'{html.escape(str(s["task"]))} · rep {s["rep"]}</b>'
-           f'<div class="dim">{html.escape(s.get("flag_reason") or "")}</div>']
-    for part, v in (s.get("loops") or {}).items():
-        m = v.get("metrics") or {}
-        keys = [k for k in ("word_run_1", "word_run_2", "word_run_4", "word_run_8", "line_run",
-                            "cycle", "block", "zip_ratio", "distinct_4", "chars") if k in m]
-        out.append(f'<div class="dim">{part}: ' +
-                   " ".join(f"{k}={m[k]}" for k in keys) + "</div>")
-        span = v.get("span")
-        if span:
-            out.append(f'<pre>{html.escape(span[:600])}</pre>')
-    out.append("</div>")
-    return "".join(out)
+        return ('<p class="dim">No sample in this run contained repeated lines, phrases, blocks or '
+                'a repeating tail, and no tool call repeated.</p>')
+    note = (f'{len(cards)} samples contain actual repetition — the cards below show the quote. '
+            f'For completeness, {artefact} further samples were flagged only by the compression '
+            f'heuristic with nothing repeating; they stay in <code>samples.jsonl</code> and in the '
+            f'"any verdict" grid, and are deliberately not shown here.')
+    return f'<div class="dim">{note}</div>' + "".join(cards)
 
 
 def _manifest_block(raw):
