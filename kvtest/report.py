@@ -792,7 +792,7 @@ def write_html(out, raw, rows, path):
                        "matrix": _human((((out.get("_timing") or {}).get("phases") or {})
                                          .get("matrix") or {}).get("wall_s"))}}
     gallery = _gallery(out, raw)
-    grids, bars = _svg_grids(out), _svg_bars(rows)
+    grids = _svg_grids(out)
     verdict_html = _verdict_html(out)
     legend = ('<div class="dim" style="margin-top:6px">colour scale, always the same way: '
               '<span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> '
@@ -800,7 +800,8 @@ def write_html(out, raw, rows, path):
               '<span style="background:rgb(200,74,58);color:#0b0e12;padding:0 6px">red = worst</span> '
               '· "best" means high on the first two grids and low on the loop grid · '
               '"—" means that arm was not run</div>')
-    taskbars, scatter = _svg_task_bars(out), _svg_scatter(out)
+    taskplots = _task_dotplots(out)
+    loopcounts, speed = _svg_loop_counts(out), _svg_speed(out)
     doc = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <title>KV quant × long context — {html.escape(str(raw.get('stamp')))}</title>
@@ -850,10 +851,11 @@ heuristic that fires on formulaic prose such as a manual generated from twelve f
 the structural grid as the finding and the "any verdict" grid as an upper bound.
 </div>
 <div class="dim" style="margin-top:6px">
-What the tabs hold: <b>Matrix</b> — the 15-arm comparison, the change versus f16, and how often two
-arms gave the identical answer. <b>Tasks</b> — the same data per task, so you can see which task
-carried a difference. <b>Loops</b> — every sample the repetition detector flagged, with the exact
-text that repeated, so you can judge it yourself.
+What the tabs hold: <b>Matrix</b> — the verdict, three grids of level-and-change, decode speed, and
+how often two arms gave the identical answer. <b>Tasks</b> — one dot plot per task: three dots per
+model, one per KV type, on a 0–100 axis, so overlapping dots mean "the KV type changed nothing here".
+<b>Loops</b> — structural repetition per arm as bars, then a card for every sample the detector
+flagged, with the repeated text highlighted.
 </div>
 <div class="dim" style="margin-top:6px">
 Three facts that make the numbers honest: differences of a few points are noise; the <code>semver</code>
@@ -864,10 +866,10 @@ generation-length cut-off, not wrong code. The prose summary, with those caveats
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Paired deltas vs f16</h2>{bars}
+<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Speed at ~91k tokens</h2>{speed}
 <h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
-<section id="t-tasks" hidden>{taskbars}{_task_details(out)}</section>
-<section id="t-loops" hidden>{scatter}{gallery}</section>
+<section id="t-tasks" hidden>{taskplots}{_task_details(out)}</section>
+<section id="t-loops" hidden>{loopcounts}{gallery}</section>
 <footer>{_manifest_block(raw)}</footer>
 <script>
 const RAW = {json.dumps(data)};
@@ -1026,10 +1028,15 @@ def write_figures(out, path):
     diff them or re-render them elsewhere without trusting the HTML.
     """
     os.makedirs(path, exist_ok=True)
-    svg = _svg_grids(out)
     import re as _re
-    for i, fig in enumerate(_re.findall(r"<svg.*?</svg>", svg, _re.S)):
-        with open(os.path.join(path, f"fig{i + 1}.svg"), "w") as f:
+    figures = (_re.findall(r"<svg.*?</svg>", _svg_grids(out), _re.S)
+               + _re.findall(r"<svg.*?</svg>", _svg_speed(out), _re.S)
+               + _re.findall(r"<svg.*?</svg>", _svg_loop_counts(out), _re.S))
+    for name in os.listdir(path):
+        if name.endswith(".svg"):
+            os.unlink(os.path.join(path, name))
+    for i, fig in enumerate(figures, 1):
+        with open(os.path.join(path, f"fig{i}.svg"), "w") as f:
             f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
             f.write(fig.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ', 1))
     table = {}
@@ -1044,83 +1051,139 @@ def write_figures(out, path):
                    "arms": table}, f, indent=2, sort_keys=True)
 
 
-def _svg_bars(rows):
-    if not rows:
-        return '<p class="dim">no paired deltas</p>'
-    cw, ch, lw = 150, 26, 150
-    h = 20 + ch * len(rows)
-    w = lw + 260
-    parts = [f'<div class="card"><svg width="{w}" height="{h}" role="img">',
-             f'<line x1="{lw + 120}" y1="0" x2="{lw + 120}" y2="{h}" stroke="#48525c"/>']
-    for i, r in enumerate(rows):
-        y = 12 + i * ch
-        parts.append(f'<text x="4" y="{y + 12}" fill="#e8ecf1" font-size="12">'
-                     f'{html.escape(r["model"])} {r["kv"]}</text>')
-        for k, (key, color) in enumerate((("dR", "#4f9d69"), ("dC", "#3d7cc9"), ("dL", "#c9563d"))):
-            v = r.get(key)
-            if v is None:
-                continue
-            width = max(-110, min(110, v * 2))
-            x = lw + 120 if width >= 0 else lw + 120 + width
-            parts.append(f'<rect x="{x}" y="{y + k * 7}" width="{abs(width)}" height="5" rx="2" '
-                         f'fill="{color}"><title>{key} {v:+.1f}</title></rect>')
-    parts.append("</svg><div class=\"dim\">green ΔR · blue ΔC · red Δloop-rate "
-                 "(2 px per point)</div></div>")
-    return "".join(parts)
+def _ticks(lo, hi, n=5):
+    step = (hi - lo) / float(n)
+    return [lo + i * step for i in range(n + 1)]
 
 
-def _svg_task_bars(out):
-    tasks = sorted({t for c in out["arms"].values() for t in c["per_task"]})
-    if not tasks:
+def _svg_hbars(items, title, note, unit, fmt, width=760, bar_h=18, gap=6, xmax=None,
+               higher_is_better=True):
+    """Horizontal bars with a real axis, gridlines, value labels and a labelled category column.
+
+    items: [(label, value, badge)] sorted by the caller.
+    """
+    if not items:
         return ""
-    cw, lw = 46, 190
-    parts = ['<div class="card"><div class="dim">per task: share correct (R/C) or flagged (L)</div>']
-    for task in tasks:
-        h = 20 + 22 * len(out["arms"])
-        w = lw + cw * 3 + 20
-        parts.append(f'<svg width="{w}" height="{h}" role="img"><text x="4" y="12" '
-                     f'fill="#9aa4b2" font-size="12">{html.escape(task)}</text>')
-        for i, (key, c) in enumerate(out["arms"].items()):
-            pt = c["per_task"].get(task)
-            if not pt:
-                continue
-            y = 18 + i * 22
-            if pt["of"]:
-                frac = pt["score"] / pt["of"]
-            elif pt["n"]:
-                frac = 1 - pt["flagged"] / pt["n"]
-            else:
-                continue
-            parts.append(f'<text x="4" y="{y + 11}" fill="#e8ecf1" font-size="11">'
-                         f'{html.escape(c["model"])} {c["kv"]}</text>')
-            parts.append(f'<rect x="{lw}" y="{y + 2}" width="{cw * 3 * frac:.1f}" height="12" '
-                         f'rx="2" fill="{_color(frac, 0.0, 1.0, True)}"/>')
-        parts.append("</svg>")
-    parts.append("</div>")
-    return "".join(parts)
-
-
-def _svg_scatter(out):
-    pts = [(c["loop_rate"] or 0.0, c["decode_tps"] or 0.0, c) for c in out["arms"].values()]
-    if not pts:
-        return ""
-    w, h, pad = 520, 260, 46
-    dmax = max(d for _, d, _ in pts) or 1
-    parts = [f'<div class="card"><div class="dim">loop rate vs decode t/s</div>',
-             f'<svg width="{w}" height="{h}" role="img">',
-             f'<line x1="{pad}" y1="{h - pad}" x2="{w - 10}" y2="{h - pad}" stroke="#48525c"/>',
-             f'<line x1="{pad}" y1="10" x2="{pad}" y2="{h - pad}" stroke="#48525c"/>',
-             f'<text x="{w // 2}" y="{h - 18}" fill="#9aa4b2" font-size="12" '
-             f'text-anchor="middle">loop rate</text>',
-             f'<text x="10" y="20" fill="#9aa4b2" font-size="12">decode t/s</text>']
-    for lr, dec, c in pts:
-        x = pad + lr * (w - pad - 20)
-        y = (h - pad) - (dec / dmax) * (h - pad - 20)
-        parts.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="6" '
-                     f'fill="{_color(lr, 0.0, max(l for l, _, _ in pts) or 1.0, False)}" '
-                     f'fill-opacity="0.85"><title>{html.escape(c["model"])} {c["kv"]}: '
-                     f'loop {lr:.2f}, {dec} t/s</title></circle>')
+    lw, pad, top = 210, 60, 46
+    xmax = xmax or max(v for _, v, _ in items) or 1
+    xmax = xmax * 1.08
+    h = top + len(items) * (bar_h + gap) + 30
+    w = width + lw + pad
+    parts = [f'<div class="card"><div>{html.escape(title)}</div>'
+             f'<div class="dim">{html.escape(note)}</div>',
+             f'<svg width="{w}" height="{h}" role="img">']
+    for t in _ticks(0, xmax, 4):
+        x = lw + (t / xmax) * width
+        parts.append(f'<line x1="{x:.0f}" y1="{top - 8}" x2="{x:.0f}" y2="{h - 26}" '
+                     f'stroke="#2b333c"/>')
+        parts.append(f'<text x="{x:.0f}" y="{h - 12}" fill="#9aa4b2" font-size="11" '
+                     f'text-anchor="middle">{fmt(t)}</text>')
+    for i, (label, value, badge) in enumerate(items):
+        y = top + i * (bar_h + gap)
+        bw = max(1.5, (value / xmax) * width)
+        colour = _color(value, 0, xmax, higher_is_better)
+        parts.append(f'<text x="4" y="{y + bar_h - 4}" fill="#e8ecf1" font-size="12">'
+                     f'{html.escape(label)}</text>')
+        parts.append(f'<rect x="{lw}" y="{y}" width="{bw:.1f}" height="{bar_h}" rx="2" '
+                     f'fill="{colour}"><title>{html.escape(label)}: {fmt(value)} {unit}'
+                     f'{" · " + html.escape(badge) if badge else ""}</title></rect>')
+        parts.append(f'<text x="{lw + bw + 6:.0f}" y="{y + bar_h - 4}" fill="#e8ecf1" '
+                     f'font-size="11">{fmt(value)} {unit}'
+                     f'{" · " + html.escape(badge) if badge else ""}</text>')
+    parts.append(f'<text x="{lw + width / 2}" y="{h - 1}" fill="#9aa4b2" font-size="11" '
+                 f'text-anchor="middle">{html.escape(unit)}</text>')
     parts.append("</svg></div>")
+    return "".join(parts)
+
+
+def _svg_loop_counts(out):
+    items = []
+    for key, c in out["arms"].items():
+        n = c["loops"]["n"] or 1
+        items.append((f"{c['model']} {c['kv']}", 100.0 * c["loops"]["hard"] / n,
+                      f"{c['loops']['hard']}/{n} samples"))
+    items.sort(key=lambda t: (-t[1], t[0]))
+    return _svg_hbars(items, "structural repetition per arm",
+                      "share of L-tier samples with a repeated line, n-gram, 200-char block or "
+                      "tail cycle · lower is better, so green bars are clean arms",
+                      "% of samples", lambda v: f"{v:.0f}", higher_is_better=False)
+
+
+def _svg_speed(out):
+    items = [(f"{c['model']} {c['kv']}", c["decode_tps"] or 0.0,
+              f"prefill {c['prefill_tps']} t/s" if c.get("prefill_tps") else "")
+             for c in out["arms"].values() if c.get("decode_tps")]
+    items.sort(key=lambda t: -t[1])
+    return _svg_hbars(items, "decode throughput at ~91k tokens of context",
+                      "median over every request in the arm · higher is better",
+                      "tokens/s", lambda v: f"{v:.0f}")
+
+
+def _task_dotplots(out, tier_labels=("R", "C", "L")):
+    """One small dot plot per task: models down the side, three KV types as dots on a 0-100 axis.
+
+    A dot plot is used instead of 15 bars because the question per task is "are the three dots for
+    this model on top of each other?" — saturation and outliers are visible at a glance, and every
+    dot carries its exact value in the tooltip.
+    """
+    tasks = {}
+    for cell in out["arms"].values():
+        for key, pt in cell["per_task"].items():
+            tier, task = key.split(":", 1)
+            tasks.setdefault((tier, task), []).append((cell["model"], cell["kv"], pt))
+    colour = {"f16": "#8fb0d6", "q8_0": "#e0b24a", "q4_0": "#d86a4a"}
+    parts = []
+    for tier in tier_labels:
+        group = [(t, rows) for (tr, t), rows in sorted(tasks.items()) if tr == tier]
+        if not group:
+            continue
+        meaning = {"R": "share of that task's points earned",
+                   "C": "share of that task's hidden checks passed",
+                   "L": "share of samples that did NOT loop (higher = cleaner)"}[tier]
+        parts.append(f'<div class="card" style="max-width:none"><b>{tier} tier</b> '
+                     f'<span class="dim">— {html.escape(meaning)} · 0–100 axis</span>'
+                     f'<div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px">')
+        for task, rows in group:
+            models = sorted({m for m, _, _ in rows})
+            w, row_h, lw, top, axis = 300, 22, 150, 26, 70
+            h = top + len(models) * row_h + 22
+            parts.append(f'<div><div class="dim">{html.escape(task)}</div>'
+                         f'<svg width="{w}" height="{h}" role="img">')
+            for t in (0, 50, 100):
+                x = lw + (t / 100.0) * axis
+                parts.append(f'<line x1="{x:.0f}" y1="{top - 6}" x2="{x:.0f}" y2="{h - 20}" '
+                             f'stroke="#2b333c"/>')
+                parts.append(f'<text x="{x:.0f}" y="{h - 8}" fill="#9aa4b2" font-size="10" '
+                             f'text-anchor="middle">{t}</text>')
+            for i, model in enumerate(models):
+                y = top + i * row_h
+                parts.append(f'<text x="2" y="{y + 4}" fill="#c8d2dc" font-size="10">'
+                             f'{html.escape(model)}</text>')
+                for m, kv, pt in sorted(rows, key=lambda r: r[1]):
+                    if m != model:
+                        continue
+                    if pt["of"]:
+                        v = 100.0 * pt["score"] / pt["of"]
+                        detail = (f"{pt['score']:.0f}/{pt['of']:.0f}"
+                                  if float(pt["score"]).is_integer() else
+                                  f"{pt['score']:g}/{pt['of']:g}")
+                    elif pt["n"]:
+                        v = 100.0 * (1 - pt["flagged"] / pt["n"])
+                        detail = f"{pt['n'] - pt['flagged']}/{pt['n']} clean"
+                    else:
+                        continue
+                    x = lw + (max(0.0, min(100.0, v)) / 100.0) * axis
+                    parts.append(f'<circle cx="{x:.1f}" cy="{y:.0f}" r="4.5" '
+                                 f'fill="{colour.get(kv, "#999")}" fill-opacity="0.95">'
+                                 f'<title>{html.escape(model)} {kv} {task}: {detail} '
+                                 f'({v:.0f}%)</title></circle>')
+            parts.append("</svg></div>")
+        parts.append("</div>"
+                     '<div class="dim" style="margin-top:6px">'
+                     '<span style="color:#8fb0d6">● f16</span> '
+                     '<span style="color:#e0b24a">● q8_0</span> '
+                     '<span style="color:#d86a4a">● q4_0</span> · dots for one model that overlap '
+                     'mean the KV type changed nothing</div></div>')
     return "".join(parts)
 
 

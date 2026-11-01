@@ -87,6 +87,13 @@ task, that task is labelled `too_hard_for_matrix` and excluded from the KV-delta
 staying in the raw data. The f16 column is always shown, so a q4_0 drop is never read as damage when
 the task is simply beyond every arm.
 
+**Statistics on the figures.** Every cell of the three Matrix figures prints the level and the
+change against that model's own f16 arm, and the change is coloured only if an exact two-sided paired
+sign-flip test rejects at α = 0.05 (all 2ⁿ sign patterns enumerated over integer differences — no
+sampling, no normal approximation, so the same `samples.jsonl` always yields the same p). Each figure
+states its n and the smallest p attainable at that n (R: 2⁻¹⁸, C: 2/2⁶, L: 2/2¹²). Where a stored
+`timing.json` is absent, the per-arm times come from the arm checkpoints.
+
 **Agreement matrix.** Beyond pass/fail: for graded R samples, the share of answers where q4_0 gives
 exactly the f16 answer for the same task and seed. This is the output-level analogue of the KL
 instrument that resolved the 32k study, and it still has signal when nothing fails outright.

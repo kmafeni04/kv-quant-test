@@ -75,6 +75,7 @@ Never the scoring rules.
 | `raw.json` | merged provenance + arms + counts (rebuildable from the two above) |
 | `matrix.csv` | one row per model × KV: R %, C %/resolved, loop rate, speeds, VRAM, knobs |
 | `REPORT.md`, `report.html` | the write-up and the three-tab browser artifact |
+| `figures/` | every figure as a standalone SVG plus `figures.json` with the numbers behind it |
 | `logs/<model>__<kv>.log` | full llama-server stderr including the exact command line |
 
 Every number in `REPORT.md` is derived from `samples.jsonl`; no metric is written by hand.

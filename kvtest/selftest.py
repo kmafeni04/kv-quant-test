@@ -386,7 +386,7 @@ def test_report(tmp, runner_out):
           page.count('rx="4"'))
     figs = os.path.join(out, "figures")
     check("report exported standalone figures",
-          sorted(os.listdir(figs)) == ["fig1.svg", "fig2.svg", "fig3.svg", "figures.json"],
+          sorted(os.listdir(figs)) == [f"fig{i}.svg" for i in range(1, 6)] + ["figures.json"],
           os.listdir(figs) if os.path.isdir(figs) else "missing")
     before = open(os.path.join(figs, "fig1.svg")).read()
     report.build(out)
