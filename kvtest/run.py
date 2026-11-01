@@ -221,7 +221,8 @@ class Runner:
                             rec2["budget_raised"] = True
                             rec = rec2
                     rec.update(model=model, kv=kv)
-                    rec["loops"] = self._loop_fields(rec, True, grade.get("resolved"))
+                    # "answered" means code was emitted, not that every hidden check passed
+                    rec["loops"] = self._loop_fields(rec, True, (grade.get("lines") or 0) > 0)
                     rec["flagged"] = any(v["flagged"] for v in rec["loops"].values())
                     rec["flag_reason"] = "; ".join(f"{k}:{v['reason']}" for k, v in rec["loops"].items()
                                                    if v["flagged"])

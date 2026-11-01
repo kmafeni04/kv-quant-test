@@ -107,61 +107,131 @@
       "ttft_s": 217.3,
       "vram_peak_mib": 15895,
       "wall_s": 68.3
+    },
+    {
+      "ctx": 102400,
+      "decode_tps": 44.9,
+      "depth_attempts": [
+        {
+          "decode_tps": 44.9,
+          "error": null,
+          "knobs": {
+            "ncmoe": 8
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 915.7,
+          "prompt_tokens": 93556,
+          "ttft_s": 102.2,
+          "vram_peak_mib": 13743
+        }
+      ],
+      "knobs": {
+        "ncmoe": 8
+      },
+      "load_s": 8.1,
+      "model": "gemma4-26b-a4b",
+      "ok": true,
+      "prefill_tps": 915.7,
+      "probe_decode_tps": 51.8,
+      "probe_prefill_tps": 1061.3,
+      "probe_tokens": 31912,
+      "prompt_tokens": 93556,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 102.2,
+      "vram_peak_mib": 13743,
+      "wall_s": 40.5
     }
   ],
   "common_ctx": 102400,
-  "created": "2026-11-01T00:03:44Z",
+  "created": "2026-11-01T01:37:57Z",
   "document": {
     "calibration": [
       {
         "chars": 456405,
         "counts": {
-          "qwen36-35b": 135049,
-          "qwen38-27b": 135049,
-          "qwen38-flash": 135049
+          "gemma4-26b-a4b": 120117
         },
         "filler_chars": 430000,
-        "max_tokens": 135049,
-        "min_tokens": 135049
+        "max_tokens": 120117,
+        "min_tokens": 120117
       },
       {
-        "chars": 315779,
+        "chars": 351755,
         "counts": {
-          "qwen36-35b": 94322,
-          "qwen38-27b": 94322,
-          "qwen38-flash": 94322
+          "gemma4-26b-a4b": 93532
         },
-        "filler_chars": 289380,
-        "max_tokens": 94322,
-        "min_tokens": 94322
-      },
-      {
-        "chars": 305234,
-        "counts": {
-          "qwen36-35b": 91284,
-          "qwen38-27b": 91284,
-          "qwen38-flash": 91284
-        },
-        "filler_chars": 278835,
-        "max_tokens": 91284,
-        "min_tokens": 91284
+        "filler_chars": 325354,
+        "max_tokens": 93532,
+        "min_tokens": 93532
       }
     ],
-    "chars": 305234,
-    "filler_chars": 278835,
+    "chars": 351755,
+    "filler_chars": 325354,
     "fwe_count": 20,
-    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "sha256": "f045b8b238e485253e16598de1795080bc0400c64a5bad72125fe205e1ad9688",
     "target_tokens": 93696,
     "tokens_by_model": {
-      "qwen36-35b": 91284,
-      "qwen38-27b": 91284,
-      "qwen38-flash": 91284
+      "gemma4-26b-a4b": 93532
     }
   },
   "free_vram_mib_at_start": 13,
   "geometry": {
     "gemma4-26b-a4b": {
-      "error": "missing model file"
+      "arch": "gemma4",
+      "context_length": 262144,
+      "file": "/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+      "full_attention_interval": null,
+      "full_attn_layers": 5,
+      "gguf_version": 3,
+      "key_length": 512,
+      "kv_bytes_per_token": {
+        "f16": 20480,
+        "q4_0": 5760,
+        "q8_0": 10880
+      },
+      "model_name": "gemma-4-26B-A4B-it",
+      "n_heads": 16,
+      "n_kv_heads": [
+        8,
+        8,
+        8,
+        8,
+        8,
+        2,
+        8,
+        8,
+        8,
+        8,
+        8,
+        2,
+        8,
+        8,
+        8,
+        8,
+        8,
+        2,
+        8,
+        8,
+        8,
+        8,
+        8,
+        2,
+        8,
+        8,
+        8,
+        8,
+        8,
+        2
+      ],
+      "n_layers": 30,
+      "n_tensors": 658,
+      "rope_freq_base": 1000000.0,
+      "sliding_window": 1024,
+      "tensor_bytes": 14602321016,
+      "value_length": 512
     },
     "ornith-35b": {
       "error": "missing model file"
@@ -248,6 +318,42 @@
     49152
   ],
   "models": {
+    "gemma4-26b-a4b": {
+      "ctx": 102400,
+      "decode_tps": 44.9,
+      "depth_attempts": [
+        {
+          "decode_tps": 44.9,
+          "error": null,
+          "knobs": {
+            "ncmoe": 8
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 915.7,
+          "prompt_tokens": 93556,
+          "ttft_s": 102.2,
+          "vram_peak_mib": 13743
+        }
+      ],
+      "knobs": {
+        "ncmoe": 8
+      },
+      "load_s": 8.1,
+      "model": "gemma4-26b-a4b",
+      "ok": true,
+      "prefill_tps": 915.7,
+      "probe_decode_tps": 51.8,
+      "probe_prefill_tps": 1061.3,
+      "probe_tokens": 31912,
+      "prompt_tokens": 93556,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 102.2,
+      "vram_peak_mib": 13743,
+      "wall_s": 40.5
+    },
     "qwen36-35b": {
       "ctx": 102400,
       "decode_tps": 36.4,
@@ -358,14 +464,12 @@
     }
   },
   "probe_document": {
-    "filler_chars": 72129,
+    "filler_chars": 83419,
     "tokens": {
-      "qwen36-35b": 31367,
-      "qwen38-27b": 31367,
-      "qwen38-flash": 31367
+      "gemma4-26b-a4b": 31888
     }
   },
   "stamp": "2026-11-01",
   "unfit": [],
-  "wall_s": 938.1
+  "wall_s": 156.3
 }

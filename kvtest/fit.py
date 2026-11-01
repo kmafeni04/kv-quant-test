@@ -212,10 +212,15 @@ def run(stamp, ladder=None, models=None, out_dir=None, resume=False):
     prev_path = os.path.join(out_dir, "fit.json")
     if resume and os.path.exists(prev_path):
         prev = json.load(open(prev_path))
+        # keep every model probed so far in the file, so partial runs accumulate
+        for k, v in (prev.get("models") or {}).items():
+            fit["models"][k] = v
+        fit["attempts"] = list(prev.get("attempts") or [])
         log(f"[fit] resuming: {len(prev.get('models') or {})} models already probed")
 
     # ---- pass 1: context + knobs, with a small probe document (cheap at every rung)
-    present = [k for k in models if os.path.exists(config.MODELS[k]["path"])]
+    # calibrate against every tokenizer that is actually on disk, not just the requested subset
+    present = [k for k in config.MODELS if os.path.exists(config.MODELS[k]["path"])]
     probe_target = min(32000, min(ladder) - config.GEN_HEADROOM - 512)
     pf, probe_doc, _, probe_hist = calibrate_document(probe_target, models=present,
                                                      start=120000)
@@ -265,7 +270,7 @@ def run(stamp, ladder=None, models=None, out_dir=None, resume=False):
     _record_document_hash(fit["document"])
 
     # ---- pass 3: prove the real depth on every model and measure speed there
-    for key in list(fit["models"]):
+    for key in [k for k in fit["models"] if k in models]:
         entry = fit["models"][key]
         res, attempts = depth_verify(key, fit["common_ctx"], entry["knobs"], doc,
                                     log_dir=logs)

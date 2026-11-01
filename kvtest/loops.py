@@ -19,7 +19,10 @@ WORD_RUN_FLAG = 8
 CYCLE_FLAG = 8
 BLOCK_FLAG = 3
 ZIP_FLAG = 0.42
-ZIP_MIN_CHARS = 1024
+# 1,024 chars was measured to be too short: a clean 1,258-char tool-turn reasoning block with
+# distinct_4 = 0.968 compressed to 0.441 and was falsely flagged. Real degenerate thinking in this
+# study is 10-100x longer, so the ratio is only judged above 2,048 chars.
+ZIP_MIN_CHARS = 2048
 SPAN_CHARS = 600
 
 

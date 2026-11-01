@@ -63,7 +63,7 @@ def agg(raw, samples, arms):
                     loop_reasoning=0, loop_content=0,
                     prompt_tokens=[], prefill=[], decode=[], out_tokens=0, errors=0,
                     cache_hits=0, cache_checks=0, budget_raised=0, per_task={},
-                    agree={}, ctx=raw.get("context"))
+                    agree=None, ctx=raw.get("context"))
         for s in samples:
             if s.get("model") != model or s.get("kv") != kv:
                 continue
@@ -90,9 +90,11 @@ def agg(raw, samples, arms):
             if flagged:
                 cell["flagged_all"] += 1
                 pt["flagged"] += 1
-                for part in ("reasoning_content", "content", "transcript"):
-                    if (s.get("loops") or {}).get(part, {}).get("flagged"):
-                        cell["loop_reasoning" if part == "reasoning_content" else "loop_content"] += 1
+                if tier == "L":
+                    for part in ("reasoning_content", "content"):
+                        if (s.get("loops") or {}).get(part, {}).get("flagged"):
+                            cell["loop_reasoning" if part == "reasoning_content" else
+                                 "loop_content"] += 1
             if tier == "L":
                 cell["loops"]["n"] += 1
                 cell["loops"]["flagged"] += 1 if flagged else 0
@@ -131,6 +133,10 @@ def agg(raw, samples, arms):
         cell["knobs"] = ((raw.get("arms") or {}).get(f"{model}__{kv}") or {}).get("knobs")
         cell["flags"] = ((raw.get("arms") or {}).get(f"{model}__{kv}") or {}).get("flags") or {}
         out["arms"][f"{model}__{kv}"] = cell
+    reps = {}
+    for s in samples:
+        reps[s.get("tier")] = max(reps.get(s.get("tier"), 0), int(s.get("rep") or 0) + 1)
+    out["reps"] = reps
     _agreement(out, samples, arms)
     _too_hard(out, samples)
     return out
@@ -209,7 +215,8 @@ def write_markdown(out, raw, rows, path):
     L.append(f"Context (identical for every arm): **-c {raw.get('context')}**. "
              f"llama.cpp `{(man.get('llama_cpp') or {}).get('commit', '?')[:12]}`, "
              f"document sha256 `{(raw.get('document') or {}).get('sha256', '?')[:16]}`, "
-             f"reps {man.get('reps')}, seeds {man.get('seeds')}.\n")
+             f"reps {out.get('reps')}, seeds {man.get('seeds')}, "
+             f"budgets {man.get('budgets')}, thinking caps {man.get('reasoning_budget_tokens')}.\n")
     if raw.get("deadline_reached"):
         L.append(f"> **Deadline reached.** Unrun arms: {raw.get('unrun_arms')}\n")
     unfit = (raw.get("fit") or {}).get("unfit") or []
@@ -240,9 +247,9 @@ def write_markdown(out, raw, rows, path):
                      f"{c['C']['pct']} | {c['C']['resolved']}/{c['C']['n']} | "
                      f"{', '.join(out.get('too_hard') or []) or '—'} |")
     L.append("\n## Loop table — flagged samples / samples (reasoning and content split)\n")
-    L.append("| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union | "
-             "reasoning | content |")
-    L.append("|---|---|---|---|---|---|---|---|---|")
+    L.append("| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union "
+             "(L) | reasoning | content | any tier |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|")
     for model in out["models"]:
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
@@ -254,7 +261,7 @@ def write_markdown(out, raw, rows, path):
                 cells.append(f"{v['flagged']}/{v['n']}" if v else "—")
             L.append(f"| `{model}` | {kv} | " + " | ".join(cells) +
                      f" | {c['loops']['flagged']}/{c['loops']['n']} | {c['loop_reasoning']} | "
-                     f"{c['loop_content']} |")
+                     f"{c['loop_content']} | {c['flagged_all']} |")
     L.append("\n## Paired deltas vs f16 (positive = worse looping, positive R/C = better)\n")
     L.append("| model | KV | ΔR pp | ΔC pp | Δloop-rate | answer agreement | n(R/C/L) |")
     L.append("|---|---|---|---|---|---|---|")

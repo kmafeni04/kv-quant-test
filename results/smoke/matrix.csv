@@ -1,0 +1,2 @@
+model,kv,R_pct,R_points,R_of,C_pct,C_passed,C_of,C_resolved,loop_flagged,loop_samples,loop_rate,loop_reasoning,loop_content,agree_f16,prompt_tokens,prefill_tps,decode_tps,cache_hit_rate,vram_peak_mib,knobs
+qwen36-35b,q4_0,70.0,7,10,92.4,721,780,3,0,4,0.0,0,0,,10679,642.6,45.6,1.0,9541,{"ncmoe": 26}

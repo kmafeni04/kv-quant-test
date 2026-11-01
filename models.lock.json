@@ -1,12 +1,10 @@
 {
   "document": {
-    "chars": 305234,
-    "filler_chars": 278835,
-    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "chars": 351755,
+    "filler_chars": 325354,
+    "sha256": "f045b8b238e485253e16598de1795080bc0400c64a5bad72125fe205e1ad9688",
     "tokens_by_model": {
-      "qwen36-35b": 91284,
-      "qwen38-27b": 91284,
-      "qwen38-flash": 91284
+      "gemma4-26b-a4b": 93532
     }
   },
   "host": {

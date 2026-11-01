@@ -22,7 +22,7 @@
         "L:tool_episode:0"
       ],
       "errors": [],
-      "finished": "2026-11-01T01:24:37Z",
+      "finished": "2026-11-01T02:14:58Z",
       "flags": {
         "reasoning_supported": true
       },
@@ -30,15 +30,15 @@
         "ncmoe": 26
       },
       "kv": "q4_0",
-      "load_s": 2.0,
+      "load_s": 4.0,
       "model": "qwen36-35b",
-      "started": "2026-11-01T01:11:39Z",
+      "started": "2026-11-01T02:01:46Z",
       "vram_peak_mib": 9541,
-      "wall_s": 777.5
+      "wall_s": 791.2
     }
   },
   "context": 16384,
-  "created": "2026-11-01T01:24:37Z",
+  "created": "2026-11-01T02:14:58Z",
   "deadline_reached": false,
   "document": {
     "chars": 26482,
@@ -56,7 +56,7 @@
   "manifest": {
     "budgets": {
       "C": 6144,
-      "L": 1536,
+      "L": 2048,
       "R": 2048,
       "tool_turn": 512
     },
