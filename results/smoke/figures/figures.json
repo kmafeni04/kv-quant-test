@@ -1,0 +1,13 @@
+{
+  "alpha": 0.05,
+  "arms": {
+    "qwen36-35b__q4_0": {
+      "C_pct": 92.4,
+      "R_pct": 70.0,
+      "loops_hard": 0,
+      "loops_n": 4,
+      "sig": null
+    }
+  },
+  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier"
+}

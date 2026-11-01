@@ -1,0 +1,301 @@
+{
+  "alpha": 0.05,
+  "arms": {
+    "gemma4-26b-a4b__f16": {
+      "C_pct": 89.0,
+      "R_pct": 36.7,
+      "loops_hard": 3,
+      "loops_n": 12,
+      "sig": null
+    },
+    "gemma4-26b-a4b__q4_0": {
+      "C_pct": 40.8,
+      "R_pct": 26.7,
+      "loops_hard": 3,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -376,
+          "n": 6,
+          "p": 0.25,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": -3,
+          "n": 18,
+          "p": 0.5625,
+          "unit": "points"
+        }
+      }
+    },
+    "gemma4-26b-a4b__q8_0": {
+      "C_pct": 89.9,
+      "R_pct": 23.3,
+      "loops_hard": 2,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": 7,
+          "n": 6,
+          "p": 0.75,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": -1,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": -4,
+          "n": 18,
+          "p": 0.4062,
+          "unit": "points"
+        }
+      }
+    },
+    "ornith-35b__f16": {
+      "C_pct": 70.3,
+      "R_pct": 63.3,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": null
+    },
+    "ornith-35b__q4_0": {
+      "C_pct": 60.9,
+      "R_pct": 60.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -73,
+          "n": 6,
+          "p": 0.5,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": -1,
+          "n": 18,
+          "p": 1.0,
+          "unit": "points"
+        }
+      }
+    },
+    "ornith-35b__q8_0": {
+      "C_pct": 73.1,
+      "R_pct": 53.3,
+      "loops_hard": 1,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": 22,
+          "n": 6,
+          "p": 1.0,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 1,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": -3,
+          "n": 18,
+          "p": 0.5,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen36-35b__f16": {
+      "C_pct": 98.1,
+      "R_pct": 60.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": null
+    },
+    "qwen36-35b__q4_0": {
+      "C_pct": 97.8,
+      "R_pct": 66.7,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -2,
+          "n": 6,
+          "p": 0.75,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 2,
+          "n": 18,
+          "p": 0.5,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen36-35b__q8_0": {
+      "C_pct": 89.0,
+      "R_pct": 63.3,
+      "loops_hard": 1,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -71,
+          "n": 6,
+          "p": 0.625,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 1,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 1,
+          "n": 18,
+          "p": 1.0,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen38-27b__f16": {
+      "C_pct": 80.6,
+      "R_pct": 70.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": null
+    },
+    "qwen38-27b__q4_0": {
+      "C_pct": 81.3,
+      "R_pct": 70.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": 5,
+          "n": 6,
+          "p": 1.0,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 0,
+          "n": 18,
+          "p": 1.0,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen38-27b__q8_0": {
+      "C_pct": 90.0,
+      "R_pct": 76.7,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": 73,
+          "n": 6,
+          "p": 0.5,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 2,
+          "n": 18,
+          "p": 0.5,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen38-flash__f16": {
+      "C_pct": 90.0,
+      "R_pct": 76.7,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": null
+    },
+    "qwen38-flash__q4_0": {
+      "C_pct": 89.9,
+      "R_pct": 80.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -1,
+          "n": 6,
+          "p": 1.0,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 1,
+          "n": 18,
+          "p": 1.0,
+          "unit": "points"
+        }
+      }
+    },
+    "qwen38-flash__q8_0": {
+      "C_pct": 80.8,
+      "R_pct": 80.0,
+      "loops_hard": 0,
+      "loops_n": 12,
+      "sig": {
+        "C": {
+          "delta": -72,
+          "n": 6,
+          "p": 1.0,
+          "unit": "checks"
+        },
+        "L": {
+          "delta": 0,
+          "n": 12,
+          "p": 1.0,
+          "unit": "samples"
+        },
+        "R": {
+          "delta": 1,
+          "n": 18,
+          "p": 1.0,
+          "unit": "points"
+        }
+      }
+    }
+  },
+  "test": "exact two-sided paired sign-flip on integer differences; pairing = (task, rep) for sampled tiers, task for the greedy tier"
+}

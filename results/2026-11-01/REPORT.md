@@ -4,6 +4,42 @@ Context (identical for every arm): **-c 102400**. llama.cpp `2a667032dc78`, docu
 
 Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **15 h 27 m** (14 h 12 m of it the matrix).
 
+
+## Verdict
+
+**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.95 of 100 (R 80.0% and C 89.9% averaged), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB peak with {'ncmoe': 48} offloaded.
+
+The next arms are `qwen38-flash` f16 (83.35), `qwen38-27b` q8_0 (83.35) — the top three sit within 1.6 capability points of each other, which is one or two graded outcomes.
+
+Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve — the reasons column says what the numbers actually support.
+
+| model | best KV | capability | runner-up | structural loops | decode t/s | why |
+|---|---|---|---|---|---|---|
+| `gemma4-26b-a4b` | **f16** | 62.85 | q8_0 | 3/12 | 46.9 | f16 keeps the lead; q4_0 loses 29.1 capability points; the runner-up arm q4_0 hit the 6144-token code cap on 3 of 6 tasks, so its checks are truncated output, not wrong code; 3/12 structural-loop samples, 46.9 t/s decode |
+| `ornith-35b` | **f16** | 66.80 | q8_0 | 0/12 | 48.8 | f16 keeps the lead; q4_0 loses 6.3 capability points; 0/12 structural-loop samples, 48.8 t/s decode |
+| `qwen36-35b` | **q4_0** | 82.25 | f16 | 0/12 | 30.8 | q4_0 beats its own f16 arm on capability (82.2 vs 79.0); the runner-up arm f16 hit the 6144-token code cap on 1 of 6 tasks, so its checks are truncated output, not wrong code; vs f16: R Δ+2 points (p=0.500), C Δ-2 checks (p=0.750); 0/12 structural-loop samples, 30.8 t/s decode |
+| `qwen38-27b` | **q8_0** | 83.35 | q4_0 | 0/12 | 10.3 | q8_0 beats its own f16 arm on capability (83.3 vs 75.3); vs f16: R Δ+2 points (p=0.500), C Δ+73 checks (p=0.500); 0/12 structural-loop samples, 10.3 t/s decode |
+| `qwen38-flash` | **q4_0** | 84.95 | f16 | 0/12 | 12.3 | q4_0 beats its own f16 arm on capability (85.0 vs 83.3); vs f16: R Δ+1 points (p=1.000), C Δ-1 checks (p=1.000); 0/12 structural-loop samples, 12.3 t/s decode |
+
+### All 15 arms, ranked by the same rule
+
+| rank | arm | capability | structural loops | decode t/s |
+|---|---|---|---|---|
+| 1 | `qwen38-flash` **q4_0** | 84.95 | 0/12 | 12.3 |
+| 2 | `qwen38-flash` **f16** | 83.35 | 0/12 | 16.6 |
+| 3 | `qwen38-27b` **q8_0** | 83.35 | 0/12 | 10.3 |
+| 4 | `qwen36-35b` **q4_0** | 82.25 | 0/12 | 30.8 |
+| 5 | `qwen38-flash` **q8_0** | 80.40 | 0/12 | 12.6 |
+| 6 | `qwen36-35b` **f16** | 79.05 | 0/12 | 38.7 |
+| 7 | `qwen36-35b` **q8_0** | 76.15 | 1/12 | 31.2 |
+| 8 | `qwen38-27b` **q4_0** | 75.65 | 0/12 | 9.7 |
+| 9 | `qwen38-27b` **f16** | 75.30 | 0/12 | 12.4 |
+| 10 | `ornith-35b` **f16** | 66.80 | 0/12 | 48.8 |
+| 11 | `ornith-35b` **q8_0** | 63.20 | 1/12 | 35.7 |
+| 12 | `gemma4-26b-a4b` **f16** | 62.85 | 3/12 | 46.9 |
+| 13 | `ornith-35b` **q4_0** | 60.45 | 0/12 | 35.2 |
+| 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 |
+| 15 | `gemma4-26b-a4b` **q4_0** | 33.75 | 3/12 | 34.3 |
 ## Per-model offload (frozen across the three KV arms)
 
 | model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |
@@ -66,22 +102,42 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 | `qwen38-flash` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
 | `qwen38-flash` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
 
-## Paired deltas vs f16 (positive = worse looping, positive R/C = better)
+## Paired tests vs f16 (exact sign-flip, paired by task and seed)
 
-| model | KV | ΔR pp | ΔC pp | Δloop-rate | answer agreement | n(R/C/L) |
+| model | KV | metric | level | change | p | direction |
 |---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | q8_0 | -13.4 | +0.9 | -0.2 | 0.2 | 18/6/12 |
-| `gemma4-26b-a4b` | q4_0 | -10.0 | -48.2 | -0.1 | 0.2 | 18/6/12 |
-| `ornith-35b` | q8_0 | -10.0 | +2.8 | +0.2 | 0.5 | 18/6/12 |
-| `ornith-35b` | q4_0 | -3.3 | -9.4 | +0.1 | 0.706 | 18/6/12 |
-| `qwen36-35b` | q8_0 | +3.3 | -9.1 | +0.1 | 0.722 | 18/6/12 |
-| `qwen36-35b` | q4_0 | +6.7 | -0.3 | -0.2 | 0.556 | 18/6/12 |
-| `qwen38-27b` | q8_0 | +6.7 | +9.4 | +0.0 | 0.722 | 18/6/12 |
-| `qwen38-27b` | q4_0 | +0.0 | +0.7 | +0.0 | 0.722 | 18/6/12 |
-| `qwen38-flash` | q8_0 | +3.3 | -9.2 | +0.0 | 0.611 | 18/6/12 |
-| `qwen38-flash` | q4_0 | +3.3 | -0.1 | +0.0 | 0.667 | 18/6/12 |
+| `gemma4-26b-a4b` | q8_0 | R | 23.3 % of 30 points | -4 points | 0.4062 | lower · not significant |
+| `gemma4-26b-a4b` | q8_0 | C | 89.9 % of 780 checks | +7 checks | 0.7500 | higher · not significant |
+| `gemma4-26b-a4b` | q8_0 | L | 16.7 % of 12 samples | -1 samples | 1.0000 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | R | 26.7 % of 30 points | -3 points | 0.5625 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | C | 40.8 % of 780 checks | -376 checks | 0.2500 | lower · not significant |
+| `gemma4-26b-a4b` | q4_0 | L | 25.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `ornith-35b` | q8_0 | R | 53.3 % of 30 points | -3 points | 0.5000 | lower · not significant |
+| `ornith-35b` | q8_0 | C | 73.1 % of 780 checks | +22 checks | 1.0000 | higher · not significant |
+| `ornith-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
+| `ornith-35b` | q4_0 | R | 60.0 % of 30 points | -1 points | 1.0000 | lower · not significant |
+| `ornith-35b` | q4_0 | C | 60.9 % of 780 checks | -73 checks | 0.5000 | lower · not significant |
+| `ornith-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen36-35b` | q8_0 | R | 63.3 % of 30 points | +1 points | 1.0000 | higher · not significant |
+| `qwen36-35b` | q8_0 | C | 89.0 % of 780 checks | -71 checks | 0.6250 | lower · not significant |
+| `qwen36-35b` | q8_0 | L | 8.3 % of 12 samples | +1 samples | 1.0000 | higher · not significant |
+| `qwen36-35b` | q4_0 | R | 66.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
+| `qwen36-35b` | q4_0 | C | 97.8 % of 780 checks | -2 checks | 0.7500 | lower · not significant |
+| `qwen36-35b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-27b` | q8_0 | R | 76.7 % of 30 points | +2 points | 0.5000 | higher · not significant |
+| `qwen38-27b` | q8_0 | C | 90.0 % of 780 checks | +73 checks | 0.5000 | higher · not significant |
+| `qwen38-27b` | q8_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-27b` | q4_0 | R | 70.0 % of 30 points | +0 points | 1.0000 | equal · not significant |
+| `qwen38-27b` | q4_0 | C | 81.3 % of 780 checks | +5 checks | 1.0000 | higher · not significant |
+| `qwen38-27b` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-flash` | q8_0 | R | 80.0 % of 30 points | +1 points | 1.0000 | higher · not significant |
+| `qwen38-flash` | q8_0 | C | 80.8 % of 780 checks | -72 checks | 1.0000 | lower · not significant |
+| `qwen38-flash` | q8_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
+| `qwen38-flash` | q4_0 | R | 80.0 % of 30 points | +1 points | 1.0000 | higher · not significant |
+| `qwen38-flash` | q4_0 | C | 89.9 % of 780 checks | -1 checks | 1.0000 | lower · not significant |
+| `qwen38-flash` | q4_0 | L | 0.0 % of 12 samples | +0 samples | 1.0000 | equal · not significant |
 
-A 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreement column is the low-level signal that still resolves arms when nothing fails outright.
+α = 0.05. The test is exact — every sign pattern is enumerated, no sampling and no normal approximation — so the same `samples.jsonl` always produces the same numbers. With 6 C-tier tasks the smallest attainable p is 0.031 and with 12 loop samples it is 0.0005, so an arm must move nearly every paired sample the same way to be called different. 'Not significant' means the change is inside what a draw of this size produces; it is not proof of identity.
 
 ## Agreement with f16 per model (share of identical graded answers)
 

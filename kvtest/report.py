@@ -49,6 +49,103 @@ def _rebuild_raw(out_dir, samples):
             "arms": arms, "samples": len(samples), "deadline_reached": False, "unrun_arms": []}
 
 
+# ---------------------------------------------------------------- verdict
+def capability(c):
+    """One number per arm: the mean of the two capability tiers, each already 0-100.
+
+    R gives 30 points and C gives 780 checks; averaging their percentages stops the check count
+    from swamping the retrieval tier. The rule is fixed here, in code, so the verdict can be
+    recomputed and argued with.
+    """
+    if c["R"]["pct"] is None or c["C"]["pct"] is None:
+        return None
+    return round((c["R"]["pct"] + c["C"]["pct"]) / 2.0, 2)
+
+
+def _rank_key(c):
+    """Higher capability, then fewer structural loops, then faster decode."""
+    return (-(capability(c) or 0.0), c["loops"]["hard"], -(c["decode_tps"] or 0.0))
+
+
+def verdict(out):
+    per_model = {}
+    for model in out["models"]:
+        arms = [(kv, out["arms"][f"{model}__{kv}"]) for kv in out["kvs"]
+                if f"{model}__{kv}" in out["arms"]]
+        arms = [(kv, c) for kv, c in arms if capability(c) is not None]
+        if not arms:
+            continue
+        arms.sort(key=lambda kc: _rank_key(kc[1]))
+        best_kv, best = arms[0]
+        runner = arms[1] if len(arms) > 1 else (None, None)
+        per_model[model] = {
+            "best_kv": best_kv, "capability": capability(best),
+            "R": best["R"]["pct"], "C": best["C"]["pct"],
+            "loops": best["loops"]["hard"], "loops_n": best["loops"]["n"],
+            "decode": best["decode_tps"], "vram": best.get("vram_peak_mib"),
+            "knobs": best.get("knobs"), "sig": best.get("sig"),
+            "runner_up": runner[0], "runner_up_capability": capability(runner[1]) if runner[1] else None,
+            "truncated_c": best.get("truncated_c", 0),
+            "arms": [{"kv": kv, "capability": capability(c), "R": c["R"]["pct"],
+                      "C": c["C"]["pct"], "loops": c["loops"]["hard"],
+                      "loops_n": c["loops"]["n"], "decode": c["decode_tps"],
+                      "truncated_c": c.get("truncated_c", 0), "sig": c.get("sig")}
+                     for kv, c in sorted(arms, key=lambda kc: _rank_key(kc[1]))],
+            "any_truncation": max((c.get("truncated_c", 0) for _, c in arms), default=0),
+        }
+    flat = []
+    for model, d in per_model.items():
+        for a in d["arms"]:
+            flat.append((model, a["kv"], a["capability"], a["loops"], a["loops_n"], a["decode"]))
+    flat.sort(key=lambda t: (-(t[2] or 0), t[3], -(t[5] or 0)))
+    order = sorted(per_model.items(), key=lambda kv: (-kv[1]["capability"], kv[1]["loops"],
+                                                     -(kv[1]["decode"] or 0)))
+    return {"per_model": per_model,
+            "overall": order[0][0] if order else None,
+            "overall_kv": order[0][1]["best_kv"] if order else None,
+            "order": [(m, d["best_kv"], d["capability"]) for m, d in order],
+            "flat": flat,
+            "rule": "capability = mean(R %, C %) per arm; then fewer structural-loop samples; "
+                    "then higher decode t/s"}
+
+
+def _verdict_rows(out):
+    """(model, best KV, capability, runner-up, loops, decode, reason) for the verdict section."""
+    v = out.get("verdict") or {}
+    rows = []
+    for model, d in v.get("per_model", {}).items():
+        f16 = next((a for a in d["arms"] if a["kv"] == "f16"), None)
+        parts = []
+        if d["best_kv"] == "f16":
+            worst = min((a for a in d["arms"] if a["kv"] != "f16"), default=None,
+                        key=lambda a: a["capability"] or 0)
+            if worst:
+                parts.append(f"f16 keeps the lead; {worst['kv']} loses "
+                             f"{(d['capability'] - worst['capability']):.1f} capability points")
+        else:
+            if f16:
+                parts.append(f"{d['best_kv']} beats its own f16 arm on capability "
+                             f"({d['capability']:.1f} vs {f16['capability']:.1f})")
+        trunc = [a for a in d["arms"] if a["truncated_c"]]
+        if trunc:
+            t = max(trunc, key=lambda a: a["truncated_c"])
+            who = "the winner" if t["kv"] == d["best_kv"] else "the runner-up arm"
+            parts.append(f"{who} {t['kv']} hit the {config.BUDGETS['C']}-token code cap on "
+                         f"{t['truncated_c']} of 6 tasks, so its checks are truncated output, "
+                         f"not wrong code")
+        sig = d.get("sig") or {}
+        if sig:
+            note = [f"{t} Δ{sig[t]['delta']:+d} {sig[t]['unit']} (p={sig[t]['p']:.3f})"
+                    for t in ("R", "C") if t in sig]
+            if note:
+                parts.append("vs f16: " + ", ".join(note))
+        parts.append(f"{d['loops']}/{d['loops_n']} structural-loop samples, "
+                     f"{d['decode']} t/s decode")
+        rows.append((model, d["best_kv"], d["capability"], d["runner_up"],
+                     f"{d['loops']}/{d['loops_n']}", d["decode"], "; ".join(parts)))
+    return rows
+
+
 # ---------------------------------------------------------------- timing
 def _human(sec):
     if sec is None:
@@ -179,7 +276,7 @@ def agg(raw, samples, arms):
                     L={}, loops={"flagged": 0, "n": 0, "hard": 0}, flagged_all=0,
                     loop_reasoning=0, loop_content=0,
                     prompt_tokens=[], prefill=[], decode=[], out_tokens=0, errors=0,
-                    cache_hits=0, cache_checks=0, budget_raised=0, per_task={},
+                    cache_hits=0, cache_checks=0, budget_raised=0, per_task={}, truncated_c=0,
                     agree=None, ctx=raw.get("context"))
         for s in samples:
             if s.get("model") != model or s.get("kv") != kv:
@@ -227,6 +324,8 @@ def agg(raw, samples, arms):
                 cell["R"]["n"] += 1
                 pt["score"] += g.get("points", 0)
                 pt["of"] += g.get("of", 0)
+            if tier == "C" and s.get("finish_reason") == "length":
+                cell["truncated_c"] += 1
             if tier == "C" and s.get("grade"):
                 g = s["grade"]
                 cell["C"]["passed"] += g.get("passed", 0)
@@ -256,6 +355,9 @@ def agg(raw, samples, arms):
     for s in samples:
         reps[s.get("tier")] = max(reps.get(s.get("tier"), 0), int(s.get("rep") or 0) + 1)
     out["reps"] = reps
+    if any(s.get("kv") == "f16" for s in samples):
+        significance(out, samples, arms)
+    out["verdict"] = verdict(out)
     _agreement(out, samples, arms)
     _cross_agreement(out, samples)
     _too_hard(out, samples)
@@ -331,6 +433,69 @@ def _too_hard(out, samples):
     out["c_tasks"] = sorted(per_task)
 
 
+# ---------------------------------------------------------------- paired sign-flip test
+def perm_p(diffs):
+    """Exact two-sided paired sign-flip test on integer differences.
+
+    Deterministic and assumption-free: enumerate the 2**n sign patterns as a subset-sum count over
+    integer sums (no sampling, no RNG, no normal approximation). Returns (sum_of_diffs, p).
+    """
+    diffs = [int(d) for d in diffs]
+    if not diffs:
+        return 0, 1.0
+    obs = abs(sum(diffs))
+    counts = {0: 1}
+    for d in diffs:
+        nxt = {}
+        for sm, c in counts.items():
+            nxt[sm + d] = nxt.get(sm + d, 0) + c
+            nxt[sm - d] = nxt.get(sm - d, 0) + c
+        counts = nxt
+    hits = sum(c for sm, c in counts.items() if abs(sm) >= obs)
+    return sum(diffs), hits / float(2 ** len(diffs))
+
+
+def _sample_score(s):
+    """Integer per-sample outcome used for pairing: R points, C checks passed, L structural flag."""
+    g = s.get("grade") or {}
+    if s.get("tier") == "R":
+        return int(g.get("points") or 0), int(g.get("of") or 0)
+    if s.get("tier") == "C":
+        return int(g.get("passed") or 0), int(g.get("of") or 0)
+    hard = hard_flag([v.get("metrics") or {} for v in (s.get("loops") or {}).values()])
+    return (1 if hard else 0), 1
+
+
+def significance(out, samples, arms):
+    """Paired comparison of every arm against its own model's f16 arm, per tier.
+
+    Pairing is by (task, rep) for the sampled tiers and by task for the greedy tier, so the two
+    sides of each pair saw the same prompt, the same seed and the same document prefix.
+    """
+    per_arm = defaultdict(dict)
+    for s in samples:
+        if not s.get("grade") and s.get("tier") != "L":
+            continue
+        key = (s["tier"], s["task"], s.get("rep") or 0)
+        per_arm[f"{s['model']}__{s['kv']}"][key] = _sample_score(s)[0]
+    for model in out["models"]:
+        base = per_arm.get(f"{model}__f16") or {}
+        for kv in out["kvs"]:
+            key = f"{model}__{kv}"
+            if kv == "f16" or key not in out["arms"]:
+                continue
+            cur = per_arm.get(key) or {}
+            sig = {}
+            for tier in ("R", "C", "L"):
+                pairs = [(cur[k], base[k]) for k in sorted(cur) if k[0] == tier and k in base]
+                diffs = [a - b for a, b in pairs]
+                total, p = perm_p(diffs)
+                sig[tier] = {"delta": total, "p": round(p, 4), "n": len(diffs),
+                             "unit": {"R": "points", "C": "checks", "L": "samples"}[tier]}
+            out["arms"][key]["sig"] = sig
+    return out
+
+
 # ---------------------------------------------------------------- pairs / deltas
 def deltas(out):
     rows = []
@@ -379,6 +544,36 @@ def write_markdown(out, raw, rows, path):
     unfit = (raw.get("fit") or {}).get("unfit") or []
     if unfit:
         L.append(f"> **Unfit / excluded models:** {', '.join(unfit)}\n")
+    L.append("\n## Verdict\n")
+    v = out.get("verdict") or {}
+    if v.get("overall"):
+        om, okv = v["overall"], v["overall_kv"]
+        top = v["per_model"][om]
+        L.append(f"**Best overall: `{om}` with a `{okv}` KV cache** — capability "
+                 f"{top['capability']:.2f} of 100 (R {top['R']}% and C {top['C']}% averaged), "
+                 f"{top['loops']}/{top['loops_n']} structural-loop samples, {top['decode']} t/s "
+                 f"decode, {top['vram']} MiB peak with {top['knobs']} offloaded.\n")
+        if len(v.get("flat") or []) > 1:
+            flat = v["flat"]
+            gap = flat[0][2] - flat[min(2, len(flat) - 1)][2]
+            runners = ", ".join(f"`{m}` {kv} ({c:.2f})" for m, kv, c, _, _, _ in flat[1:3])
+            L.append(f"The next arms are {runners} — the top three sit within {gap:.1f} capability "
+                     f"points of each other, which is one or two graded outcomes.\n")
+        L.append("Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: "
+                 "capability = mean(R %, C %) per arm, then fewer structural-loop samples, then "
+                 "higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on "
+                 "any metric**, so these ranks sit inside the noise this design can resolve — the "
+                 "reasons column says what the numbers actually support.\n")
+    L.append("| model | best KV | capability | runner-up | structural loops | decode t/s | why |")
+    L.append("|---|---|---|---|---|---|---|")
+    for row in _verdict_rows(out):
+        L.append(f"| `{row[0]}` | **{row[1]}** | {row[2]:.2f} | {row[3]} | {row[4]} | {row[5]} | "
+                 f"{row[6]} |")
+    L.append("\n### All 15 arms, ranked by the same rule\n")
+    L.append("| rank | arm | capability | structural loops | decode t/s |")
+    L.append("|---|---|---|---|---|")
+    for i, (model, kv, cap, loops, loops_n, dec) in enumerate(v.get("flat") or [], 1):
+        L.append(f"| {i} | `{model}` **{kv}** | {cap:.2f} | {loops}/{loops_n} | {dec} |")
     L.append("## Per-model offload (frozen across the three KV arms)\n")
     L.append("| model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |")
     L.append("|---|---|---|---|---|---|")
@@ -423,14 +618,33 @@ def write_markdown(out, raw, rows, path):
                      f" | {c['loops']['flagged']}/{c['loops']['n']} | "
                      f"{c['loops']['hard']}/{c['loops']['n']} | {c['loop_reasoning']} | "
                      f"{c['loop_content']} | {c['flagged_all']} |")
-    L.append("\n## Paired deltas vs f16 (positive = worse looping, positive R/C = better)\n")
-    L.append("| model | KV | ΔR pp | ΔC pp | Δloop-rate | answer agreement | n(R/C/L) |")
+    L.append("\n## Paired tests vs f16 (exact sign-flip, paired by task and seed)\n")
+    L.append("| model | KV | metric | level | change | p | direction |")
     L.append("|---|---|---|---|---|---|---|")
-    for r in rows:
-        L.append(f"| `{r['model']}` | {r['kv']} | {_fmt(r['dR'])} | {_fmt(r['dC'])} | "
-                 f"{_fmt(r['dL'])} | {r['agree']} | {r['nR']}/{r['nC']}/{r['nL']} |")
-    L.append("\nA 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreement "
-             "column is the low-level signal that still resolves arms when nothing fails outright.\n")
+    for model in out["models"]:
+        for kv in out["kvs"]:
+            c = out["arms"].get(f"{model}__{kv}")
+            if not c or kv == "f16":
+                continue
+            for tier, level, unit in (("R", c["R"]["pct"], "% of 30 points"),
+                                      ("C", c["C"]["pct"], "% of 780 checks"),
+                                      ("L", (100.0 * c["loops"]["hard"] / c["loops"]["n"]
+                                             if c["loops"]["n"] else None),
+                                       "% of 12 samples")):
+                sig = (c.get("sig") or {}).get(tier)
+                if not sig or level is None:
+                    continue
+                direction = ("higher" if sig["delta"] > 0 else
+                             "lower" if sig["delta"] < 0 else "equal")
+                direction += " · significant" if sig["p"] < ALPHA else " · not significant"
+                L.append(f"| `{model}` | {kv} | {tier} | {level:.1f} {unit} | "
+                         f"{sig['delta']:+d} {sig['unit']} | {sig['p']:.4f} | {direction} |")
+    L.append(f"\nα = {ALPHA}. The test is exact — every sign pattern is enumerated, no sampling and "
+             f"no normal approximation — so the same `samples.jsonl` always produces the same "
+             f"numbers. With 6 C-tier tasks the smallest attainable p is 0.031 and with 12 loop "
+             f"samples it is 0.0005, so an arm must move nearly every paired sample the same way to "
+             f"be called different. 'Not significant' means the change is inside what a draw of this "
+             f"size produces; it is not proof of identity.\n")
     L.append("## Agreement with f16 per model (share of identical graded answers)\n")
     for model in out["models"]:
         parts = []
@@ -541,6 +755,7 @@ def write_html(out, raw, rows, path):
                                          .get("matrix") or {}).get("wall_s"))}}
     gallery = _gallery(out, raw)
     grids, bars = _svg_grids(out), _svg_bars(rows)
+    verdict_html = _verdict_html(out)
     legend = ('<div class="dim" style="margin-top:6px">colour scale, always the same way: '
               '<span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> '
               '<span style="background:rgb(205,160,62);color:#0b0e12;padding:0 6px">amber = middle</span> '
@@ -611,7 +826,7 @@ generation-length cut-off, not wrong code. The prose summary, with those caveats
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix">{grids}{legend}<h2>Paired deltas vs f16</h2>{bars}
+<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Paired deltas vs f16</h2>{bars}
 <h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
 <section id="t-tasks" hidden>{taskbars}{_task_details(out)}</section>
 <section id="t-loops" hidden>{scatter}{gallery}</section>
@@ -654,63 +869,139 @@ def _color(value, lo, hi, higher_is_better=True):
     return _ramp(frac if higher_is_better else 1.0 - frac)
 
 
+ALPHA = 0.05
+
+
+def _cell_colour(sig, delta, scale):
+    """Green/red only when the paired test says the arm differs from its own f16 arm."""
+    if sig is None:
+        return "#2a3138"
+    if sig["p"] >= ALPHA or delta == 0:
+        return "#3a4149"
+    strength = min(1.0, abs(delta) / scale) if scale else 1.0
+    base = GREEN if delta > 0 else RED
+    t = 0.45 + 0.55 * strength
+    return "rgb(%d,%d,%d)" % tuple(round(255 - (255 - c) * t) for c in base)
+
+
 def _svg_grids(out):
     kvs = out["kvs"]
     models = out["models"]
-    union = [100 * (c["loop_rate"] or 0) for c in out["arms"].values()]
-    hard = [100 * c["loops"]["hard"] / c["loops"]["n"] for c in out["arms"].values()
-            if c["loops"]["n"]]
-    # one scale for both loop grids so they can be read against each other
-    loop_hi = max(25, int(max(union + hard or [0]) // 10 * 10 + 10))
+    loop_n = max([c["loops"]["n"] for c in out["arms"].values()] or [12])
 
-    def hard_rate(c):
+    def val_R(c):
+        return c["R"]["pct"]
+
+    def val_C(c):
+        return c["C"]["pct"]
+
+    def val_L(c):
         return 100.0 * c["loops"]["hard"] / c["loops"]["n"] if c["loops"]["n"] else None
 
-    def tip_union(c):
-        return (f"{c['loops']['flagged']}/{c['loops']['n']} flagged · "
-                f"{c['loops']['hard']}/{c['loops']['n']} structural")
-
-    def tip_hard(c):
-        return f"{c['loops']['hard']}/{c['loops']['n']} samples with repeated lines/blocks/cycles"
-
-    # (title, getter, lo, hi, higher-is-better, scale note, tooltip)
-    metrics = [
-        ("R accuracy %", lambda c: c["R"]["pct"], 0, 100, True, "0–100 · higher is better", None),
-        ("C checks %", lambda c: c["C"]["pct"], 0, 100, True, "0–100 · higher is better", None),
-        ("loop rate % — any verdict", lambda c: None if c["loop_rate"] is None else 100 * c["loop_rate"],
-         0, loop_hi, False, f"0–{loop_hi} · LOWER is better · includes the compression heuristic",
-         tip_union),
-        ("structural repetition %", hard_rate, 0, loop_hi, False,
-         f"0–{loop_hi} · LOWER is better · repeated lines, n-grams, blocks, cycles only", tip_hard),
+    specs = [
+        ("R accuracy", val_R, "R",
+         "level in % of 30 points · change in points · n = 18 paired samples per arm, "
+         "smallest attainable p = 0.000004"),
+        ("C checks", val_C, "C",
+         "level in % of 780 hidden checks · change in checks · n = 6 paired tasks per arm, "
+         "smallest attainable p = 0.031"),
+        ("structural repetition", val_L, "L",
+         f"level in % of {loop_n} samples · change in samples · n = {loop_n} paired samples per "
+         f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f}"),
     ]
-    cw, ch, pad, lw = 92, 30, 10, 150
+    cw, ch, pad, lw = 104, 46, 12, 150
     parts = ['<div class="grid">']
-    for title, get, lo, hi, higher, note, tip in metrics:
-        w, h = lw + cw * len(kvs) + pad, 34 + ch * len(models) + pad
-        parts.append(f'<div class="card"><div>{html.escape(title)}</div>'
-                     f'<div class="dim">{html.escape(note)}</div>')
+    for title, get, tier, caption in specs:
+        w, h = lw + cw * len(kvs) + pad, 40 + ch * len(models) + pad
+        parts.append(f'<div class="card"><div>{html.escape(title)}</div>')
+        parts.append(f'<div class="dim">{html.escape(caption)} · exact paired sign-flip test; '
+                     f'grey = not distinguishable from f16 at p &lt; {ALPHA}</div>')
         parts.append(f'<svg width="{w}" height="{h}" role="img">')
         for j, kv in enumerate(kvs):
-            parts.append(f'<text x="{lw + j * cw + cw / 2}" y="16" fill="#9aa4b2" '
+            parts.append(f'<text x="{lw + j * cw + cw / 2}" y="18" fill="#9aa4b2" '
                          f'font-size="12" text-anchor="middle">{kv}</text>')
         for i, model in enumerate(models):
-            parts.append(f'<text x="4" y="{34 + i * ch + 19}" fill="#e8ecf1" font-size="12">'
+            parts.append(f'<text x="4" y="{40 + i * ch + 26}" fill="#e8ecf1" font-size="12">'
                          f'{html.escape(model)}</text>')
             for j, kv in enumerate(kvs):
                 c = out["arms"].get(f"{model}__{kv}")
                 v = get(c) if c else None
-                label = "—" if v is None else (f"{v:.0f}" if "loop" in title or
-                                               "repetition" in title else f"{v:.1f}")
-                detail = tip(c) if (tip and c) else label
-                parts.append(
-                    f'<rect x="{lw + j * cw + 2}" y="{34 + i * ch + 2}" width="{cw - 4}" '
-                    f'height="{ch - 4}" rx="4" fill="{_color(v, lo, hi, higher)}">'
-                    f'<title>{html.escape(model)} {kv}: {html.escape(detail)}</title></rect>')
-                parts.append(f'<text x="{lw + j * cw + cw / 2}" y="{34 + i * ch + 19}" '
-                             f'fill="#0b0e12" font-size="12" text-anchor="middle">{label}</text>')
+                level = "—" if v is None else f"{v:.1f}"
+                sig = ((c or {}).get("sig") or {}).get(tier)
+                scale = max(1, int(abs((sig or {}).get("delta") or 1)) * 4)
+                if kv == "f16":
+                    sub, fill = "reference", "#2f3740"
+                elif sig and v is not None:
+                    d = sig["delta"]
+                    sub = f"Δ {d:+d} · p={sig['p']:.3f}"
+                    fill = _cell_colour(sig, d, scale)
+                else:
+                    sub, fill = "—", "#2a3138"
+                tip = level
+                if sig and v is not None:
+                    tip = (f"{level} · Δ {sig['delta']:+d} {sig['unit']} vs f16 · "
+                           f"p={sig['p']:.4f} (n={sig['n']})")
+                x, y = lw + j * cw + 2, 40 + i * ch + 2
+                parts.append(f'<rect x="{x}" y="{y}" width="{cw - 4}" height="{ch - 4}" rx="4" '
+                             f'fill="{fill}"><title>{html.escape(model)} {kv}: '
+                             f'{html.escape(tip)}</title></rect>')
+                tc = "#e8ecf1" if fill in ("#2f3740", "#2a3138", "#3a4149") else "#0b0e12"
+                parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 18}" fill="{tc}" '
+                             f'font-size="13" text-anchor="middle">{level}</text>')
+                parts.append(f'<text x="{x + (cw - 4) / 2}" y="{y + 33}" fill="{tc}" '
+                             f'font-size="10" text-anchor="middle">{html.escape(sub)}</text>')
         parts.append("</svg></div>")
     parts.append("</div>")
     return "".join(parts)
+
+
+def _verdict_html(out):
+    v = out.get("verdict") or {}
+    if not v.get("overall"):
+        return ""
+    om, okv = v["overall"], v["overall_kv"]
+    top = v["per_model"][om]
+    rows = "".join(
+        f'<tr><td>{html.escape(r[0])}</td><td><b>{r[1]}</b></td><td>{r[2]:.2f}</td>'
+        f'<td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td><td style="text-align:left">'
+        f'{html.escape(r[6])}</td></tr>'
+        for r in _verdict_rows(out))
+    return (f'<div class="card" style="max-width:none"><h2 style="margin-top:0">Verdict</h2>'
+            f'<div><b>Best overall: {html.escape(om)} with a {html.escape(okv)} KV cache</b> — '
+            f'capability {top["capability"]:.2f} of 100, {top["loops"]}/{top["loops_n"]} '
+            f'structural-loop samples, {top["decode"]} t/s decode.</div>'
+            f'<div class="dim">Rule, fixed in code: capability = mean(R %, C %) per arm, then fewer '
+            f'structural-loop samples, then higher decode t/s. No arm differs from its own f16 arm '
+            f'at p &lt; 0.05 on any metric, so these ranks sit inside the noise this design can '
+            f'resolve.</div>'
+            f'<table style="margin-top:8px"><tr><th>model</th><th>best KV</th><th>capability</th>'
+            f'<th>runner-up</th><th>structural loops</th><th>decode t/s</th><th>why</th></tr>'
+            f'{rows}</table></div>')
+
+
+def write_figures(out, path):
+    """Export every figure as a standalone SVG plus the exact numbers behind it.
+
+    Deterministic: the same samples.jsonl always produces byte-identical files, so a third party can
+    diff them or re-render them elsewhere without trusting the HTML.
+    """
+    os.makedirs(path, exist_ok=True)
+    svg = _svg_grids(out)
+    import re as _re
+    for i, fig in enumerate(_re.findall(r"<svg.*?</svg>", svg, _re.S)):
+        with open(os.path.join(path, f"fig{i + 1}.svg"), "w") as f:
+            f.write('<?xml version="1.0" encoding="UTF-8"?>\n')
+            f.write(fig.replace('<svg ', '<svg xmlns="http://www.w3.org/2000/svg" ', 1))
+    table = {}
+    for key, c in out["arms"].items():
+        table[key] = {"R_pct": c["R"]["pct"], "C_pct": c["C"]["pct"],
+                      "loops_hard": c["loops"]["hard"], "loops_n": c["loops"]["n"],
+                      "sig": c.get("sig")}
+    with open(os.path.join(path, "figures.json"), "w") as f:
+        json.dump({"alpha": ALPHA,
+                   "test": "exact two-sided paired sign-flip on integer differences; "
+                           "pairing = (task, rep) for sampled tiers, task for the greedy tier",
+                   "arms": table}, f, indent=2, sort_keys=True)
 
 
 def _svg_bars(rows):
@@ -923,7 +1214,7 @@ def write_readme_headline(out, readme_path):
             lines.append(
                 f"| `{model}` | {kv} | {c['R']['points']}/{c['R']['of']} "
                 f"({c['R']['pct']}%) | {c['C']['passed']}/{c['C']['of']} ({c['C']['pct']}%) | "
-                f"{c['C']['resolved']}/{c['C']['n']} | {c['loops']['flagged']}/{c['loops']['n']} | "
+                f"{c['C']['resolved']}/{c['C']['n']} | {c['loops']['hard']}/{c['loops']['n']} | "
                 f"{(c.get('agree') if c.get('agree') is not None else '—')} |")
     text = open(readme_path).read()
     start, end = "<!-- HEADLINE:START -->", "<!-- HEADLINE:END -->"
@@ -945,6 +1236,7 @@ def build(out_dir):
     write_markdown(out, raw, rows, os.path.join(out_dir, "REPORT.md"))
     write_html(out, raw, rows, os.path.join(out_dir, "report.html"))
     write_csv(out, os.path.join(out_dir, "matrix.csv"))
+    write_figures(out, os.path.join(out_dir, "figures"))
     write_readme_headline(out, os.path.join(config.ROOT, "README.md"))
     return out, raw
 

@@ -10,6 +10,27 @@ decoding.
 Model downloads are excluded. Per-arm times are in `REPORT.md` §"How long this took"; the slowest arm
 was the dense 27B at q4_0 (1 h 27 m) and the fastest was Ornith at f16 (21 m).
 
+## Verdict: which KV cache to use, per model and overall
+
+Ranking rule, fixed in `kvtest/report.py::verdict` so anyone can recompute it: **capability =
+mean(R %, C %)** per arm (each tier already on a 0–100 scale, so 780 code checks cannot swamp 30
+retrieval points), then **fewer structural-loop samples**, then **higher decode t/s**.
+
+| model | best KV | capability | runner-up | structural loops | decode t/s | why |
+|---|---|---|---|---|---|---|
+| `qwen38-flash` | **q4_0** | 84.95 | f16 (83.35) | 0/12 | 12.3 | best overall; +1 R point and −1 check vs its own f16 arm (p = 1.000): a tie resolved by nothing more than a one-outcome difference |
+| `qwen38-27b` | **q8_0** | 83.35 | q4_0 (75.65) | 0/12 | 10.3 | +2 R points, +73 checks vs f16 (p = 0.500) — the +73 is the `semver` bit, not a trend |
+| `qwen36-35b` | **q4_0** | 82.25 | f16 (79.05) | 0/12 | 30.8 | +2 R points, −2 checks vs f16 (p = 0.500/0.750); its f16 arm was the one truncated once at the code cap |
+| `ornith-35b` | **f16** | 66.80 | q8_0 (63.20) | 0/12 | 48.8 | q4_0 loses 6.3 capability points; its one structural loop is at q8_0 |
+| `gemma4-26b-a4b` | **f16** | 62.85 | q8_0 (56.60) | 3/12 | 46.9 | q4_0 loses 29.1 points because it hit the 6,144-token code cap on 3 of 6 tasks — truncated output, not wrong code; Gemma loops at every KV type |
+
+**Best overall: `qwen38-flash` with a q4_0 KV cache** (84.95/100, 0/12 structural loops, 12.3 t/s
+decode, 9.1 GiB peak with 48 MoE layers on the CPU). The top three arms — flash q4_0, flash f16 and
+27B q8_0 — sit inside 1.6 capability points of each other, so treat "which single combination wins"
+as a near-tie; what the run does establish is that **q4_0 is not a downgrade on four of five
+models**, and that the one model where it clearly is (Gemma) fails by running long, not by answering
+wrong.
+
 ## The one-line answer
 
 **At ~91k tokens of context, q4_0 and q8_0 KV caches cost essentially nothing in capability on four

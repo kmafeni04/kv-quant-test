@@ -27,12 +27,17 @@ Full study: `./scripts/run_all.sh` — see [docs/REPRODUCE.md](docs/REPRODUCE.md
 
 ## Headline
 
+**Best overall: `qwen38-flash` @ q4_0** (capability 84.95/100, 0/12 structural-loop samples, 12.3 t/s
+decode) — with the top three arms inside 1.6 points, i.e. a near-tie. Per model the best KV type is
+q4_0 for Flash and the 35B, q8_0 for the dense 27B, f16 for Gemma and Ornith; **no arm differs from
+its own f16 arm at p < 0.05 on any metric**. Rule and reasons: `REPORT.md` §Verdict.
+
 Filled from `results/<stamp>/REPORT.md` after the run:
 
 <!-- HEADLINE:START -->
 | model | KV | R accuracy | C checks | C resolved | loop rate | agreement with f16 |
 |---|---|---|---|---|---|---|
-| `qwen38-27b` | q4_0 | 0/10 (0.0%) | 0/780 (0.0%) | 0/6 | 2/4 | — |
+| `qwen36-35b` | q4_0 | 7/10 (70.0%) | 721/780 (92.4%) | 3/6 | 0/4 | — |
 <!-- HEADLINE:END -->
 
 ## What is here

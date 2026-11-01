@@ -382,8 +382,21 @@ def test_report(tmp, runner_out):
     page = open(os.path.join(out, "report.html")).read()
     check("report html has the three tabs",
           all(f'id="t-{t}"' in page for t in ("matrix", "tasks", "loops")))
-    check("report html has 4 grids of 15 cells", page.count('rx="4"') == 60,
+    check("report html has 3 figures of 15 cells", page.count('rx="4"') == 45,
           page.count('rx="4"'))
+    figs = os.path.join(out, "figures")
+    check("report exported standalone figures",
+          sorted(os.listdir(figs)) == ["fig1.svg", "fig2.svg", "fig3.svg", "figures.json"],
+          os.listdir(figs) if os.path.isdir(figs) else "missing")
+    before = open(os.path.join(figs, "fig1.svg")).read()
+    report.build(out)
+    check("figure export is byte-identical on rebuild",
+          before == open(os.path.join(figs, "fig1.svg")).read())
+    check("paired test is exact and symmetric",
+          report.perm_p([1, 1, 1, 1, 1, 1])[1] == 2 / 64
+          and report.perm_p([0] * 6)[1] == 1.0
+          and report.perm_p([1, -1])[1] == 1.0
+          and report.perm_p([-1, -1, -1, -1, -1, -1])[1] == 2 / 64)
     check("report html embeds the raw data", "const RAW =" in page)
     check("report markdown is non-empty and has the tables",
           os.path.getsize(os.path.join(out, "REPORT.md")) > 1500
@@ -392,6 +405,13 @@ def test_report(tmp, runner_out):
           len(open(os.path.join(out, "matrix.csv")).read().strip().splitlines()) == 16)
     check("report is idempotent (rebuild from raw+samples)", report.build(out)[1]["stamp"]
           == "synthetic")
+    v = out_dir["verdict"]
+    check("verdict ranks every arm and names one overall winner",
+          v.get("overall") and len(v["flat"]) == 15 and len(v["per_model"]) == 5,
+          (v.get("overall"), len(v.get("flat") or [])))
+    check("verdict ranking follows capability then loops then decode",
+          [t[2] for t in v["flat"]] == sorted([t[2] for t in v["flat"]], reverse=True),
+          [t[2] for t in v["flat"]])
     # and it must also work on the real end-to-end arm the mock produced
     report.build(runner_out)
 

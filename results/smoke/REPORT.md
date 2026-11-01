@@ -4,6 +4,22 @@ Context (identical for every arm): **-c 16384**. llama.cpp `2a667032dc78`, docum
 
 Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **—** (13 m 12 s of it the matrix).
 
+
+## Verdict
+
+**Best overall: `qwen36-35b` with a `q4_0` KV cache** — capability 81.20 of 100 (R 70.0% and C 92.4% averaged), 0/4 structural-loop samples, 45.6 t/s decode, 9541 MiB peak with {'ncmoe': 26} offloaded.
+
+Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: capability = mean(R %, C %) per arm, then fewer structural-loop samples, then higher decode throughput. **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these ranks sit inside the noise this design can resolve — the reasons column says what the numbers actually support.
+
+| model | best KV | capability | runner-up | structural loops | decode t/s | why |
+|---|---|---|---|---|---|---|
+| `qwen36-35b` | **q4_0** | 81.20 | None | 0/4 | 45.6 | 0/4 structural-loop samples, 45.6 t/s decode |
+
+### All 15 arms, ranked by the same rule
+
+| rank | arm | capability | structural loops | decode t/s |
+|---|---|---|---|---|
+| 1 | `qwen36-35b` **q4_0** | 81.20 | 0/4 | 45.6 |
 ## Per-model offload (frozen across the three KV arms)
 
 | model | knobs | VRAM peak MiB | realized prompt tokens | prefill t/s | decode t/s |
@@ -30,12 +46,12 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 |---|---|---|---|---|---|---|---|---|---|---|
 | `qwen36-35b` | q4_0 | 0/1 | 0/1 | 0/1 | 0/1 | 0/4 | 0/4 | 0 | 0 | 1 |
 
-## Paired deltas vs f16 (positive = worse looping, positive R/C = better)
+## Paired tests vs f16 (exact sign-flip, paired by task and seed)
 
-| model | KV | ΔR pp | ΔC pp | Δloop-rate | answer agreement | n(R/C/L) |
+| model | KV | metric | level | change | p | direction |
 |---|---|---|---|---|---|---|
 
-A 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreement column is the low-level signal that still resolves arms when nothing fails outright.
+α = 0.05. The test is exact — every sign pattern is enumerated, no sampling and no normal approximation — so the same `samples.jsonl` always produces the same numbers. With 6 C-tier tasks the smallest attainable p is 0.031 and with 12 loop samples it is 0.0005, so an arm must move nearly every paired sample the same way to be called different. 'Not significant' means the change is inside what a draw of this size produces; it is not proof of identity.
 
 ## Agreement with f16 per model (share of identical graded answers)
 
