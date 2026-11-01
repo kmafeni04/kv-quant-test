@@ -585,9 +585,16 @@ in the matrix</div>
 Each <b>grid</b> is one measurement: rows are models, columns are the three KV cache types.
 A cell's number is that arm's result. Colour always means the same thing:
 <span style="color:#3fa05a">green = best</span>, <span style="color:#c9563d">red = worst</span>.
-On the retrieval and code grids <b>best means highest</b>; on the <b>loop</b> grid <b>best means
-lowest</b>, and that grid is scaled to the observed range so small differences are visible. Each
+On the retrieval and code grids <b>best means highest</b>; on the two <b>loop</b> grids <b>best means
+lowest</b>, and those grids are scaled to the observed range so small differences are visible. Each
 grid prints its own scale. Hover any cell for the exact value.
+</div>
+<div class="dim" style="margin-top:6px">
+The loop numbers come in two flavours, and they differ: <b>any verdict</b> includes a compression
+heuristic that fires on formulaic prose such as a manual generated from twelve fixed rules, while
+<b>structural repetition</b> counts only samples with a repeated line, repeated n-gram, repeated
+200-character block or a repeating tail cycle — i.e. the thing that actually looks like a loop. Read
+the structural grid as the finding and the "any verdict" grid as an upper bound.
 </div>
 <div class="dim" style="margin-top:6px">
 What the tabs hold: <b>Matrix</b> — the 15-arm comparison, the change versus f16, and how often two
@@ -650,18 +657,35 @@ def _color(value, lo, hi, higher_is_better=True):
 def _svg_grids(out):
     kvs = out["kvs"]
     models = out["models"]
-    loops = [100 * (c["loop_rate"] or 0) for c in out["arms"].values()]
-    loop_hi = max(25, int((max(loops) if loops else 0) // 10 * 10 + 10))
-    # (title, getter, lo, hi, higher-is-better, scale note)
+    union = [100 * (c["loop_rate"] or 0) for c in out["arms"].values()]
+    hard = [100 * c["loops"]["hard"] / c["loops"]["n"] for c in out["arms"].values()
+            if c["loops"]["n"]]
+    # one scale for both loop grids so they can be read against each other
+    loop_hi = max(25, int(max(union + hard or [0]) // 10 * 10 + 10))
+
+    def hard_rate(c):
+        return 100.0 * c["loops"]["hard"] / c["loops"]["n"] if c["loops"]["n"] else None
+
+    def tip_union(c):
+        return (f"{c['loops']['flagged']}/{c['loops']['n']} flagged · "
+                f"{c['loops']['hard']}/{c['loops']['n']} structural")
+
+    def tip_hard(c):
+        return f"{c['loops']['hard']}/{c['loops']['n']} samples with repeated lines/blocks/cycles"
+
+    # (title, getter, lo, hi, higher-is-better, scale note, tooltip)
     metrics = [
-        ("R accuracy %", lambda c: c["R"]["pct"], 0, 100, True, "0–100 · higher is better"),
-        ("C checks %", lambda c: c["C"]["pct"], 0, 100, True, "0–100 · higher is better"),
-        ("loop rate %", lambda c: None if c["loop_rate"] is None else 100 * c["loop_rate"],
-         0, loop_hi, False, f"0–{loop_hi} · LOWER is better (green = no loops)"),
+        ("R accuracy %", lambda c: c["R"]["pct"], 0, 100, True, "0–100 · higher is better", None),
+        ("C checks %", lambda c: c["C"]["pct"], 0, 100, True, "0–100 · higher is better", None),
+        ("loop rate % — any verdict", lambda c: None if c["loop_rate"] is None else 100 * c["loop_rate"],
+         0, loop_hi, False, f"0–{loop_hi} · LOWER is better · includes the compression heuristic",
+         tip_union),
+        ("structural repetition %", hard_rate, 0, loop_hi, False,
+         f"0–{loop_hi} · LOWER is better · repeated lines, n-grams, blocks, cycles only", tip_hard),
     ]
     cw, ch, pad, lw = 92, 30, 10, 150
     parts = ['<div class="grid">']
-    for title, get, lo, hi, higher, note in metrics:
+    for title, get, lo, hi, higher, note, tip in metrics:
         w, h = lw + cw * len(kvs) + pad, 34 + ch * len(models) + pad
         parts.append(f'<div class="card"><div>{html.escape(title)}</div>'
                      f'<div class="dim">{html.escape(note)}</div>')
@@ -675,12 +699,13 @@ def _svg_grids(out):
             for j, kv in enumerate(kvs):
                 c = out["arms"].get(f"{model}__{kv}")
                 v = get(c) if c else None
-                label = "—" if v is None else (f"{v:.0f}" if title.startswith("loop") else f"{v:.1f}")
+                label = "—" if v is None else (f"{v:.0f}" if "loop" in title or
+                                               "repetition" in title else f"{v:.1f}")
+                detail = tip(c) if (tip and c) else label
                 parts.append(
                     f'<rect x="{lw + j * cw + 2}" y="{34 + i * ch + 2}" width="{cw - 4}" '
                     f'height="{ch - 4}" rx="4" fill="{_color(v, lo, hi, higher)}">'
-                    f'<title>{html.escape(model)} {kv}: {label}'
-                    f'{" loops (lower is better)" if title.startswith("loop") else ""}</title></rect>')
+                    f'<title>{html.escape(model)} {kv}: {html.escape(detail)}</title></rect>')
                 parts.append(f'<text x="{lw + j * cw + cw / 2}" y="{34 + i * ch + 19}" '
                              f'fill="#0b0e12" font-size="12" text-anchor="middle">{label}</text>')
         parts.append("</svg></div>")

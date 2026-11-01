@@ -382,7 +382,7 @@ def test_report(tmp, runner_out):
     page = open(os.path.join(out, "report.html")).read()
     check("report html has the three tabs",
           all(f'id="t-{t}"' in page for t in ("matrix", "tasks", "loops")))
-    check("report html has 15 cells per grid", page.count('rx="4"') == 45,
+    check("report html has 4 grids of 15 cells", page.count('rx="4"') == 60,
           page.count('rx="4"'))
     check("report html embeds the raw data", "const RAW =" in page)
     check("report markdown is non-empty and has the tables",
