@@ -1,6 +1,6 @@
 # Appendix — every table, method and provenance
 
-## Appendix — full tables, method and provenance
+## Appendix: full tables, method and provenance
 
 
 ## Hardware and build this ran on
@@ -62,7 +62,7 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 | `ornith-35b` | 16 layers on CPU | 15468 | 91357 | 67.4 | 48.8 |
 | `gemma4-26b-a4b` | 8 layers on CPU | 13757 | 81845 | 34.5 | 46.9 |
 
-## R tier — retrieval / tracing / aggregation (partial credit, %)
+## R tier: retrieval, tracing, aggregation (partial credit, %)
 
 | model | f16 | q8_0 | q4_0 |
 |---|---|---|---|
@@ -72,7 +72,7 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 | `ornith-35b` | 63.3 | 53.3 | 60.0 |
 | `gemma4-26b-a4b` | 36.7 | 23.3 | 26.7 |
 
-## C tier — hidden checks passed / total, and resolved tasks
+## C tier: hidden checks passed / total, and resolved tasks
 
 | model | KV | checks | % | resolved | too-hard tasks |
 |---|---|---|---|---|---|
@@ -92,7 +92,7 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 | `gemma4-26b-a4b` | q8_0 | 701/780 | 89.9 | 2/6 | — |
 | `gemma4-26b-a4b` | q4_0 | 318/780 | 40.8 | 3/6 | — |
 
-## Loop table — flagged samples / samples (reasoning and content split)
+## Loop table: flagged samples / samples (reasoning and content split)
 
 `union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; `hard repetition` counts only samples with a repeated line, n-gram, 200-char block or tail cycle. The gap between the two columns is formulaic prose, not looping.
 

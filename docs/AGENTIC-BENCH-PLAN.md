@@ -66,8 +66,9 @@ plus 120 hidden cases; test files are hashed and rejected if edited. What it det
 oscillation, re-reading without progress, "done" without running the tests. Guard: 120 tool calls.
 
 **W2 — long-horizon ledger maintenance.** A 100k operations log with 400 mutation records; the agent
-applies 20 tenant-scoped mutations through `append`/`retract`/`transfer`, where the records each
-mutation references are spread from the start of the log to the end, then reports five invariants.
+applies 20 tenant-scoped mutations through `append`/`retract`/`transfer`, then reports five
+invariants. The records each mutation references sit far apart in the log, so the state it must hold
+comes from clauses read long before it acts.
 Graded state: final ledger hash + invariant answers; a re-applied mutation changes the hash. This is
 the direct KV-depth task: the state it must keep is defined by clauses read long before the action.
 Guard: 120 tool calls.

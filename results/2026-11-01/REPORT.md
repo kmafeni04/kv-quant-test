@@ -1,4 +1,4 @@
-# KV-cache quantization at long context — 5 models × f16 / q8_0 / q4_0
+# KV-cache quantization at long context: 5 models × 3 cache types
 
 One context for every arm: **-c 102400** · 15 arms · 540 samples · llama.cpp `2a667032d`. Seeds, budgets and the document hash are in the appendix.
 

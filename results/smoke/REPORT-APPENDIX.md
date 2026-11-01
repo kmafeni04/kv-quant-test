@@ -1,6 +1,6 @@
 # Appendix — every table, method and provenance
 
-## Appendix — full tables, method and provenance
+## Appendix: full tables, method and provenance
 
 
 ## Hardware and build this ran on
@@ -34,19 +34,19 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 |---|---|---|---|---|---|
 | `qwen36-35b` | 26 layers on CPU | 9541 | 10679 | 642.6 | 45.6 |
 
-## R tier — retrieval / tracing / aggregation (partial credit, %)
+## R tier: retrieval, tracing, aggregation (partial credit, %)
 
 | model | f16 | q8_0 | q4_0 |
 |---|---|---|---|
 | `qwen36-35b` | — | — | 70.0 |
 
-## C tier — hidden checks passed / total, and resolved tasks
+## C tier: hidden checks passed / total, and resolved tasks
 
 | model | KV | checks | % | resolved | too-hard tasks |
 |---|---|---|---|---|---|
 | `qwen36-35b` | q4_0 | 721/780 | 92.4 | 3/6 | — |
 
-## Loop table — flagged samples / samples (reasoning and content split)
+## Loop table: flagged samples / samples (reasoning and content split)
 
 `union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; `hard repetition` counts only samples with a repeated line, n-gram, 200-char block or tail cycle. The gap between the two columns is formulaic prose, not looping.
 

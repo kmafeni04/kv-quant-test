@@ -750,7 +750,8 @@ def write_markdown(out, raw, path):
     man = raw.get("manifest") or {}
     ctx = out.get("arms", {})
     fixture = next(iter(ctx.values()), {}) if ctx else {}
-    L.append("# KV-cache quantization at long context — 5 models × f16 / q8_0 / q4_0\n")
+    L.append(f"# KV-cache quantization at long context: {len(out['models'])} models × "
+             f"{len(out['kvs'])} cache types\n")
     n_arms = len(out.get("arms") or {})
     L.append(f"One context for every arm: **-c {raw.get('context')}** · {n_arms} arms · "
              f"{raw.get('samples')} samples · llama.cpp "
@@ -826,7 +827,7 @@ def write_markdown(out, raw, path):
              "invisible; `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain "
              "literal `\\n` text, so newline handling was not actually tested.")
     split = len(L)
-    L.append("\n## Appendix — full tables, method and provenance\n")
+    L.append("\n## Appendix: full tables, method and provenance\n")
     L.append("\n## Hardware and build this ran on\n")
     L.extend(_hardware_md(out.get("_hardware") or {}, out.get("_hardware_provenance") or ""))
     L.append("The long form lives in `REPORT-APPENDIX.md` next to this file; it is the same data, "
@@ -890,9 +891,9 @@ def write_markdown(out, raw, path):
         L.append(f"| `{model}` | {on_cpu} layers on CPU | {cell.get('vram_peak_mib')} | "
                  f"{cell.get('prompt_tokens_med')} | {cell.get('prefill_tps')} | "
                  f"{cell.get('decode_tps')} |")
-    L.append("\n## R tier — retrieval / tracing / aggregation (partial credit, %)\n")
+    L.append("\n## R tier: retrieval, tracing, aggregation (partial credit, %)\n")
     L += _md_grid(out, lambda c: c["R"]["pct"], "R %")
-    L.append("\n## C tier — hidden checks passed / total, and resolved tasks\n")
+    L.append("\n## C tier: hidden checks passed / total, and resolved tasks\n")
     L.append("| model | KV | checks | % | resolved | too-hard tasks |")
     L.append("|---|---|---|---|---|---|")
     for model in _ranked_models(out):
@@ -905,7 +906,7 @@ def write_markdown(out, raw, path):
             L.append(f"| `{model}` | {kv} | {c['C']['passed']}/{c['C']['of']} | "
                      f"{c['C']['pct']} | {c['C']['resolved']}/{c['C']['n']} | "
                      f"{', '.join(hard_here) or '—'} |")
-    L.append("\n## Loop table — flagged samples / samples (reasoning and content split)\n")
+    L.append("\n## Loop table: flagged samples / samples (reasoning and content split)\n")
     L.append("`union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; "
              "`hard repetition` counts only samples with a repeated line, n-gram, 200-char block or "
              "tail cycle. The gap between the two columns is formulaic prose, not looping.\n")
@@ -1827,7 +1828,7 @@ def write_readme_headline(out, readme_path):
                 f"| `{model}` | {kv} | {c['R']['points']}/{c['R']['of']} "
                 f"({c['R']['pct']}%) | {c['C']['passed']}/{c['C']['of']} ({c['C']['pct']}%) | "
                 f"{c['C']['resolved']}/{c['C']['n']} | {c['loops']['hard']}/{c['loops']['n']} | "
-                f"{(c.get('agree') if c.get('agree') is not None else '—')} |")
+                f"{c.get('agree') if c.get('agree') is not None else ''} |")
     text = open(readme_path).read()
     start, end = "<!-- HEADLINE:START -->", "<!-- HEADLINE:END -->"
     if start not in text or end not in text:
