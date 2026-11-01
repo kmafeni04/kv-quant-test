@@ -516,6 +516,12 @@ def write_html(out, raw, rows, path):
                                          .get("matrix") or {}).get("wall_s"))}}
     gallery = _gallery(out, raw)
     grids, bars = _svg_grids(out), _svg_bars(rows)
+    legend = ('<div class="dim" style="margin-top:6px">colour scale: '
+              '<span style="background:rgb(30,160,90);color:#0b0e12;padding:0 6px">100</span> '
+              '<span style="background:rgb(130,130,70);color:#0b0e12;padding:0 6px">50</span> '
+              '<span style="background:rgb(230,100,50);color:#0b0e12;padding:0 6px">0</span> '
+              '· loop grid uses the same ramp inverted (0 loops = green) · '
+              '"—" means that arm was not run</div>')
     taskbars, scatter = _svg_task_bars(out), _svg_scatter(out)
     doc = f"""<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
@@ -548,10 +554,31 @@ wall clock <b>{_human((out.get('_timing') or {}).get('study_wall_s'))}</b> total
 {_human((((out.get('_timing') or {}).get('phases') or {}).get('matrix') or {}).get('wall_s'))}
 in the matrix</div>
 </header>
+<div class="card" style="max-width:none">
+<b>How to read this page</b>
+<div class="dim" style="margin-top:6px">
+Each <b>grid</b> is one measurement: rows are models, columns are the three KV cache types.
+A cell's number is that arm's result, and its colour is the same number on a 0–100 scale —
+<span style="color:#3fa05a">green = good</span>, <span style="color:#c9563d">red = bad</span>.
+For the first two grids higher is better; for the <b>loop</b> grid lower is better, so its colours
+are inverted. Hover any cell for the exact value.
+</div>
+<div class="dim" style="margin-top:6px">
+What the tabs hold: <b>Matrix</b> — the 15-arm comparison, the change versus f16, and how often two
+arms gave the identical answer. <b>Tasks</b> — the same data per task, so you can see which task
+carried a difference. <b>Loops</b> — every sample the repetition detector flagged, with the exact
+text that repeated, so you can judge it yourself.
+</div>
+<div class="dim" style="margin-top:6px">
+Three facts that make the numbers honest: differences of a few points are noise; the <code>semver</code>
+code task moves by tens of points on a single design decision; and Gemma's q4_0 code score is a
+generation-length cut-off, not wrong code. The prose summary, with those caveats written out, is
+<code>docs/RESULTS.md</code>.
+</div></div>
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix">{grids}<h2>Paired deltas vs f16</h2>{bars}
+<section id="t-matrix">{grids}{legend}<h2>Paired deltas vs f16</h2>{bars}
 <h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
 <section id="t-tasks" hidden>{taskbars}{_task_details(out)}</section>
 <section id="t-loops" hidden>{scatter}{gallery}</section>
