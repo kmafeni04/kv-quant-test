@@ -36,6 +36,9 @@ A 1-point delta on 6 R tasks is one sub-value of one sample: noise. The agreemen
 ## Agreement with f16 per model (share of identical graded answers)
 
 
+## Cross-model answer agreement (same R task + seed, same KV)
+
+
 ## Speed and realized context
 
 | model | KV | prompt tokens | prefill t/s | decode t/s | cache hit rate | out tokens |

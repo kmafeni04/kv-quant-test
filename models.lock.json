@@ -1,10 +1,14 @@
 {
   "document": {
-    "chars": 351755,
-    "filler_chars": 325354,
-    "sha256": "f045b8b238e485253e16598de1795080bc0400c64a5bad72125fe205e1ad9688",
+    "chars": 305234,
+    "filler_chars": 278835,
+    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
     "tokens_by_model": {
-      "gemma4-26b-a4b": 93532
+      "gemma4-26b-a4b": 81765,
+      "ornith-35b": 91284,
+      "qwen36-35b": 91284,
+      "qwen38-27b": 91284,
+      "qwen38-flash": 91284
     }
   },
   "host": {
@@ -25,5 +29,41 @@
     "ggml_cuda_fa_quants": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
     "version": "0.7.0-dev (build 11698)"
   },
-  "models": {}
+  "models": {
+    "gemma4-26b-a4b": {
+      "bytes": 14618145824,
+      "filename": "gemma-4-26B-A4B-it-Q4_0.gguf",
+      "hf_repo": "ggml-org/gemma-4-26B-A4B-it-GGUF",
+      "path": "/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+      "sha256": "d208665ab1cd3a69f7a9a4bc59430e8448c8093d9b06334f566ac59d6d504a03"
+    },
+    "ornith-35b": {
+      "bytes": 21713463040,
+      "filename": "Ornith-1.5-35B-Q4_K_M.gguf",
+      "hf_repo": "ornith-ai/Ornith-1.5-35B-A3B-GGUF",
+      "path": "/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+      "sha256": "42739874cc2ccfdb8523b23fbe52e29b2a7555c8176737ca9ca0b5d59859d41f"
+    },
+    "qwen36-35b": {
+      "bytes": 22853663008,
+      "filename": "Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+      "hf_repo": "",
+      "path": "/home/kome/.local/share/llm-models/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+      "sha256": "55983c5a75a1ab969824077b3bb3de4146e82a9234072b48ad4e8f92ad3fe9f1"
+    },
+    "qwen38-27b": {
+      "bytes": 10442827840,
+      "filename": "Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+      "hf_repo": "",
+      "path": "/home/kome/.local/share/llm-models/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+      "sha256": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262"
+    },
+    "qwen38-flash": {
+      "bytes": 47039860096,
+      "filename": "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+      "hf_repo": "",
+      "path": "/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+      "sha256": "219ea929900dfa9ef091f3aa473fdba6874b65fcb36526d7d851ac9e95856d15"
+    }
+  }
 }

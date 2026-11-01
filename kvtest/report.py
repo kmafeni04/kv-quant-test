@@ -138,6 +138,7 @@ def agg(raw, samples, arms):
         reps[s.get("tier")] = max(reps.get(s.get("tier"), 0), int(s.get("rep") or 0) + 1)
     out["reps"] = reps
     _agreement(out, samples, arms)
+    _cross_agreement(out, samples)
     _too_hard(out, samples)
     return out
 
@@ -161,6 +162,38 @@ def _agreement(out, samples, arms):
         if tot:
             out["arms"][f"{model}__{kv}"]["agree"] = round(same / tot, 3)
             out["arms"][f"{model}__{kv}"]["agree_n"] = tot
+
+
+def _cross_agreement(out, samples):
+    """Cross-model answer agreement on the same graded R task+seed, per KV type.
+
+    Within-model agreement (vs f16) resolves the KV ladder; cross-model agreement shows whether the
+    five models are actually giving the same answers, which is what makes a cross-model comparison
+    of the KV effect meaningful at all.
+    """
+    by = defaultdict(dict)
+    for s in samples:
+        if s.get("tier") != "R" or not s.get("grade") or s["grade"].get("answer") is None:
+            continue
+        by[(s["task"], s["seed"], s["kv"])].setdefault(s["model"], s["grade"]["answer"]
+                                                       .strip().upper())
+    out["cross"] = {}
+    for kv in KV_ORDER:
+        rows = {}
+        for a in out["models"]:
+            for b in out["models"]:
+                if a >= b:
+                    continue
+                same = tot = 0
+                for (task, seed, k), d in by.items():
+                    if k != kv or a not in d or b not in d:
+                        continue
+                    tot += 1
+                    same += 1 if d[a] == d[b] else 0
+                if tot:
+                    rows[f"{a}|{b}"] = [same, tot, round(same / tot, 3)]
+        out["cross"][kv] = rows
+    return out["cross"]
 
 
 def _too_hard(out, samples):
@@ -279,6 +312,16 @@ def write_markdown(out, raw, rows, path):
                 parts.append(f"{kv}: {cell['agree']} of {cell.get('agree_n')} samples")
         if parts:
             L.append(f"- `{model}` — " + "; ".join(parts))
+    L.append("\n## Cross-model answer agreement (same R task + seed, same KV)\n")
+    for kv in out["kvs"]:
+        rows = (out.get("cross") or {}).get(kv) or {}
+        if not rows:
+            continue
+        L.append(f"\n**{kv}**\n")
+        L.append("| pair | identical / compared | share |")
+        L.append("|---|---|---|")
+        for pair, (same, tot, share) in sorted(rows.items()):
+            L.append(f"| `{pair.split('|')[0]}` vs `{pair.split('|')[1]}` | {same}/{tot} | {share} |")
     L.append("\n## Speed and realized context\n")
     L.append("| model | KV | prompt tokens | prefill t/s | decode t/s | cache hit rate | out tokens |")
     L.append("|---|---|---|---|---|---|---|")
@@ -386,7 +429,7 @@ document <code>{(raw.get('document') or {}).get('sha256', '?')[:16]}</code> ·
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
 <section id="t-matrix">{grids}<h2>Paired deltas vs f16</h2>{bars}
-<h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}</section>
+<h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
 <section id="t-tasks" hidden>{taskbars}{_task_details(out)}</section>
 <section id="t-loops" hidden>{scatter}{gallery}</section>
 <footer>{_manifest_block(raw)}</footer>
@@ -553,6 +596,21 @@ def _agree_table(out):
                          f'<td>{c["agree"]}</td><td>{c.get("agree_n")}</td></tr>')
     lines.append("</table>")
     return "".join(lines)
+
+
+def _cross_table(out):
+    parts = ["<h2>Cross-model agreement (same R task + seed, same KV)</h2>"]
+    for kv in out["kvs"]:
+        rows = (out.get("cross") or {}).get(kv) or {}
+        if not rows:
+            continue
+        parts.append(f'<div class="card"><b>{kv}</b><table>'
+                     '<tr><th>pair</th><th>identical</th><th>compared</th><th>share</th></tr>')
+        for pair, (same, tot, share) in sorted(rows.items()):
+            parts.append(f'<tr><td>{html.escape(pair)}</td><td>{same}</td><td>{tot}</td>'
+                         f'<td>{share}</td></tr>')
+        parts.append("</table></div>")
+    return "".join(parts)
 
 
 def _gallery(out, raw):

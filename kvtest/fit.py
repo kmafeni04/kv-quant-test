@@ -78,7 +78,7 @@ def depth_probe(base, doc, max_tokens=32, timeout=7200, prompt_suffix=None):
 
 
 def probe_model(key, ladder, probe_doc, port=config.PORT, history=None):
-    """Try rungs top-down, bumping the offload knob when allocation at the rung fails."""
+    """Try rungs top-down; within a rung, bump the offload knob until it fits or is exhausted."""
     m = config.MODELS[key]
     knob_name = "ncmoe" if "ncmoe" in m["knobs"] else "ncffn"
     attempts = []
@@ -98,39 +98,41 @@ def probe_model(key, ladder, probe_doc, port=config.PORT, history=None):
                 s.stop()
                 log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
                     f"FAILED to start ({reason})")
-                break
-            r = tiny_probe(s.base)
-            entry["tiny_ok"] = not r.get("error")
-            entry["tiny_error"] = r.get("error")
-            if r.get("error"):
-                attempts.append(entry)
-                s.stop()
-                log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                    f"up but request failed: {r['error'][:140]}")
-                break
-            d = depth_probe(s.base, probe_doc, max_tokens=16)
-            entry["probe_tokens"] = (d.get("usage") or {}).get("prompt_tokens")
-            if d.get("error"):
-                entry.update(ok=False, reason=f"depth probe failed: {d['error'][:160]}")
-                attempts.append(entry)
-                s.stop()
-                log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                    f"{entry['probe_tokens']}-token prefill failed")
-                break
-            entry.update(ok=True, probe_prefill_tps=d.get("prefill_tps"),
-                         probe_decode_tps=d.get("decode_tps"),
-                         wall_s=round(time.time() - t0, 1), vram_peak_mib=s.vram.peak)
-            attempts.append(entry)
-            s.stop()
-            log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} OK   "
-                f"probe prefill {entry['probe_prefill_tps']} t/s  "
-                f"vram {entry['vram_peak_mib']} MiB")
-            return entry, attempts
-        bump = m["knob_bump"](knob.get(knob_name, 0))
-        if bump <= m["knob_max"]:
-            knob = {**knob, knob_name: bump}
-            continue
-        break
+            else:
+                r = tiny_probe(s.base)
+                entry["tiny_ok"] = not r.get("error")
+                entry["tiny_error"] = r.get("error")
+                if r.get("error"):
+                    attempts.append(entry)
+                    s.stop()
+                    log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
+                        f"up but request failed: {r['error'][:140]}")
+                else:
+                    d = depth_probe(s.base, probe_doc, max_tokens=16)
+                    entry["probe_tokens"] = (d.get("usage") or {}).get("prompt_tokens")
+                    if d.get("error"):
+                        entry.update(ok=False, reason=f"depth probe failed: {d['error'][:160]}")
+                        attempts.append(entry)
+                        s.stop()
+                        log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
+                            f"{entry['probe_tokens']}-token prefill failed")
+                    else:
+                        entry.update(ok=True, probe_prefill_tps=d.get("prefill_tps"),
+                                     probe_decode_tps=d.get("decode_tps"),
+                                     wall_s=round(time.time() - t0, 1), vram_peak_mib=s.vram.peak)
+                        attempts.append(entry)
+                        s.stop()
+                        log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
+                            f"OK   probe prefill {entry['probe_prefill_tps']} t/s  "
+                            f"vram {entry['vram_peak_mib']} MiB")
+                        return entry, attempts
+            bump = m["knob_bump"](knob.get(knob_name, 0))
+            if bump <= m["knob_max"]:
+                knob = {**knob, knob_name: bump}
+                continue
+            break
+        log(f"[fit] {key:14} ctx={rung:6} {knob_name} exhausted at {m['knob_max']}; "
+            f"dropping a rung")
     return None, attempts
 
 

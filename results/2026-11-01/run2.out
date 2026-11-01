@@ -1,0 +1,219 @@
+[10:42:52] arm qwen36-35b__f16: already finished, skipping
+[10:42:52] arm qwen36-35b__q8_0: already finished, skipping
+[10:42:52] arm qwen36-35b__q4_0: already finished, skipping
+[10:42:52] arm qwen38-27b__f16: already finished, skipping
+[10:42:52] arm qwen38-27b__q8_0: already finished, skipping
+[10:42:52] arm qwen38-27b__q4_0: already finished, skipping
+[10:42:52] arm qwen38-flash__f16: resuming with 0 requests already done
+[10:42:56] arm qwen38-flash__f16: up in 4.0s, knobs={'ncmoe': 48}, ctx=102400
+[10:48:03]   qwen38-flash__f16          R niah_multi     r0 3/3 out=215 dec=16.1 cache=0
+[10:48:15]   qwen38-flash__f16          R niah_multi     r1 3/3 out=196 dec=16.5 cache=91353
+[10:48:28]   qwen38-flash__f16          R niah_multi     r2 3/3 out=210 dec=16.5 cache=91353
+[10:49:44]   qwen38-flash__f16          R niah_deep      r0 1/1 out=1195 dec=16.6 cache=90329
+[10:50:09]   qwen38-flash__f16          R niah_deep      r1 1/1 out=420 dec=16.6 cache=91340
+[10:50:44]   qwen38-flash__f16          R niah_deep      r2 1/1 out=578 dec=16.6 cache=91340
+[10:51:12]   qwen38-flash__f16          R vt_trace       r0 2/2 out=364 dec=15.7 cache=90329
+[10:51:30]   qwen38-flash__f16          R vt_trace       r1 2/2 out=284 dec=16.0 cache=91376
+[10:52:08]   qwen38-flash__f16          R vt_trace       r2 2/2 out=613 dec=16.2 cache=91376
+[10:53:40]   qwen38-flash__f16          R agg_sum        r0 0/2 out=1483 dec=16.9 cache=90352
+[10:55:08]   qwen38-flash__f16          R agg_sum        r1 0/2 out=1478 dec=16.7 cache=91355
+[10:56:36]   qwen38-flash__f16          R agg_sum        r2 1/2 out=1487 dec=17.0 cache=91355
+[10:57:55]   qwen38-flash__f16          R count_proj     r0 1/1 out=1172 dec=15.6 cache=90352
+[10:59:11]   qwen38-flash__f16          R count_proj     r1 1/1 out=1180 dec=15.6 cache=91332
+[11:00:26]   qwen38-flash__f16          R count_proj     r2 1/1 out=1179 dec=15.7 cache=91332
+[11:02:04]   qwen38-flash__f16          R fwe_count      r0 0/1 out=1610 dec=17.1 cache=90352
+[11:03:53]   qwen38-flash__f16          R fwe_count      r1 1/1 out=1773 dec=16.4 cache=91376
+[11:05:24]   qwen38-flash__f16          R fwe_count      r2 0/1 out=1559 dec=17.1 cache=91376
+[11:09:01]   qwen38-flash__f16          C cg_csvlite     r0 29/29 lines=80 out=3633
+[11:12:48]   qwen38-flash__f16          C cg_fixedpoint  r0 45/45 lines=99 out=3775
+[11:15:24]   qwen38-flash__f16          C cg_intervals   r0 162/162 lines=87 out=2592
+[11:19:56]   qwen38-flash__f16          C cg_semver      r0 190/261 lines=184 out=4520
+[11:21:08]   qwen38-flash__f16          C cg_statistics  r0 229/229 lines=96 out=1167
+[11:25:05]   qwen38-flash__f16          C repo_fix       r0 47/54 lines=76 out=3786
+[11:26:25]   qwen38-flash__f16          L gen_manual     r0 loop content:zip=0.429
+[11:27:46]   qwen38-flash__f16          L gen_manual     r1 clean 
+[11:29:09]   qwen38-flash__f16          L gen_manual     r2 loop content:zip=0.424
+[11:29:44]   qwen38-flash__f16          L copy_ledgers   r0 clean 
+[11:30:16]   qwen38-flash__f16          L copy_ledgers   r1 clean 
+[11:30:48]   qwen38-flash__f16          L copy_ledgers   r2 clean 
+[11:31:15]   qwen38-flash__f16          L enumerate_shards r0 clean 
+[11:31:52]   qwen38-flash__f16          L enumerate_shards r1 clean 
+[11:32:29]   qwen38-flash__f16          L enumerate_shards r2 clean 
+[11:37:44]   qwen38-flash__f16          L tool_episode   r0 clean 
+[11:38:01]   qwen38-flash__f16          L tool_episode   r1 clean 
+[11:38:17]   qwen38-flash__f16          L tool_episode   r2 clean 
+[11:38:18] arm qwen38-flash__f16: done in 3325.7s, vram peak 11295 MiB
+[11:38:18] arm qwen38-flash__q8_0: resuming with 0 requests already done
+[11:38:22] arm qwen38-flash__q8_0: up in 4.0s, knobs={'ncmoe': 48}, ctx=102400
+[11:43:32]   qwen38-flash__q8_0         R niah_multi     r0 3/3 out=215 dec=12.5 cache=0
+[11:43:49]   qwen38-flash__q8_0         R niah_multi     r1 3/3 out=205 dec=12.5 cache=91353
+[11:44:04]   qwen38-flash__q8_0         R niah_multi     r2 3/3 out=193 dec=12.8 cache=91353
+[11:45:42]   qwen38-flash__q8_0         R niah_deep      r0 0/1 out=1174 dec=12.5 cache=90329
+[11:47:19]   qwen38-flash__q8_0         R niah_deep      r1 1/1 out=1233 dec=12.7 cache=91340
+[11:48:13]   qwen38-flash__q8_0         R niah_deep      r2 1/1 out=678 dec=12.6 cache=91340
+[11:48:46]   qwen38-flash__q8_0         R vt_trace       r0 2/2 out=347 dec=12.1 cache=90329
+[11:49:26]   qwen38-flash__q8_0         R vt_trace       r1 2/2 out=488 dec=12.4 cache=91376
+[11:49:48]   qwen38-flash__q8_0         R vt_trace       r2 2/2 out=267 dec=12.5 cache=91376
+[11:51:49]   qwen38-flash__q8_0         R agg_sum        r0 2/2 out=1508 dec=12.8 cache=90352
+[11:53:47]   qwen38-flash__q8_0         R agg_sum        r1 1/2 out=1487 dec=12.7 cache=91355
+[11:55:55]   qwen38-flash__q8_0         R agg_sum        r2 1/2 out=1610 dec=12.7 cache=91355
+[11:57:35]   qwen38-flash__q8_0         R count_proj     r0 1/1 out=1172 dec=12.1 cache=90352
+[11:59:14]   qwen38-flash__q8_0         R count_proj     r1 1/1 out=1180 dec=12.0 cache=91332
+[12:00:52]   qwen38-flash__q8_0         R count_proj     r2 1/1 out=1179 dec=12.0 cache=91332
+[12:02:58]   qwen38-flash__q8_0         R fwe_count      r0 0/1 out=1551 dec=12.7 cache=90352
+[12:04:37]   qwen38-flash__q8_0         R fwe_count      r1 0/1 out=1255 dec=12.7 cache=91376
+[12:06:38]   qwen38-flash__q8_0         R fwe_count      r2 0/1 out=1517 dec=12.6 cache=91376
+[12:11:37]   qwen38-flash__q8_0         C cg_csvlite     r0 29/29 lines=103 out=3773
+[12:16:36]   qwen38-flash__q8_0         C cg_fixedpoint  r0 45/45 lines=89 out=3730
+[12:20:10]   qwen38-flash__q8_0         C cg_intervals   r0 162/162 lines=85 out=2646
+[12:25:43]   qwen38-flash__q8_0         C cg_semver      r0 118/261 lines=157 out=4159
+[12:27:20]   qwen38-flash__q8_0         C cg_statistics  r0 229/229 lines=101 out=1178
+[12:32:29]   qwen38-flash__q8_0         C repo_fix       r0 47/54 lines=76 out=3787
+[12:34:13]   qwen38-flash__q8_0         L gen_manual     r0 loop content:zip=0.436
+[12:36:00]   qwen38-flash__q8_0         L gen_manual     r1 loop content:zip=0.435
+[12:38:00]   qwen38-flash__q8_0         L gen_manual     r2 clean 
+[12:38:44]   qwen38-flash__q8_0         L copy_ledgers   r0 clean 
+[12:39:26]   qwen38-flash__q8_0         L copy_ledgers   r1 clean 
+[12:40:01]   qwen38-flash__q8_0         L copy_ledgers   r2 clean 
+[12:40:52]   qwen38-flash__q8_0         L enumerate_shards r0 clean 
+[12:41:41]   qwen38-flash__q8_0         L enumerate_shards r1 clean 
+[12:42:15]   qwen38-flash__q8_0         L enumerate_shards r2 clean 
+[12:47:35]   qwen38-flash__q8_0         L tool_episode   r0 clean 
+[12:47:55]   qwen38-flash__q8_0         L tool_episode   r1 clean 
+[12:48:15]   qwen38-flash__q8_0         L tool_episode   r2 clean 
+[12:48:16] arm qwen38-flash__q8_0: done in 4198.5s, vram peak 9857 MiB
+[12:48:16] arm qwen38-flash__q4_0: resuming with 0 requests already done
+[12:48:20] arm qwen38-flash__q4_0: up in 4.0s, knobs={'ncmoe': 48}, ctx=102400
+[12:53:34]   qwen38-flash__q4_0         R niah_multi     r0 3/3 out=195 dec=12.5 cache=0
+[12:53:53]   qwen38-flash__q4_0         R niah_multi     r1 3/3 out=231 dec=12.4 cache=91353
+[12:54:10]   qwen38-flash__q4_0         R niah_multi     r2 3/3 out=219 dec=12.5 cache=91353
+[12:55:32]   qwen38-flash__q4_0         R niah_deep      r0 1/1 out=971 dec=12.4 cache=90329
+[12:56:04]   qwen38-flash__q4_0         R niah_deep      r1 1/1 out=390 dec=12.4 cache=91340
+[12:57:08]   qwen38-flash__q4_0         R niah_deep      r2 1/1 out=784 dec=12.4 cache=91340
+[12:57:40]   qwen38-flash__q4_0         R vt_trace       r0 2/2 out=342 dec=12.1 cache=90329
+[12:57:57]   qwen38-flash__q4_0         R vt_trace       r1 2/2 out=195 dec=12.3 cache=91376
+[12:58:21]   qwen38-flash__q4_0         R vt_trace       r2 2/2 out=302 dec=12.4 cache=91376
+[13:00:24]   qwen38-flash__q4_0         R agg_sum        r0 1/2 out=1488 dec=12.5 cache=90352
+[13:02:28]   qwen38-flash__q4_0         R agg_sum        r1 0/2 out=1531 dec=12.3 cache=91355
+[13:04:39]   qwen38-flash__q4_0         R agg_sum        r2 2/2 out=1609 dec=12.3 cache=91355
+[13:05:11]   qwen38-flash__q4_0         R count_proj     r0 1/1 out=345 dec=12.2 cache=90352
+[13:06:50]   qwen38-flash__q4_0         R count_proj     r1 1/1 out=1182 dec=12.0 cache=91332
+[13:08:29]   qwen38-flash__q4_0         R count_proj     r2 1/1 out=1172 dec=11.9 cache=91332
+[13:09:57]   qwen38-flash__q4_0         R fwe_count      r0 0/1 out=1032 dec=12.3 cache=90352
+[13:11:23]   qwen38-flash__q4_0         R fwe_count      r1 0/1 out=1033 dec=12.0 cache=91376
+[13:13:27]   qwen38-flash__q4_0         R fwe_count      r2 0/1 out=1472 dec=11.9 cache=91376
+[13:18:26]   qwen38-flash__q4_0         C cg_csvlite     r0 28/29 lines=92 out=3704
+[13:23:27]   qwen38-flash__q4_0         C cg_fixedpoint  r0 45/45 lines=93 out=3739
+[13:26:49]   qwen38-flash__q4_0         C cg_intervals   r0 162/162 lines=87 out=2430
+[13:31:12]   qwen38-flash__q4_0         C cg_semver      r0 190/261 lines=160 out=3180
+[13:33:02]   qwen38-flash__q4_0         C cg_statistics  r0 229/229 lines=98 out=1321
+[13:38:18]   qwen38-flash__q4_0         C repo_fix       r0 47/54 lines=76 out=3786
+[13:40:04]   qwen38-flash__q4_0         L gen_manual     r0 clean 
+[13:42:08]   qwen38-flash__q4_0         L gen_manual     r1 loop content:zip=0.427
+[13:43:38]   qwen38-flash__q4_0         L gen_manual     r2 loop content:zip=0.441
+[13:44:19]   qwen38-flash__q4_0         L copy_ledgers   r0 clean 
+[13:45:02]   qwen38-flash__q4_0         L copy_ledgers   r1 clean 
+[13:45:45]   qwen38-flash__q4_0         L copy_ledgers   r2 clean 
+[13:46:37]   qwen38-flash__q4_0         L enumerate_shards r0 clean 
+[13:47:32]   qwen38-flash__q4_0         L enumerate_shards r1 clean 
+[13:48:05]   qwen38-flash__q4_0         L enumerate_shards r2 clean 
+[13:53:31]   qwen38-flash__q4_0         L tool_episode   r0 clean 
+[13:53:52]   qwen38-flash__q4_0         L tool_episode   r1 clean 
+[13:54:14]   qwen38-flash__q4_0         L tool_episode   r2 clean 
+[13:54:15] arm qwen38-flash__q4_0: done in 3958.9s, vram peak 9107 MiB
+[13:54:15] arm gemma4-26b-a4b__f16: resuming with 0 requests already done
+[13:54:25] arm gemma4-26b-a4b__f16: up in 10.0s, knobs={'ncmoe': 8}, ctx=102400
+[13:56:16]   gemma4-26b-a4b__f16        R niah_multi     r0 2/3 out=1050 dec=47.1 cache=0
+[13:56:39]   gemma4-26b-a4b__f16        R niah_multi     r1 1/3 out=1050 dec=47.3 cache=81840
+[13:57:02]   gemma4-26b-a4b__f16        R niah_multi     r2 1/3 out=1050 dec=47.3 cache=81840
+[14:00:43]   gemma4-26b-a4b__f16        R niah_deep      r0 0/1 out=8192 dec=46.6 cache=81825
+[14:01:21]   gemma4-26b-a4b__f16        R niah_deep      r1 0/1 out=1808 dec=47.1 cache=81825
+[14:05:02]   gemma4-26b-a4b__f16        R niah_deep      r2 0/1 out=8192 dec=46.5 cache=81825
+[14:06:16]   gemma4-26b-a4b__f16        R vt_trace       r0 2/2 out=1351 dec=47.1 cache=81862
+[14:06:44]   gemma4-26b-a4b__f16        R vt_trace       r1 2/2 out=1339 dec=47.0 cache=81862
+[14:07:07]   gemma4-26b-a4b__f16        R vt_trace       r2 2/2 out=1042 dec=47.1 cache=81862
+[14:10:48]   gemma4-26b-a4b__f16        R agg_sum        r0 0/2 out=8192 dec=46.5 cache=81840
+[14:14:29]   gemma4-26b-a4b__f16        R agg_sum        r1 0/2 out=8192 dec=46.5 cache=81840
+[14:18:09]   gemma4-26b-a4b__f16        R agg_sum        r2 0/2 out=8192 dec=46.5 cache=81840
+[14:20:09]   gemma4-26b-a4b__f16        R count_proj     r0 1/1 out=3526 dec=46.9 cache=81817
+[14:23:49]   gemma4-26b-a4b__f16        R count_proj     r1 0/1 out=8192 dec=46.5 cache=81817
+[14:27:30]   gemma4-26b-a4b__f16        R count_proj     r2 0/1 out=8192 dec=46.5 cache=81817
+[14:28:49]   gemma4-26b-a4b__f16        R fwe_count      r0 0/1 out=1602 dec=47.0 cache=81860
+[14:32:29]   gemma4-26b-a4b__f16        R fwe_count      r1 0/1 out=8192 dec=46.5 cache=81860
+[14:35:14]   gemma4-26b-a4b__f16        R fwe_count      r2 0/1 out=5612 dec=46.7 cache=81860
+[14:36:48]   gemma4-26b-a4b__f16        C cg_csvlite     r0 29/29 lines=112 out=4067
+[14:38:32]   gemma4-26b-a4b__f16        C cg_fixedpoint  r0 45/45 lines=165 out=4573
+[14:40:02]   gemma4-26b-a4b__f16        C cg_intervals   r0 162/162 lines=106 out=3936
+[14:41:42]   gemma4-26b-a4b__f16        C cg_semver      r0 182/261 lines=101 out=4374
+[14:43:15]   gemma4-26b-a4b__f16        C cg_statistics  r0 229/229 lines=102 out=4043
+[14:44:48]   gemma4-26b-a4b__f16        C repo_fix       r0 47/54 lines=99 out=4128
+[14:45:12]   gemma4-26b-a4b__f16        L gen_manual     r0 loop content:zip=0.431
+[14:45:35]   gemma4-26b-a4b__f16        L gen_manual     r1 clean 
+[14:46:06]   gemma4-26b-a4b__f16        L gen_manual     r2 clean 
+[14:46:17]   gemma4-26b-a4b__f16        L copy_ledgers   r0 clean 
+[14:46:29]   gemma4-26b-a4b__f16        L copy_ledgers   r1 clean 
+[14:46:40]   gemma4-26b-a4b__f16        L copy_ledgers   r2 clean 
+[14:47:24]   gemma4-26b-a4b__f16        L enumerate_shards r0 clean 
+[14:48:08]   gemma4-26b-a4b__f16        L enumerate_shards r1 loop content:line_run=159; ngram_run=159; cycle=[300, 3]; block_x
+[14:48:52]   gemma4-26b-a4b__f16        L enumerate_shards r2 loop content:line_run=41; cycle=[270, 3]; block_x4
+[14:50:32]   gemma4-26b-a4b__f16        L tool_episode   r0 clean 
+[14:50:42]   gemma4-26b-a4b__f16        L tool_episode   r1 loop reasoning_content:ngram_run=6; cycle=[92, 3]
+[14:50:51]   gemma4-26b-a4b__f16        L tool_episode   r2 clean 
+[14:50:52] arm gemma4-26b-a4b__f16: done in 3396.9s, vram peak 13757 MiB
+[14:50:52] arm gemma4-26b-a4b__q8_0: resuming with 0 requests already done
+[14:50:56] arm gemma4-26b-a4b__q8_0: up in 4.0s, knobs={'ncmoe': 8}, ctx=102400
+[14:52:57]   gemma4-26b-a4b__q8_0       R niah_multi     r0 1/3 out=1050 dec=34.6 cache=0
+[14:53:28]   gemma4-26b-a4b__q8_0       R niah_multi     r1 2/3 out=1051 dec=34.6 cache=81840
+[14:53:59]   gemma4-26b-a4b__q8_0       R niah_multi     r2 2/3 out=1051 dec=34.5 cache=81840
+[14:55:49]   gemma4-26b-a4b__q8_0       R niah_deep      r0 0/1 out=1683 dec=34.4 cache=81825
+[15:00:51]   gemma4-26b-a4b__q8_0       R niah_deep      r1 0/1 out=8192 dec=33.8 cache=81825
+[15:05:53]   gemma4-26b-a4b__q8_0       R niah_deep      r2 0/1 out=8192 dec=33.8 cache=81825
+[15:10:57]   gemma4-26b-a4b__q8_0       R vt_trace       r0 0/2 out=8192 dec=33.8 cache=81862
+[15:16:09]   gemma4-26b-a4b__q8_0       R vt_trace       r1 0/2 out=8192 dec=32.4 cache=81862
+[15:16:44]   gemma4-26b-a4b__q8_0       R vt_trace       r2 2/2 out=1042 dec=30.5 cache=81862
+[15:21:48]   gemma4-26b-a4b__q8_0       R agg_sum        r0 0/2 out=8192 dec=33.6 cache=81840
+[15:26:52]   gemma4-26b-a4b__q8_0       R agg_sum        r1 0/2 out=8192 dec=33.8 cache=81840
+[15:31:56]   gemma4-26b-a4b__q8_0       R agg_sum        r2 0/2 out=8192 dec=33.5 cache=81840
+[15:37:00]   gemma4-26b-a4b__q8_0       R count_proj     r0 0/1 out=8192 dec=33.9 cache=81817
+[15:42:01]   gemma4-26b-a4b__q8_0       R count_proj     r1 0/1 out=8192 dec=34.0 cache=81817
+[15:47:03]   gemma4-26b-a4b__q8_0       R count_proj     r2 0/1 out=8192 dec=33.8 cache=81817
+[15:47:47]   gemma4-26b-a4b__q8_0       R fwe_count      r0 0/1 out=1470 dec=34.4 cache=81348
+[15:49:55]   gemma4-26b-a4b__q8_0       R fwe_count      r1 0/1 out=2208 dec=33.9 cache=81860
+[15:55:01]   gemma4-26b-a4b__q8_0       R fwe_count      r2 0/1 out=8192 dec=33.4 cache=81860
+[15:58:12]   gemma4-26b-a4b__q8_0       C cg_csvlite     r0 23/29 lines=64 out=6144
+[16:00:18]   gemma4-26b-a4b__q8_0       C cg_fixedpoint  r0 45/45 lines=109 out=4051
+[16:02:15]   gemma4-26b-a4b__q8_0       C cg_intervals   r0 162/162 lines=84 out=3801
+[16:04:29]   gemma4-26b-a4b__q8_0       C cg_semver      r0 190/261 lines=105 out=4285
+[16:06:39]   gemma4-26b-a4b__q8_0       C cg_statistics  r0 227/229 lines=111 out=4129
+[16:08:49]   gemma4-26b-a4b__q8_0       C repo_fix       r0 54/54 lines=101 out=4144
+[16:09:27]   gemma4-26b-a4b__q8_0       L gen_manual     r0 clean 
+[16:10:11]   gemma4-26b-a4b__q8_0       L gen_manual     r1 clean 
+[16:10:50]   gemma4-26b-a4b__q8_0       L gen_manual     r2 clean 
+[16:11:07]   gemma4-26b-a4b__q8_0       L copy_ledgers   r0 clean 
+[16:11:22]   gemma4-26b-a4b__q8_0       L copy_ledgers   r1 clean 
+[16:11:38]   gemma4-26b-a4b__q8_0       L copy_ledgers   r2 clean 
+[16:11:58]   gemma4-26b-a4b__q8_0       L enumerate_shards r0 loop content:line_run=32; ngram_run=32; cycle=[160, 3]
+[16:12:58]   gemma4-26b-a4b__q8_0       L enumerate_shards r1 clean 
+[16:13:18]   gemma4-26b-a4b__q8_0       L enumerate_shards r2 loop content:line_run=33; ngram_run=33; cycle=[176, 3]
+[16:15:02]   gemma4-26b-a4b__q8_0       L tool_episode   r0 clean 
+[16:15:15]   gemma4-26b-a4b__q8_0       L tool_episode   r1 clean 
+[16:15:27]   gemma4-26b-a4b__q8_0       L tool_episode   r2 clean 
+[16:15:28] arm gemma4-26b-a4b__q8_0: done in 5075.7s, vram peak 15670 MiB
+[16:15:28] arm gemma4-26b-a4b__q4_0: resuming with 0 requests already done
+[16:15:32] arm gemma4-26b-a4b__q4_0: up in 4.0s, knobs={'ncmoe': 8}, ctx=102400
+[16:17:33]   gemma4-26b-a4b__q4_0       R niah_multi     r0 2/3 out=1050 dec=35.0 cache=0
+[16:18:04]   gemma4-26b-a4b__q4_0       R niah_multi     r1 2/3 out=1051 dec=34.9 cache=81840
+[16:18:34]   gemma4-26b-a4b__q4_0       R niah_multi     r2 2/3 out=1050 dec=35.0 cache=81840
+[16:23:34]   gemma4-26b-a4b__q4_0       R niah_deep      r0 0/1 out=8192 dec=34.2 cache=81825
+[16:28:33]   gemma4-26b-a4b__q4_0       R niah_deep      r1 0/1 out=8192 dec=34.2 cache=81825
+[16:29:16]   gemma4-26b-a4b__q4_0       R niah_deep      r2 0/1 out=1459 dec=34.8 cache=81825
+[16:30:47]   gemma4-26b-a4b__q4_0       R vt_trace       r0 2/2 out=1042 dec=34.4 cache=81862
+[16:35:50]   gemma4-26b-a4b__q4_0       R vt_trace       r1 0/2 out=8192 dec=33.7 cache=81862
+[16:40:52]   gemma4-26b-a4b__q4_0       R vt_trace       r2 0/2 out=8192 dec=33.8 cache=81862
+[16:46:03]   gemma4-26b-a4b__q4_0       R agg_sum        r0 0/2 out=8192 dec=33.1 cache=81840
+[16:51:08]   gemma4-26b-a4b__q4_0       R agg_sum        r1 0/2 out=8192 dec=33.6 cache=81840
+[16:56:10]   gemma4-26b-a4b__q4_0       R agg_sum        r2 0/2 out=8192 dec=33.8 cache=81840
+[17:01:11]   gemma4-26b-a4b__q4_0       R count_proj     r0 0/1 out=8192 dec=34.0 cache=81817
+[17:06:13]   gemma4-26b-a4b__q4_0       R count_proj     r1 0/1 out=8192 dec=33.8 cache=81817
+[17:11:11]   gemma4-26b-a4b__q4_0       R count_proj     r2 0/1 out=8192 dec=34.3 cache=81817
+[17:12:03]   gemma4-26b-a4b__q4_0       R fwe_count      r0 0/1 out=1746 dec=34.6 cache=81348

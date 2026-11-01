@@ -1,0 +1,873 @@
+{
+  "arms": {
+    "gemma4-26b-a4b__f16": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 8
+      },
+      "kv": "f16",
+      "log_tail": "rt medium --reasoning-budget 8192 --reasoning-format deepseek -ub 512 --n-cpu-moe 8\n0.00.059.707 I srv  llama_server: initializing ...\n0.00.059.721 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.060.057 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.062.220 I srv    load_model: loading model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.00.764.087 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.01.123.983 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.01.124.420 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.01.144.871 W load: '</s>' is a normal token here, removing it from EOG list\n0.01.160.858 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n0.07.534.838 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 10658.91 MiB on device 0: cudaMalloc failed: out of memory\n0.07.534.847 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 11176679296\n0.07.681.286 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.07.681.291 E llama_model_load_from_file_impl: failed to load model\n0.07.681.310 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.07.681.326 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.07.681.334 I srv    operator(): operator(): cleaning up before exit...\n0.07.681.941 E srv  llama_server: exiting due to model loading error\n",
+      "model": "gemma4-26b-a4b",
+      "started": "2026-11-01T09:23:36Z"
+    },
+    "gemma4-26b-a4b__q4_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 8
+      },
+      "kv": "q4_0",
+      "log_tail": "rt medium --reasoning-budget 8192 --reasoning-format deepseek -ub 512 --n-cpu-moe 8\n0.00.199.112 I srv  llama_server: initializing ...\n0.00.199.122 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.199.384 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.201.235 I srv    load_model: loading model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.00.911.217 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.01.269.008 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.01.269.379 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.01.289.530 W load: '</s>' is a normal token here, removing it from EOG list\n0.01.305.801 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n0.09.264.730 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 10658.91 MiB on device 0: cudaMalloc failed: out of memory\n0.09.264.736 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 11176679296\n0.09.423.296 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.09.423.306 E llama_model_load_from_file_impl: failed to load model\n0.09.423.314 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.09.423.322 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.09.423.326 I srv    operator(): operator(): cleaning up before exit...\n0.09.424.817 E srv  llama_server: exiting due to model loading error\n",
+      "model": "gemma4-26b-a4b",
+      "started": "2026-11-01T09:24:25Z"
+    },
+    "gemma4-26b-a4b__q8_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 8
+      },
+      "kv": "q8_0",
+      "log_tail": "rt medium --reasoning-budget 8192 --reasoning-format deepseek -ub 512 --n-cpu-moe 8\n0.00.060.464 I srv  llama_server: initializing ...\n0.00.060.476 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.060.733 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.062.737 I srv    load_model: loading model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.00.642.704 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.00.990.138 W load: control-looking token:    212 '</s>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.00.990.514 W load: control-looking token:     50 '<|tool_response>' was not control-type; this is probably a bug in the model. its type will be overridden\n0.01.012.634 W load: '</s>' is a normal token here, removing it from EOG list\n0.01.029.027 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n0.30.285.557 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 10658.91 MiB on device 0: cudaMalloc failed: out of memory\n0.30.285.566 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 11176679296\n0.34.776.159 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.34.776.163 E llama_model_load_from_file_impl: failed to load model\n0.34.776.586 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.34.776.602 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf'\n0.34.777.027 I srv    operator(): operator(): cleaning up before exit...\n0.34.788.332 E srv  llama_server: exiting due to model loading error\n",
+      "model": "gemma4-26b-a4b",
+      "started": "2026-11-01T09:23:46Z"
+    },
+    "ornith-35b__f16": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 16
+      },
+      "kv": "f16",
+      "log_tail": ".ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring\n0.00.880.200 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring\n0.00.880.205 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.880.207 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.880.210 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring\n0.00.880.213 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.880.216 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.880.218 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.880.222 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.880.225 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.880.228 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.880.236 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.45.331.714 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12462.90 MiB on device 0: cudaMalloc failed: out of memory\n0.45.331.727 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 13068298752\n0.46.549.021 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.46.549.415 E llama_model_load_from_file_impl: failed to load model\n0.46.553.787 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.46.555.488 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.46.555.501 I srv    operator(): operator(): cleaning up before exit...\n0.46.559.717 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "started": "2026-11-01T09:24:37Z"
+    },
+    "ornith-35b__q4_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 16
+      },
+      "kv": "q4_0",
+      "log_tail": ".ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring\n0.00.789.970 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring\n0.00.789.974 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.789.977 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.789.979 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring\n0.00.789.981 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.789.984 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.789.986 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.789.989 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.789.991 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.789.994 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.790.001 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.47.547.217 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12462.90 MiB on device 0: cudaMalloc failed: out of memory\n0.47.547.229 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 13068298752\n0.48.210.502 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.48.210.507 E llama_model_load_from_file_impl: failed to load model\n0.48.211.889 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.48.211.907 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.48.212.012 I srv    operator(): operator(): cleaning up before exit...\n0.48.214.685 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "started": "2026-11-01T09:25:37Z"
+    },
+    "ornith-35b__q8_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 16
+      },
+      "kv": "q8_0",
+      "log_tail": ".ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring\n0.00.831.149 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring\n0.00.831.154 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.831.157 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.831.159 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring\n0.00.831.162 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.831.165 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.831.167 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.831.171 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.831.174 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.831.177 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.831.184 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.09.735.198 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12462.90 MiB on device 0: cudaMalloc failed: out of memory\n0.09.735.210 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 13068298752\n0.10.282.816 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.10.282.822 E llama_model_load_from_file_impl: failed to load model\n0.10.282.935 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.10.282.949 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.10.282.955 I srv    operator(): operator(): cleaning up before exit...\n0.10.284.078 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "started": "2026-11-01T09:25:25Z"
+    },
+    "qwen36-35b__f16": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T04:20:49Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncmoe": 26
+      },
+      "kv": "f16",
+      "load_s": 10.0,
+      "model": "qwen36-35b",
+      "started": "2026-11-01T03:53:18Z",
+      "vram_peak_mib": 11619,
+      "wall_s": 1650.7
+    },
+    "qwen36-35b__q4_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T05:25:09Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncmoe": 26
+      },
+      "kv": "q4_0",
+      "load_s": 4.0,
+      "model": "qwen36-35b",
+      "started": "2026-11-01T04:52:39Z",
+      "vram_peak_mib": 10223,
+      "wall_s": 1950.3
+    },
+    "qwen36-35b__q8_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T04:52:39Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncmoe": 26
+      },
+      "kv": "q8_0",
+      "load_s": 4.0,
+      "model": "qwen36-35b",
+      "started": "2026-11-01T04:20:49Z",
+      "vram_peak_mib": 10723,
+      "wall_s": 1909.7
+    },
+    "qwen38-27b__f16": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T06:31:44Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncffn": 8
+      },
+      "kv": "f16",
+      "load_s": 6.0,
+      "model": "qwen38-27b",
+      "started": "2026-11-01T05:25:09Z",
+      "vram_peak_mib": 15899,
+      "wall_s": 3994.9
+    },
+    "qwen38-27b__q4_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T09:17:55Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncffn": 8
+      },
+      "kv": "q4_0",
+      "load_s": 4.0,
+      "model": "qwen38-27b",
+      "started": "2026-11-01T07:49:57Z",
+      "vram_peak_mib": 15380,
+      "wall_s": 5277.6
+    },
+    "qwen38-27b__q8_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_multi:1",
+        "R:niah_multi:2",
+        "R:niah_deep:0",
+        "R:niah_deep:1",
+        "R:niah_deep:2",
+        "R:vt_trace:0",
+        "R:vt_trace:1",
+        "R:vt_trace:2",
+        "R:agg_sum:0",
+        "R:agg_sum:1",
+        "R:agg_sum:2",
+        "R:count_proj:0",
+        "R:count_proj:1",
+        "R:count_proj:2",
+        "R:fwe_count:0",
+        "R:fwe_count:1",
+        "R:fwe_count:2",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:gen_manual:1",
+        "L:gen_manual:2",
+        "L:copy_ledgers:0",
+        "L:copy_ledgers:1",
+        "L:copy_ledgers:2",
+        "L:enumerate_shards:0",
+        "L:enumerate_shards:1",
+        "L:enumerate_shards:2",
+        "L:tool_episode:0",
+        "L:tool_episode:1",
+        "L:tool_episode:2"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T07:49:57Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncffn": 8
+      },
+      "kv": "q8_0",
+      "load_s": 2.0,
+      "model": "qwen38-27b",
+      "started": "2026-11-01T06:31:44Z",
+      "vram_peak_mib": 13277,
+      "wall_s": 4693.4
+    },
+    "qwen38-flash__f16": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 48
+      },
+      "kv": "f16",
+      "log_tail": "SQ-RCO-IQ3_XXS-00001-of-00002.gguf --alias qwen38-flash-f16 --port 18400 -c 102400 -ctk f16 -ctv f16 -ngl 999 -fa on -np 1 -b 2048 --jinja --no-warmup --metrics --cache-reuse 0 --ctx-checkpoints 8 --checkpoint-min-step 8192 --reasoning on --reasoning-effort medium --reasoning-budget 8192 --reasoning-format deepseek --moe-cache-mib 2900 -lm mmap -lzm on -ub 1024 --n-cpu-moe 48\n0.00.016.816 I srv  llama_server: initializing ...\n0.00.016.825 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.017.107 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.019.140 I srv    load_model: loading model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n0.00.653.157 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.00.970.439 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n2.22.124.549 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 3664.71 MiB on device 0: cudaMalloc failed: out of memory\n2.22.128.451 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 3842726912\n2.27.557.985 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n2.27.561.098 E llama_model_load_from_file_impl: failed to load model\n2.27.613.212 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n2.27.613.225 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n2.27.613.230 I srv    operator(): operator(): cleaning up before exit...\n2.27.624.356 E srv  llama_server: exiting due to model loading error\n",
+      "model": "qwen38-flash",
+      "started": "2026-11-01T09:17:55Z"
+    },
+    "qwen38-flash__q4_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 48
+      },
+      "kv": "q4_0",
+      "log_tail": "RCO-IQ3_XXS-00001-of-00002.gguf --alias qwen38-flash-q4_0 --port 18400 -c 102400 -ctk q4_0 -ctv q4_0 -ngl 999 -fa on -np 1 -b 2048 --jinja --no-warmup --metrics --cache-reuse 0 --ctx-checkpoints 8 --checkpoint-min-step 8192 --reasoning on --reasoning-effort medium --reasoning-budget 8192 --reasoning-format deepseek --moe-cache-mib 2900 -lm mmap -lzm on -ub 1024 --n-cpu-moe 48\n0.00.059.940 I srv  llama_server: initializing ...\n0.00.059.951 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.060.206 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.062.174 I srv    load_model: loading model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n0.00.633.525 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.00.893.062 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n1.51.987.256 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 3664.71 MiB on device 0: cudaMalloc failed: out of memory\n1.51.987.267 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 3842726912\n1.52.631.984 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n1.52.631.990 E llama_model_load_from_file_impl: failed to load model\n1.52.632.215 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n1.52.632.231 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n1.52.632.240 I srv    operator(): operator(): cleaning up before exit...\n1.52.634.001 E srv  llama_server: exiting due to model loading error\n",
+      "model": "qwen38-flash",
+      "started": "2026-11-01T09:21:43Z"
+    },
+    "qwen38-flash__q8_0": {
+      "ctx": 102400,
+      "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "done": [],
+      "errors": [],
+      "failed": "server did not start",
+      "finished": null,
+      "flags": {},
+      "knobs": {
+        "ncmoe": 48
+      },
+      "kv": "q8_0",
+      "log_tail": "RCO-IQ3_XXS-00001-of-00002.gguf --alias qwen38-flash-q8_0 --port 18400 -c 102400 -ctk q8_0 -ctv q8_0 -ngl 999 -fa on -np 1 -b 2048 --jinja --no-warmup --metrics --cache-reuse 0 --ctx-checkpoints 8 --checkpoint-min-step 8192 --reasoning on --reasoning-effort medium --reasoning-budget 8192 --reasoning-format deepseek --moe-cache-mib 2900 -lm mmap -lzm on -ub 1024 --n-cpu-moe 48\n0.00.210.596 I srv  llama_server: initializing ...\n0.00.210.606 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)\n0.00.210.867 W srv  llama_server: security: no API key is set and CORS allows all origins (see https://github.com/ggml-org/llama.cpp/pull/25655)\n0.00.212.882 I srv    load_model: loading model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n0.00.842.670 W common_fit_params: failed to fit params to free device memory: n_gpu_layers already set by user to 999, abort\n0.01.106.517 W llama_model_loader: tensor overrides to CPU are used with mmap enabled - consider using --load-mode none for better performance\n1.14.056.144 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 3664.71 MiB on device 0: cudaMalloc failed: out of memory\n1.14.056.153 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 3842726912\n1.14.592.958 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n1.14.592.964 E llama_model_load_from_file_impl: failed to load model\n1.14.593.057 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n1.14.593.073 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf'\n1.14.593.081 I srv    operator(): operator(): cleaning up before exit...\n1.14.595.023 E srv  llama_server: exiting due to model loading error\n",
+      "model": "qwen38-flash",
+      "started": "2026-11-01T09:20:26Z"
+    }
+  },
+  "context": 102400,
+  "created": "2026-11-01T09:26:27Z",
+  "deadline_reached": false,
+  "document": {
+    "chars": 305234,
+    "filler_chars": 278835,
+    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "tokens_by_model": {
+      "gemma4-26b-a4b": 81765,
+      "ornith-35b": 91284,
+      "qwen36-35b": 91284,
+      "qwen38-27b": 91284,
+      "qwen38-flash": 91284
+    }
+  },
+  "fit": {
+    "common_ctx": 102400,
+    "document": {
+      "calibration": [
+        {
+          "chars": 456405,
+          "counts": {
+            "gemma4-26b-a4b": 120117,
+            "ornith-35b": 135049,
+            "qwen36-35b": 135049,
+            "qwen38-27b": 135049,
+            "qwen38-flash": 135049
+          },
+          "filler_chars": 430000,
+          "max_tokens": 135049,
+          "min_tokens": 120117
+        },
+        {
+          "chars": 315779,
+          "counts": {
+            "gemma4-26b-a4b": 84419,
+            "ornith-35b": 94322,
+            "qwen36-35b": 94322,
+            "qwen38-27b": 94322,
+            "qwen38-flash": 94322
+          },
+          "filler_chars": 289380,
+          "max_tokens": 94322,
+          "min_tokens": 84419
+        },
+        {
+          "chars": 305234,
+          "counts": {
+            "gemma4-26b-a4b": 81765,
+            "ornith-35b": 91284,
+            "qwen36-35b": 91284,
+            "qwen38-27b": 91284,
+            "qwen38-flash": 91284
+          },
+          "filler_chars": 278835,
+          "max_tokens": 91284,
+          "min_tokens": 81765
+        }
+      ],
+      "chars": 305234,
+      "filler_chars": 278835,
+      "fwe_count": 20,
+      "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+      "target_tokens": 93696,
+      "tokens_by_model": {
+        "gemma4-26b-a4b": 81765,
+        "ornith-35b": 91284,
+        "qwen36-35b": 91284,
+        "qwen38-27b": 91284,
+        "qwen38-flash": 91284
+      }
+    },
+    "geometry": {
+      "gemma4-26b-a4b": {
+        "arch": "gemma4",
+        "context_length": 262144,
+        "file": "/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+        "full_attention_interval": null,
+        "full_attn_layers": 5,
+        "gguf_version": 3,
+        "key_length": 512,
+        "kv_bytes_per_token": {
+          "f16": 20480,
+          "q4_0": 5760,
+          "q8_0": 10880
+        },
+        "model_name": "gemma-4-26B-A4B-it",
+        "n_heads": 16,
+        "n_kv_heads": [
+          8,
+          8,
+          8,
+          8,
+          8,
+          2,
+          8,
+          8,
+          8,
+          8,
+          8,
+          2,
+          8,
+          8,
+          8,
+          8,
+          8,
+          2,
+          8,
+          8,
+          8,
+          8,
+          8,
+          2,
+          8,
+          8,
+          8,
+          8,
+          8,
+          2
+        ],
+        "n_layers": 30,
+        "n_tensors": 658,
+        "rope_freq_base": 1000000.0,
+        "sliding_window": 1024,
+        "tensor_bytes": 14602321016,
+        "value_length": 512
+      },
+      "ornith-35b": {
+        "arch": "qwen35moe",
+        "context_length": 262144,
+        "file": "/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+        "full_attention_interval": 4,
+        "full_attn_layers": 10,
+        "gguf_version": 3,
+        "key_length": 256,
+        "kv_bytes_per_token": {
+          "f16": 20480,
+          "q4_0": 5760,
+          "q8_0": 10880
+        },
+        "model_name": "Ornith-1.5-35B",
+        "n_heads": 16,
+        "n_kv_heads": 2,
+        "n_layers": 41,
+        "n_tensors": 753,
+        "rope_freq_base": 10000000.0,
+        "sliding_window": null,
+        "tensor_bytes": 21702472192,
+        "value_length": 256
+      },
+      "qwen36-35b": {
+        "arch": "qwen35moe",
+        "context_length": 262144,
+        "file": "/home/kome/.local/share/llm-models/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+        "full_attention_interval": 4,
+        "full_attn_layers": 10,
+        "gguf_version": 3,
+        "key_length": 256,
+        "kv_bytes_per_token": {
+          "f16": 20480,
+          "q4_0": 5760,
+          "q8_0": 10880
+        },
+        "model_name": "Qwen3.6-35B-A3B",
+        "n_heads": 16,
+        "n_kv_heads": 2,
+        "n_layers": 41,
+        "n_tensors": 753,
+        "rope_freq_base": 10000000.0,
+        "sliding_window": null,
+        "tensor_bytes": 22842671616,
+        "value_length": 256
+      },
+      "qwen38-27b": {
+        "arch": "qwen35",
+        "context_length": 262144,
+        "file": "/home/kome/.local/share/llm-models/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+        "full_attention_interval": 4,
+        "full_attn_layers": 16,
+        "gguf_version": 3,
+        "key_length": 256,
+        "kv_bytes_per_token": {
+          "f16": 65536,
+          "q4_0": 18432,
+          "q8_0": 34816
+        },
+        "model_name": "Qwen3.8-27B GSQ-RCO",
+        "n_heads": 24,
+        "n_kv_heads": 4,
+        "n_layers": 65,
+        "n_tensors": 866,
+        "rope_freq_base": 10000000.0,
+        "sliding_window": null,
+        "tensor_bytes": 11125694464,
+        "value_length": 256
+      },
+      "qwen38-flash": {
+        "arch": "qwen4exp",
+        "context_length": 262144,
+        "file": "/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+        "full_attention_interval": 4,
+        "full_attn_layers": 12,
+        "gguf_version": 3,
+        "key_length": 256,
+        "kv_bytes_per_token": {
+          "f16": 24576,
+          "q4_0": 6912,
+          "q8_0": 13056
+        },
+        "model_name": "Qwen3.8-Flash-Next GSQ-RCO",
+        "n_heads": 24,
+        "n_kv_heads": 2,
+        "n_layers": 48,
+        "n_tensors": 1223,
+        "rope_freq_base": 10000000.0,
+        "sliding_window": null,
+        "tensor_bytes": 65126192640,
+        "value_length": 256
+      }
+    },
+    "geometry_warnings": [],
+    "unfit": []
+  },
+  "manifest": {
+    "budgets": {
+      "C": 6144,
+      "L": 2048,
+      "R": 2048,
+      "tool_turn": 512
+    },
+    "context": 102400,
+    "context_ladder": [
+      102400,
+      98304,
+      90112,
+      81920,
+      73728,
+      65536,
+      57344,
+      49152
+    ],
+    "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "host": "RTX 3080 Laptop 16384 MiB / 64 GiB RAM",
+    "knobs": {
+      "gemma4-26b-a4b": {
+        "ncmoe": 8
+      },
+      "ornith-35b": {
+        "ncmoe": 16
+      },
+      "qwen36-35b": {
+        "ncmoe": 26
+      },
+      "qwen38-27b": {
+        "ncffn": 8
+      },
+      "qwen38-flash": {
+        "ncmoe": 48
+      }
+    },
+    "kv_arms": [
+      "f16",
+      "q8_0",
+      "q4_0"
+    ],
+    "llama_cpp": {
+      "build_type": "Release",
+      "commit": "2a667032dc788c3a071d538e0b572e45a3f12731",
+      "cuda": "13.4 (V13.4.92)",
+      "cuda_arch": "86",
+      "driver": "615.78.08",
+      "ggml_cuda": true,
+      "ggml_cuda_fa": true,
+      "ggml_cuda_fa_all_quants": false,
+      "ggml_cuda_fa_quants": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
+      "version": "0.7.0-dev (build 11698)"
+    },
+    "models": {
+      "gemma4-26b-a4b": {
+        "bytes": 14618145824,
+        "path": "/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+        "sha256": "d208665ab1cd3a69f7a9a4bc59430e8448c8093d9b06334f566ac59d6d504a03"
+      },
+      "ornith-35b": {
+        "bytes": 21713463040,
+        "path": "/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+        "sha256": "42739874cc2ccfdb8523b23fbe52e29b2a7555c8176737ca9ca0b5d59859d41f"
+      },
+      "qwen36-35b": {
+        "bytes": 22853663008,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+        "sha256": "55983c5a75a1ab969824077b3bb3de4146e82a9234072b48ad4e8f92ad3fe9f1"
+      },
+      "qwen38-27b": {
+        "bytes": 10442827840,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+        "sha256": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262"
+      },
+      "qwen38-flash": {
+        "bytes": 47039860096,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+        "sha256": "219ea929900dfa9ef091f3aa473fdba6874b65fcb36526d7d851ac9e95856d15"
+      }
+    },
+    "reasoning_budget_tokens": {
+      "C": 3072,
+      "L": 256,
+      "R": 1024,
+      "tool_turn": 256
+    },
+    "reps": 3,
+    "sampling_graded": {
+      "dry_multiplier": 0.0,
+      "min_p": 0.0,
+      "repeat_last_n": 64,
+      "repeat_penalty": 1.05,
+      "temperature": 0.0,
+      "top_k": 20,
+      "top_p": 0.95
+    },
+    "sampling_loop": {
+      "dry_multiplier": 0.0,
+      "min_p": 0.0,
+      "repeat_last_n": 0,
+      "repeat_penalty": 1.0,
+      "temperature": 0.7,
+      "top_k": 20,
+      "top_p": 0.95
+    },
+    "seeds": [
+      1001,
+      1002,
+      1003
+    ],
+    "server_common": [
+      "-ngl",
+      "999",
+      "-fa",
+      "on",
+      "-np",
+      "1",
+      "-b",
+      "2048",
+      "--jinja",
+      "--no-warmup",
+      "--metrics",
+      "--cache-reuse",
+      "0",
+      "--ctx-checkpoints",
+      "8",
+      "--checkpoint-min-step",
+      "8192",
+      "--reasoning",
+      "on",
+      "--reasoning-effort",
+      "medium",
+      "--reasoning-budget",
+      "8192",
+      "--reasoning-format",
+      "deepseek"
+    ]
+  },
+  "samples": 216,
+  "stamp": "2026-11-01",
+  "tasks": {
+    "C": [
+      "cg_csvlite",
+      "cg_fixedpoint",
+      "cg_intervals",
+      "cg_semver",
+      "cg_statistics",
+      "repo_fix"
+    ],
+    "L": [
+      "gen_manual",
+      "copy_ledgers",
+      "enumerate_shards",
+      "tool_episode"
+    ],
+    "R": [
+      "niah_multi",
+      "niah_deep",
+      "vt_trace",
+      "agg_sum",
+      "count_proj",
+      "fwe_count"
+    ]
+  },
+  "unrun_arms": []
+}

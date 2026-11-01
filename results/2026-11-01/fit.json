@@ -143,38 +143,198 @@
       "ttft_s": 102.2,
       "vram_peak_mib": 13743,
       "wall_s": 40.5
+    },
+    {
+      "ctx": 102400,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 12.1,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.762.158 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.762.161 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.762.163 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.762.166 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.762.172 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.10.906.780 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 2000.00 MiB on device 0: cudaMalloc failed: out of memory\n0.10.906.785 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 2097152000\n0.10.909.907 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.10.909.912 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.10.910.018 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.10.911.181 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.10.911.636 I srv    operator(): operator(): cleaning up before exit...\n0.10.913.397 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 98304,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.777.076 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.777.079 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.777.082 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.777.084 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.777.091 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.03.052.283 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1920.00 MiB on device 0: cudaMalloc failed: out of memory\n0.03.052.286 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 2013265920\n0.03.053.429 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.03.053.432 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.03.053.435 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.03.053.439 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.03.053.440 I srv    operator(): operator(): cleaning up before exit...\n0.03.053.974 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 90112,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.726.504 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.726.507 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.726.510 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.726.513 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.726.520 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.409.283 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1760.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.409.287 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1845493760\n0.02.409.585 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.409.588 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.409.592 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.409.594 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.409.596 I srv    operator(): operator(): cleaning up before exit...\n0.02.410.052 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 81920,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.738.683 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.738.687 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.738.689 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.738.692 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.738.699 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.436.846 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1600.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.436.850 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1677721600\n0.02.437.135 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.437.138 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.437.140 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.437.143 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.437.145 I srv    operator(): operator(): cleaning up before exit...\n0.02.437.621 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 73728,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.717.120 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.717.123 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.717.126 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.717.128 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.717.135 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.384.527 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1440.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.384.533 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1509949440\n0.02.384.834 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.384.837 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.384.840 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.384.842 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.384.844 I srv    operator(): operator(): cleaning up before exit...\n0.02.385.299 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 65536,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.882.865 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.882.869 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.882.871 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.882.874 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.882.881 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.552.416 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1280.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.552.421 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1342177280\n0.02.552.729 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.552.733 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.552.735 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.552.739 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.552.740 I srv    operator(): operator(): cleaning up before exit...\n0.02.554.180 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 57344,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.729.948 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.729.951 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.729.954 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.729.956 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.729.963 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.401.992 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 1120.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.401.996 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1174405120\n0.02.402.392 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.402.395 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.402.399 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.402.402 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.402.403 I srv    operator(): operator(): cleaning up before exit...\n0.02.403.170 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 49152,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 4.0,
+      "log_tail": "ize = 589824 bytes) -- ignoring\n0.00.724.781 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.724.785 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.724.787 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.724.790 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.724.797 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.02.397.998 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 960.00 MiB on device 0: cudaMalloc failed: out of memory\n0.02.398.002 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 1006632960\n0.02.398.317 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.02.398.320 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.398.323 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.398.326 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.02.398.328 I srv    operator(): operator(): cleaning up before exit...\n0.02.398.826 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 102400,
+      "knobs": {
+        "ncmoe": 10
+      },
+      "load_s": 8.0,
+      "log_tail": "ze = 589824 bytes) -- ignoring\n0.00.741.828 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.741.831 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.741.834 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.741.836 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.741.852 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.05.779.607 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 2000.00 MiB on device 0: cudaMalloc failed: out of memory\n0.05.779.611 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 2097152000\n0.05.779.904 E llama_init_from_model: failed to initialize the context: failed to allocate buffer for kv cache\n0.05.779.908 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.05.779.911 E cmn  common_init_: failed to create context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.05.779.914 E srv    load_model: failed to create_context with model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.05.779.916 I srv    operator(): operator(): cleaning up before exit...\n0.05.780.526 E srv  llama_server: exiting due to model loading error\n",
+      "model": "ornith-35b",
+      "ok": false,
+      "reason": "oom"
+    },
+    {
+      "ctx": 102400,
+      "decode_tps": 48.0,
+      "depth_attempts": [
+        {
+          "decode_tps": 48.0,
+          "error": null,
+          "knobs": {
+            "ncmoe": 16
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 912.5,
+          "prompt_tokens": 91302,
+          "ttft_s": 100.1,
+          "vram_peak_mib": 15447
+        }
+      ],
+      "knobs": {
+        "ncmoe": 16
+      },
+      "load_s": 4.0,
+      "model": "ornith-35b",
+      "ok": true,
+      "prefill_tps": 912.5,
+      "probe_decode_tps": 59.0,
+      "probe_prefill_tps": 1034.9,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 100.1,
+      "vram_peak_mib": 15447,
+      "wall_s": 35.6
     }
   ],
   "common_ctx": 102400,
-  "created": "2026-11-01T01:37:57Z",
+  "created": "2026-11-01T03:49:03Z",
   "document": {
     "calibration": [
       {
         "chars": 456405,
         "counts": {
-          "gemma4-26b-a4b": 120117
+          "gemma4-26b-a4b": 120117,
+          "ornith-35b": 135049,
+          "qwen36-35b": 135049,
+          "qwen38-27b": 135049,
+          "qwen38-flash": 135049
         },
         "filler_chars": 430000,
-        "max_tokens": 120117,
+        "max_tokens": 135049,
         "min_tokens": 120117
       },
       {
-        "chars": 351755,
+        "chars": 315779,
         "counts": {
-          "gemma4-26b-a4b": 93532
+          "gemma4-26b-a4b": 84419,
+          "ornith-35b": 94322,
+          "qwen36-35b": 94322,
+          "qwen38-27b": 94322,
+          "qwen38-flash": 94322
         },
-        "filler_chars": 325354,
-        "max_tokens": 93532,
-        "min_tokens": 93532
+        "filler_chars": 289380,
+        "max_tokens": 94322,
+        "min_tokens": 84419
+      },
+      {
+        "chars": 305234,
+        "counts": {
+          "gemma4-26b-a4b": 81765,
+          "ornith-35b": 91284,
+          "qwen36-35b": 91284,
+          "qwen38-27b": 91284,
+          "qwen38-flash": 91284
+        },
+        "filler_chars": 278835,
+        "max_tokens": 91284,
+        "min_tokens": 81765
       }
     ],
-    "chars": 351755,
-    "filler_chars": 325354,
+    "chars": 305234,
+    "filler_chars": 278835,
     "fwe_count": 20,
-    "sha256": "f045b8b238e485253e16598de1795080bc0400c64a5bad72125fe205e1ad9688",
+    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
     "target_tokens": 93696,
     "tokens_by_model": {
-      "gemma4-26b-a4b": 93532
+      "gemma4-26b-a4b": 81765,
+      "ornith-35b": 91284,
+      "qwen36-35b": 91284,
+      "qwen38-27b": 91284,
+      "qwen38-flash": 91284
     }
   },
   "free_vram_mib_at_start": 13,
@@ -234,7 +394,27 @@
       "value_length": 512
     },
     "ornith-35b": {
-      "error": "missing model file"
+      "arch": "qwen35moe",
+      "context_length": 262144,
+      "file": "/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+      "full_attention_interval": 4,
+      "full_attn_layers": 10,
+      "gguf_version": 3,
+      "key_length": 256,
+      "kv_bytes_per_token": {
+        "f16": 20480,
+        "q4_0": 5760,
+        "q8_0": 10880
+      },
+      "model_name": "Ornith-1.5-35B",
+      "n_heads": 16,
+      "n_kv_heads": 2,
+      "n_layers": 41,
+      "n_tensors": 753,
+      "rope_freq_base": 10000000.0,
+      "sliding_window": null,
+      "tensor_bytes": 21702472192,
+      "value_length": 256
     },
     "qwen36-35b": {
       "arch": "qwen35moe",
@@ -330,10 +510,10 @@
           },
           "log_tail": null,
           "ok": true,
-          "prefill_tps": 915.7,
-          "prompt_tokens": 93556,
-          "ttft_s": 102.2,
-          "vram_peak_mib": 13743
+          "prefill_tps": 948.3,
+          "prompt_tokens": 81789,
+          "ttft_s": 86.3,
+          "vram_peak_mib": 13896
         }
       ],
       "knobs": {
@@ -342,34 +522,70 @@
       "load_s": 8.1,
       "model": "gemma4-26b-a4b",
       "ok": true,
-      "prefill_tps": 915.7,
+      "prefill_tps": 948.3,
       "probe_decode_tps": 51.8,
       "probe_prefill_tps": 1061.3,
       "probe_tokens": 31912,
-      "prompt_tokens": 93556,
+      "prompt_tokens": 81789,
       "reverified": true,
       "tiny_error": null,
       "tiny_ok": true,
-      "ttft_s": 102.2,
-      "vram_peak_mib": 13743,
+      "ttft_s": 86.3,
+      "vram_peak_mib": 13896,
       "wall_s": 40.5
+    },
+    "ornith-35b": {
+      "ctx": 102400,
+      "decode_tps": 48.0,
+      "depth_attempts": [
+        {
+          "decode_tps": 48.0,
+          "error": null,
+          "knobs": {
+            "ncmoe": 16
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 912.5,
+          "prompt_tokens": 91302,
+          "ttft_s": 100.1,
+          "vram_peak_mib": 15447
+        }
+      ],
+      "knobs": {
+        "ncmoe": 16
+      },
+      "load_s": 4.0,
+      "model": "ornith-35b",
+      "ok": true,
+      "prefill_tps": 912.5,
+      "probe_decode_tps": 59.0,
+      "probe_prefill_tps": 1034.9,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 100.1,
+      "vram_peak_mib": 15447,
+      "wall_s": 35.6
     },
     "qwen36-35b": {
       "ctx": 102400,
-      "decode_tps": 36.4,
+      "decode_tps": 38.0,
       "depth_attempts": [
         {
-          "decode_tps": 36.4,
+          "decode_tps": 38.0,
           "error": null,
           "knobs": {
             "ncmoe": 26
           },
           "log_tail": null,
           "ok": true,
-          "prefill_tps": 749.5,
+          "prefill_tps": 756.0,
           "prompt_tokens": 91302,
-          "ttft_s": 121.8,
-          "vram_peak_mib": 11619
+          "ttft_s": 120.8,
+          "vram_peak_mib": 11770
         }
       ],
       "knobs": {
@@ -378,7 +594,7 @@
       "load_s": 8.0,
       "model": "qwen36-35b",
       "ok": true,
-      "prefill_tps": 749.5,
+      "prefill_tps": 756.0,
       "probe_decode_tps": 43.7,
       "probe_prefill_tps": 804.6,
       "probe_tokens": 31385,
@@ -386,25 +602,25 @@
       "reverified": true,
       "tiny_error": null,
       "tiny_ok": true,
-      "ttft_s": 121.8,
-      "vram_peak_mib": 11619,
+      "ttft_s": 120.8,
+      "vram_peak_mib": 11770,
       "wall_s": 49.0
     },
     "qwen38-27b": {
       "ctx": 102400,
-      "decode_tps": 12.2,
+      "decode_tps": 12.6,
       "depth_attempts": [
         {
-          "decode_tps": 12.2,
+          "decode_tps": 12.6,
           "error": null,
           "knobs": {
             "ncffn": 8
           },
           "log_tail": null,
           "ok": true,
-          "prefill_tps": 420.1,
+          "prefill_tps": 423.2,
           "prompt_tokens": 91302,
-          "ttft_s": 217.3,
+          "ttft_s": 215.7,
           "vram_peak_mib": 15895
         }
       ],
@@ -414,7 +630,7 @@
       "load_s": 4.0,
       "model": "qwen38-27b",
       "ok": true,
-      "prefill_tps": 420.1,
+      "prefill_tps": 423.2,
       "probe_decode_tps": 14.3,
       "probe_prefill_tps": 524.1,
       "probe_tokens": 31385,
@@ -422,25 +638,25 @@
       "reverified": true,
       "tiny_error": null,
       "tiny_ok": true,
-      "ttft_s": 217.3,
+      "ttft_s": 215.7,
       "vram_peak_mib": 15895,
       "wall_s": 68.3
     },
     "qwen38-flash": {
       "ctx": 102400,
-      "decode_tps": 17.4,
+      "decode_tps": 17.5,
       "depth_attempts": [
         {
-          "decode_tps": 17.4,
+          "decode_tps": 17.5,
           "error": null,
           "knobs": {
             "ncmoe": 48
           },
           "log_tail": null,
           "ok": true,
-          "prefill_tps": 305.6,
+          "prefill_tps": 307.7,
           "prompt_tokens": 91302,
-          "ttft_s": 298.8,
+          "ttft_s": 296.7,
           "vram_peak_mib": 11259
         }
       ],
@@ -450,7 +666,7 @@
       "load_s": 14.0,
       "model": "qwen38-flash",
       "ok": true,
-      "prefill_tps": 305.6,
+      "prefill_tps": 307.7,
       "probe_decode_tps": 16.5,
       "probe_prefill_tps": 273.4,
       "probe_tokens": 31385,
@@ -458,18 +674,22 @@
       "reverified": true,
       "tiny_error": null,
       "tiny_ok": true,
-      "ttft_s": 298.8,
+      "ttft_s": 296.7,
       "vram_peak_mib": 11259,
       "wall_s": 133.3
     }
   },
   "probe_document": {
-    "filler_chars": 83419,
+    "filler_chars": 72129,
     "tokens": {
-      "gemma4-26b-a4b": 31888
+      "gemma4-26b-a4b": 28982,
+      "ornith-35b": 31367,
+      "qwen36-35b": 31367,
+      "qwen38-27b": 31367,
+      "qwen38-flash": 31367
     }
   },
   "stamp": "2026-11-01",
   "unfit": [],
-  "wall_s": 156.3
+  "wall_s": 178.0
 }

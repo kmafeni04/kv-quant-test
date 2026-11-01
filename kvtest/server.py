@@ -92,29 +92,47 @@ class Server:
         self.vram = VramSampler()
         self.start_s, self.load_s = None, None
 
-    def start(self, timeout=900):
-        if not port_free(self.port):
-            print(f"[server] port {self.port} still in use; refusing to start", flush=True)
-            return False
-        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
-        cmd = build_cmd(self.model_key, self.kv, self.ctx, self.knobs, self.port)
-        self.cmd = cmd
+    def wait_vram_free(self, below=1024, timeout=240):
+        """A previous arm's CUDA context can outlive its process for a moment; do not race it."""
         t0 = time.time()
-        self.log = open(self.log_path, "wb")
-        self.log.write(("# " + " ".join(cmd) + "\n").encode())
-        self.log.flush()
-        self.proc = subprocess.Popen(cmd, stdout=self.log, stderr=subprocess.STDOUT,
-                                     start_new_session=True)
-        self.vram.start()
-        ok, waited, payload = client.wait_ready(self.base, timeout=timeout, proc=self.proc)
-        self.start_s = round(time.time() - t0, 1)
-        if not ok:
+        while time.time() - t0 < timeout:
+            used = gpu_mib()
+            if 0 <= used < below:
+                return True
+            time.sleep(2)
+        print(f"[server] WARNING: GPU still holds {gpu_mib()} MiB after {timeout}s", flush=True)
+        return False
+
+    def start(self, timeout=900, attempts=2):
+        os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
+        for attempt in range(attempts):
+            if not port_free(self.port):
+                print(f"[server] port {self.port} still in use; refusing to start", flush=True)
+                return False
+            self.wait_vram_free()
+            cmd = build_cmd(self.model_key, self.kv, self.ctx, self.knobs, self.port)
+            self.cmd = cmd
+            t0 = time.time()
+            self.log = open(self.log_path, "wb")
+            self.log.write(("# " + " ".join(cmd) + "\n").encode())
+            self.log.flush()
+            self.proc = subprocess.Popen(cmd, stdout=self.log, stderr=subprocess.STDOUT,
+                                         start_new_session=True)
+            self.vram.start()
+            ok, waited, payload = client.wait_ready(self.base, timeout=timeout, proc=self.proc)
+            self.start_s = round(time.time() - t0, 1)
+            if ok:
+                self.load_s = self.start_s
+                return True
+            reason = self.oom_reason() or str(payload)
             print(f"[server] {self.model_key} {self.kv} ctx={self.ctx} knobs={self.knobs} "
-                  f"failed after {waited:.0f}s: {payload}", flush=True)
+                  f"attempt {attempt + 1}/{attempts} failed after {waited:.0f}s "
+                  f"(gpu {gpu_mib()} MiB used): {reason}", flush=True)
             self.stop()
-            return False
-        self.load_s = self.start_s
-        return True
+            if attempt + 1 < attempts:
+                # a transient hold on VRAM is the one thing a retry can fix
+                time.sleep(15)
+        return False
 
     def log_tail(self, n=4000):
         try:

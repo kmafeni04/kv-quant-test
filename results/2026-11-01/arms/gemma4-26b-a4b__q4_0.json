@@ -1,0 +1,34 @@
+{
+  "ctx": 102400,
+  "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+  "done": [
+    "R:niah_multi:0",
+    "R:niah_multi:1",
+    "R:niah_multi:2",
+    "R:niah_deep:0",
+    "R:niah_deep:1",
+    "R:niah_deep:2",
+    "R:vt_trace:0",
+    "R:vt_trace:1",
+    "R:vt_trace:2",
+    "R:agg_sum:0",
+    "R:agg_sum:1",
+    "R:agg_sum:2",
+    "R:count_proj:0",
+    "R:count_proj:1",
+    "R:count_proj:2",
+    "R:fwe_count:0"
+  ],
+  "errors": [],
+  "finished": null,
+  "flags": {
+    "reasoning_supported": true
+  },
+  "knobs": {
+    "ncmoe": 8
+  },
+  "kv": "q4_0",
+  "load_s": 4.0,
+  "model": "gemma4-26b-a4b",
+  "started": "2026-11-01T09:24:25Z"
+}

@@ -1,0 +1,16 @@
+{
+  "ctx": 102400,
+  "document_sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+  "done": [],
+  "errors": [],
+  "failed": "server did not start",
+  "finished": null,
+  "flags": {},
+  "knobs": {
+    "ncmoe": 16
+  },
+  "kv": "f16",
+  "log_tail": ".ffn_gate_inp.weight (size = 2097152 bytes) -- ignoring\n0.00.880.200 W model has unused tensor blk.40.ffn_down_exps.weight (size = 220200960 bytes) -- ignoring\n0.00.880.205 W model has unused tensor blk.40.ffn_gate_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.880.207 W model has unused tensor blk.40.ffn_up_exps.weight (size = 150994944 bytes) -- ignoring\n0.00.880.210 W model has unused tensor blk.40.ffn_gate_inp_shexp.weight (size = 8192 bytes) -- ignoring\n0.00.880.213 W model has unused tensor blk.40.ffn_gate_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.880.216 W model has unused tensor blk.40.ffn_up_shexp.weight (size = 589824 bytes) -- ignoring\n0.00.880.218 W model has unused tensor blk.40.ffn_down_shexp.weight (size = 860160 bytes) -- ignoring\n0.00.880.222 W model has unused tensor blk.40.nextn.eh_proj.weight (size = 4718592 bytes) -- ignoring\n0.00.880.225 W model has unused tensor blk.40.nextn.enorm.weight (size = 8192 bytes) -- ignoring\n0.00.880.228 W model has unused tensor blk.40.nextn.hnorm.weight (size = 8192 bytes) -- ignoring\n0.00.880.236 W model has unused tensor blk.40.nextn.shared_head_norm.weight (size = 8192 bytes) -- ignoring\n0.45.331.714 E ggml_backend_cuda_buffer_type_alloc_buffer: allocating 12462.90 MiB on device 0: cudaMalloc failed: out of memory\n0.45.331.727 E ggml_backend_buft_alloc_buffer_n_default: failed to allocate CUDA0 buffer of size 13068298752\n0.46.549.021 E llama_model_load: error loading model: unable to allocate CUDA0 buffer\n0.46.549.415 E llama_model_load_from_file_impl: failed to load model\n0.46.553.787 E cmn  common_init_: failed to load model '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.46.555.488 E srv    load_model: failed to load model, '/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf'\n0.46.555.501 I srv    operator(): operator(): cleaning up before exit...\n0.46.559.717 E srv  llama_server: exiting due to model loading error\n",
+  "model": "ornith-35b",
+  "started": "2026-11-01T09:24:37Z"
+}
