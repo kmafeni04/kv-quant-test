@@ -278,6 +278,11 @@ def test_code_tier(tmp):
     shutil.copytree(codegraders.REPO_DIR, work)
     _repair_repo(work)
     res = codegraders.run_repo(work, os.path.join(codegraders.REPO_DIR, "checks.json"))
+    graded = codegraders.grade_c(next(t for t in codegraders.c_tasks() if t["id"] == "repo_fix"),
+                                 "### FILE: intervalkit/core.py\n```python\nx = 1\n```\n",
+                                 os.path.join(tmp, "repo-nofix"))
+    check("repo_fix is only resolved when the visible test passes too",
+          graded["resolved"] is False and graded["visible_test"] is False, graded)
     check("repaired repository scores 54/54", res["passed"] == res["of"] == 54,
           f"{res['passed']}/{res['of']} {res.get('load_error')}")
     work2 = os.path.join(tmp, "repo-buggy")
@@ -431,9 +436,11 @@ def test_report(tmp, runner_out):
           and report.perm_p([-1, -1, -1, -1, -1, -1])[1] == 2 / 64)
     check("report html is self-contained (no external references)",
           not [u for u in __import__("re").findall(r'(?:src|href)="(?!#)([^"]+)"', page)])
-    check("report markdown is non-empty and has the tables",
-          os.path.getsize(os.path.join(out, "REPORT.md")) > 1500
-          and "## Loop table" in open(os.path.join(out, "REPORT.md")).read())
+    md_short = open(os.path.join(out, "REPORT.md")).read()
+    md_full = open(os.path.join(out, "REPORT-APPENDIX.md")).read()
+    check("REPORT.md stays short and the tables live in the appendix",
+          len(md_short.splitlines()) < 80 and "## Loop table" in md_full,
+          len(md_short.splitlines()))
     check("matrix.csv has one row per arm",
           len(open(os.path.join(out, "matrix.csv")).read().strip().splitlines()) == 16)
     check("report is idempotent (rebuild from raw+samples)", report.build(out)[1]["stamp"]
@@ -447,12 +454,12 @@ def test_report(tmp, runner_out):
           [t[2] for t in v["flat"]])
     # and it must also work on the real end-to-end arm the mock produced
     report.build(runner_out)
-    md = open(os.path.join(runner_out, "REPORT.md")).read()
+    md = open(os.path.join(runner_out, "REPORT-APPENDIX.md")).read()
     check("report prints the hardware and build section",
           "## Hardware and build this ran on" in md and "| GPU |" in md,
           [ln for ln in md.splitlines() if "GPU" in ln][:2])
     check("report falls back to hardware.json when raw.json predates capture",
-          "hardware.json" in md or "captured at matrix start" in md,
+          "hardware.json" in md or "captured" in md,
           [ln for ln in md.splitlines() if "Recorded:" in ln][:1])
 
 
@@ -527,10 +534,17 @@ def test_leader_test_is_per_tier(tmp):
     built_r, pooled_r = _leader_fixture(
         tmp, "leadertest_r", r_shift=-1,
         c_pairs=[(261, 61), (61, 261), (261, 61), (61, 261), (261, 61), (61, 261)], l_flags=())
+    out_r = built_r["arms"]["m__q4_0"]["sig"]["R"]
     row_r = next(r for r in built_r["verdict"]["flat"] if r[1] == "q4_0")
-    check("a real R gap is not diluted by C noise (per-tier test)",
-          row_r[6] < report.ALPHA, (row_r[6], row_r))
-    check("that same R gap would be hidden if the tiers were pooled",
+    # 18 samples over 6 tasks: clustering must reduce n to the task count, and the clustered p must be
+    # far weaker than the pseudo-replicated one, which is the whole point of finding B
+    check("paired tests cluster by task, not by rep", out_r["n"] == 6 and out_r["n_samples"] == 18,
+          out_r)
+    check("clustering weakens the p-value that reps were inflating",
+          out_r["p"] > report.perm_p([-1] * 18)[1] * 100, (out_r["p"], report.perm_p([-1] * 18)[1]))
+    check("after Holm the same data is not separable at alpha",
+          row_r[6] >= report.ALPHA, (row_r[6], row_r))
+    check("a one-task C drop is not called significant after correction",
           pooled_r >= report.ALPHA, pooled_r)
 
 

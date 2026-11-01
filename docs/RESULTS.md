@@ -1,5 +1,13 @@
 # Results
 
+> **This run's loop probes are too short to settle the looping question** (≈1,000 visible tokens per
+> probe, 4 independent probes per arm). The design that replaces them — agentic workflows that use a
+> 100k context, with no generation cap: a run ends when the task is finished or when a loop is
+> observed — is in [`AGENTIC-BENCH-PLAN.md`](AGENTIC-BENCH-PLAN.md).
+> Two grading defects found after the run are fixed in the working tree: `repo_fix` counted as
+> resolved without the visible test, and every paired test now clusters the three reps of a task and
+> applies a Holm correction (after which no arm separates).
+
 Run: `results/2026-11-01/`. One shared context, `-c 102400`, five models × three symmetric KV types
 (f16 / q8_0 / q4_0), **540 samples** (36 per arm, of which 495 carry a graded outcome — the 45
 tool-episode samples are graded from their transcript instead — plus 39 re-runs at a larger budget

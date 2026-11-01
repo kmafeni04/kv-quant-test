@@ -1,7 +1,7 @@
 # kv-quant-test — does KV-cache quantization hurt long-context work?
 
 Five models, served by llama.cpp at one identical long context (~96k tokens), each run three times
-with a different KV-cache type: **f16, q8_0, q4_0**. 15 arms, ~5,400 graded requests, one report.
+with a different KV-cache type: **f16, q8_0, q4_0**. 15 arms, 540 requests, one report.
 
 Two things are measured per arm:
 
@@ -42,17 +42,17 @@ Filled from `results/<stamp>/REPORT.md` after the run:
 | `qwen38-flash` | f16 | 23/30 (76.7%) | 702/780 (90.0%) | 4/6 | 0/12 | — |
 | `qwen38-flash` | q8_0 | 24/30 (80.0%) | 630/780 (80.8%) | 4/6 | 0/12 | 0.611 |
 | `qwen38-flash` | q4_0 | 24/30 (80.0%) | 701/780 (89.9%) | 3/6 | 0/12 | 0.667 |
-| `qwen38-27b` | f16 | 21/30 (70.0%) | 629/780 (80.6%) | 4/6 | 0/12 | — |
+| `qwen38-27b` | f16 | 21/30 (70.0%) | 629/780 (80.6%) | 3/6 | 0/12 | — |
 | `qwen38-27b` | q8_0 | 23/30 (76.7%) | 702/780 (90.0%) | 4/6 | 0/12 | 0.722 |
-| `qwen38-27b` | q4_0 | 21/30 (70.0%) | 634/780 (81.3%) | 4/6 | 0/12 | 0.722 |
+| `qwen38-27b` | q4_0 | 21/30 (70.0%) | 634/780 (81.3%) | 3/6 | 0/12 | 0.722 |
 | `qwen36-35b` | f16 | 18/30 (60.0%) | 765/780 (98.1%) | 4/6 | 0/12 | — |
 | `qwen36-35b` | q8_0 | 19/30 (63.3%) | 694/780 (89.0%) | 3/6 | 1/12 | 0.722 |
 | `qwen36-35b` | q4_0 | 20/30 (66.7%) | 763/780 (97.8%) | 3/6 | 0/12 | 0.556 |
 | `ornith-35b` | f16 | 19/30 (63.3%) | 548/780 (70.3%) | 4/6 | 0/12 | — |
-| `ornith-35b` | q8_0 | 16/30 (53.3%) | 570/780 (73.1%) | 3/6 | 1/12 | 0.5 |
+| `ornith-35b` | q8_0 | 16/30 (53.3%) | 570/780 (73.1%) | 2/6 | 1/12 | 0.5 |
 | `ornith-35b` | q4_0 | 18/30 (60.0%) | 475/780 (60.9%) | 3/6 | 0/12 | 0.706 |
 | `gemma4-26b-a4b` | f16 | 11/30 (36.7%) | 694/780 (89.0%) | 4/6 | 3/12 | — |
-| `gemma4-26b-a4b` | q8_0 | 7/30 (23.3%) | 701/780 (89.9%) | 3/6 | 2/12 | 0.2 |
+| `gemma4-26b-a4b` | q8_0 | 7/30 (23.3%) | 701/780 (89.9%) | 2/6 | 2/12 | 0.2 |
 | `gemma4-26b-a4b` | q4_0 | 8/30 (26.7%) | 318/780 (40.8%) | 3/6 | 3/12 | 0.2 |
 <!-- HEADLINE:END -->
 
@@ -63,7 +63,8 @@ kvtest/        the harness (config, server lifecycle, client, document, tasks, g
                fit probe, orchestrator, report, selftest)
 fixtures/      the user's own codegen + intervalkit fixtures, verbatim
 scripts/       preflight, build, download, run_all
-docs/          METHOD.md (design + threats), REPRODUCE.md, RESULTS.md (findings)
+docs/          METHOD.md (design + threats), REPRODUCE.md, RESULTS.md (findings),
+               AGENTIC-BENCH-PLAN.md (design for the next study: agentic workflows at 100k)
 results/       <UTC-stamp>/{fit.json,samples.jsonl,arms/,logs/,REPORT.md,report.html}
 models.lock.json   pinned GGUF sha256 + llama.cpp commit + build flags + document hash
 ```

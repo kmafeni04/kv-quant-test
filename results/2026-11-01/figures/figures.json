@@ -231,19 +231,25 @@
         "C": {
           "delta": -376,
           "n": 6,
+          "n_samples": 6,
           "p": 0.25,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": -3,
-          "n": 18,
-          "p": 0.5625,
+          "n": 6,
+          "n_samples": 18,
+          "p": 0.75,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -364,19 +370,25 @@
         "C": {
           "delta": 7,
           "n": 6,
+          "n_samples": 6,
           "p": 0.75,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": -1,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": -4,
-          "n": 18,
-          "p": 0.4062,
+          "n": 6,
+          "n_samples": 18,
+          "p": 0.75,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -611,19 +623,25 @@
         "C": {
           "delta": -73,
           "n": 6,
+          "n_samples": 6,
           "p": 0.5,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": -1,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -744,19 +762,25 @@
         "C": {
           "delta": 22,
           "n": 6,
+          "n_samples": 6,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 1,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": -3,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 0.5,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -991,19 +1015,25 @@
         "C": {
           "delta": -2,
           "n": 6,
+          "n_samples": 6,
           "p": 0.75,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 2,
-          "n": 18,
-          "p": 0.5,
+          "n": 6,
+          "n_samples": 18,
+          "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -1124,19 +1154,25 @@
         "C": {
           "delta": -71,
           "n": 6,
+          "n_samples": 6,
           "p": 0.625,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 1,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 1,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -1371,19 +1407,25 @@
         "C": {
           "delta": 5,
           "n": 6,
+          "n_samples": 6,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 0,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -1504,19 +1546,25 @@
         "C": {
           "delta": 73,
           "n": 6,
+          "n_samples": 6,
           "p": 0.5,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 2,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 0.5,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -1751,19 +1799,25 @@
         "C": {
           "delta": -1,
           "n": 6,
+          "n_samples": 6,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 1,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }
@@ -1884,19 +1938,25 @@
         "C": {
           "delta": -72,
           "n": 6,
+          "n_samples": 6,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "checks"
         },
         "L": {
           "delta": 0,
-          "n": 12,
+          "n": 4,
+          "n_samples": 12,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "samples"
         },
         "R": {
           "delta": 1,
-          "n": 18,
+          "n": 6,
+          "n_samples": 18,
           "p": 1.0,
+          "p_adj": 1.0,
           "unit": "points"
         }
       }

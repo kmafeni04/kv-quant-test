@@ -9,7 +9,7 @@ import os
 import statistics
 from collections import defaultdict
 
-from . import config, hostinfo
+from . import codegraders, config, hostinfo
 
 KV_ORDER = config.KV_ARMS
 
@@ -116,17 +116,24 @@ def verdict(out, samples=None):
     if flat:
         lead_key = f"{flat[0][0]}__{flat[0][1]}"
         lead = per_arm.get(lead_key) or {}
+        raw_family = {}
         for i, t in enumerate(flat):
             key = f"{t[0]}__{t[1]}"
             cur = per_arm.get(key) or {}
+            if not i:
+                continue
+            for tier in TIERS:
+                diffs = {k: cur[k] - lead[k] for k in sorted(cur) if k[0] == tier and k in lead}
+                if not diffs:
+                    continue
+                _, p_tier = perm_p(list(_cluster_sums(diffs).values()))
+                raw_family[(key, tier)] = p_tier
+        adjusted = holm(raw_family)
+        for i, t in enumerate(flat):
+            key = f"{t[0]}__{t[1]}"
             t_p = 1.0
-            if i:
-                for tier in TIERS:
-                    pairs = [k for k in sorted(cur) if k[0] == tier and k in lead]
-                    if not pairs:
-                        continue
-                    _, p_tier = perm_p([cur[k] - lead[k] for k in pairs])
-                    t_p = min(t_p, min(1.0, len(TIERS) * p_tier))
+            if i and raw_family:
+                t_p = min([adjusted.get((key, tier), 1.0) for tier in TIERS] or [1.0])
             t_p = round(t_p, 4)
             flat[i] = t + (t_p,)
             if 0 < i and t_p >= ALPHA:
@@ -159,8 +166,7 @@ def _lead_sentence(out):
     who = ("including its own f16 arm" if own_f16
            else "none of them from its own model")
     return (f"Its lead is not established: {len(tied)} other arms, {who}, cannot be "
-            f"distinguished from it (each tier tested on its own pairs, Bonferroni over "
-            f"{len(TIERS)} tiers, alpha = {ALPHA}).")
+            f"distinguished from it (task-clustered pairs, Holm over 42 comparisons).")
 
 
 def _plain_summary(out):
@@ -530,7 +536,8 @@ def agg(raw, samples, arms):
             if tier == "C" and s.get("finish_reason") == "length":
                 cell["truncated_c"] += 1
             if tier == "C" and s.get("grade"):
-                g = s["grade"]
+                g = dict(s["grade"])
+                g["resolved"] = codegraders.is_resolved(s.get("task"), g)
                 cell["C"]["passed"] += g.get("passed", 0)
                 cell["C"]["of"] += g.get("of", 0)
                 cell["C"]["n"] += 1
@@ -680,6 +687,29 @@ def _paired_scores(samples):
     return per_arm
 
 
+def _cluster_sums(diffs_by_key):
+    """Sum each task's per-rep differences into one observation per task.
+
+    The three reps of a task share its prompt, document prefix and difficulty, so they are not three
+    independent units. Counting them as independent is pseudo-replication: it divides the p-value by
+    roughly 2**(reps-1) per task for free. Clustering keeps n at the task count.
+    """
+    per_task = defaultdict(int)
+    for (tier, task, _rep), d in diffs_by_key.items():
+        per_task[(tier, task)] += d
+    return per_task
+
+
+def holm(pvals):
+    """Holm-Bonferroni adjustment for a family of p-values -> adjusted p per key."""
+    items = sorted(pvals.items(), key=lambda kv: kv[1])
+    m, out, running = len(items), {}, 0.0
+    for i, (key, p) in enumerate(items):
+        running = max(running, min(1.0, (m - i) * p))
+        out[key] = round(running, 4)
+    return out
+
+
 def significance(out, samples, arms):
     """Paired comparison of every arm against its own model's f16 arm, per tier.
 
@@ -696,27 +726,36 @@ def significance(out, samples, arms):
             cur = per_arm.get(key) or {}
             sig = {}
             for tier in ("R", "C", "L"):
-                pairs = [(cur[k], base[k]) for k in sorted(cur) if k[0] == tier and k in base]
-                diffs = [a - b for a, b in pairs]
-                total, p = perm_p(diffs)
-                sig[tier] = {"delta": total, "p": round(p, 4), "n": len(diffs),
+                diffs = {k: cur[k] - base[k] for k in sorted(cur) if k[0] == tier and k in base}
+                clusters = _cluster_sums(diffs)
+                total, p = perm_p(list(clusters.values()))
+                sig[tier] = {"delta": sum(diffs.values()), "p": round(p, 4),
+                             "n": len(clusters), "n_samples": len(diffs),
                              "unit": {"R": "points", "C": "checks", "L": "samples"}[tier]}
             out["arms"][key]["sig"] = sig
+    # one family per tier: every arm of every model compared with its own f16 arm
+    for tier in ("R", "C", "L"):
+        fam = {k: v["sig"][tier]["p"] for k, v in out["arms"].items()
+               if (v.get("sig") or {}).get(tier)}
+        adj = holm(fam)
+        for k, p in adj.items():
+            out["arms"][k]["sig"][tier]["p_adj"] = p
     return out
 
 
 # ---------------------------------------------------------------- pairs / deltas
 def write_markdown(out, raw, path):
     L = []
+    split = None
     man = raw.get("manifest") or {}
     ctx = out.get("arms", {})
     fixture = next(iter(ctx.values()), {}) if ctx else {}
     L.append("# KV-cache quantization at long context — 5 models × f16 / q8_0 / q4_0\n")
-    L.append(f"Context (identical for every arm): **-c {raw.get('context')}**. "
-             f"llama.cpp `{(man.get('llama_cpp') or {}).get('commit', '?')[:12]}`, "
-             f"document sha256 `{(raw.get('document') or {}).get('sha256', '?')[:16]}`, "
-             f"reps {out.get('reps')}, seeds {man.get('seeds')}, "
-             f"budgets {man.get('budgets')}, thinking caps {man.get('reasoning_budget_tokens')}.\n")
+    n_arms = len(out.get("arms") or {})
+    L.append(f"One context for every arm: **-c {raw.get('context')}** · {n_arms} arms · "
+             f"{raw.get('samples')} samples · llama.cpp "
+             f"`{(man.get('llama_cpp') or {}).get('commit', '?')[:9]}`. Seeds, budgets and the "
+             f"document hash are in the appendix.\n")
     L.append(f"Total test wall clock (fit probe + matrix + harness validation, model downloads "
              f"excluded): "
              f"**{_human(out.get('_timing', {}).get('study_wall_s'))}** "
@@ -731,8 +770,6 @@ def write_markdown(out, raw, path):
     unfit = (raw.get("fit") or {}).get("unfit") or []
     if unfit:
         L.append(f"> **Unfit / excluded models:** {', '.join(unfit)}\n")
-    L.append("\n## Hardware and build this ran on\n")
-    L.extend(_hardware_md(out.get("_hardware") or {}, out.get("_hardware_provenance") or ""))
     L.append("\n## Verdict\n")
     v = out.get("verdict") or {}
     if v.get("overall"):
@@ -758,15 +795,42 @@ def write_markdown(out, raw, path):
             runners = ", ".join(f"`{r[0]}` {r[1]} ({r[2]:.2f})" for r in flat[1:3])
             L.append(f"The next arms are {runners} — the top three sit within {gap:.1f} capability "
                      f"points of each other, which is one or two graded outcomes.\n")
-        rule = ("Ranking rule, fixed in `kvtest/report.py::verdict` so it can be recomputed: "
-                "capability = mean(R %, C %) per arm, then fewer structural-loop samples, then "
-                "higher decode throughput.")
-        if len(v.get("flat") or []) > 1 and "f16" in (out.get("kvs") or []):
-            rule += (" **No arm differs from its own f16 arm at p < 0.05 on any metric**, so these "
-                     "ranks sit inside the noise this design can resolve. The only differences that "
-                     "do reach p < 0.05 are arms that are worse than the leader, never one that is "
-                     "better.")
+        rule = ("Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer "
+                "repeating samples, then the faster one. Every paired test clusters the three reps "
+                "of a task into one observation and then applies a Holm correction across all 42 "
+                "arm x tier comparisons, so nothing here can separate on a handful of correlated "
+                "samples.")
         L.append(rule + "\n")
+    L.append("### Every arm, one line each\n")
+    L.append("| arm | capability | retrieval | code | structural loops | decode t/s |")
+    L.append("|---|---|---|---|---|---|")
+    for r in (v.get("flat") or []):
+        m, kv, capc = r[0], r[1], r[2]
+        c = out["arms"].get(f"{m}__{kv}") or {}
+        loops = f"{c['loops']['hard']}/{c['loops']['n']}" if c.get("loops", {}).get("n") else "—"
+        L.append(f"| `{m}` {kv} | {capc:.1f} | {c.get('R', {}).get('pct')} % | "
+                 f"{c.get('C', {}).get('pct')} % | {loops} | {c.get('decode_tps')} |")
+    L.append("\n### What this does not show\n")
+    L.append("- **No arm is statistically separable.** Each tier has 6 task clusters (4 loop probes), "
+             "so the smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons "
+             "puts every adjusted p at 1.00. The test can exclude a large, consistent difference and "
+             "nothing smaller. 'No difference' here means 'not resolvable at this sample size'.")
+    L.append("- **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the "
+             "6,144-token cap on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no "
+             "`### FILE:` block at all. Its retrieval failures are content-side repetition loops, "
+             "not truncated thinking.")
+    L.append("- **Two tasks carry most of the code score.** `semver` is 261 of 780 checks and moves "
+             "on a single decision; `intervals` and `statistics` are saturated in 14 of 15 arms. "
+             "`count_proj` is degenerate (every project has the same count, so guessing 3 scores).")
+    L.append("- **The loop probes only see the first ~2,000 tokens**, so a loop that starts later is "
+             "invisible; `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain "
+             "literal `\\n` text, so newline handling was not actually tested.")
+    split = len(L)
+    L.append("\n## Appendix — full tables, method and provenance\n")
+    L.append("\n## Hardware and build this ran on\n")
+    L.extend(_hardware_md(out.get("_hardware") or {}, out.get("_hardware_provenance") or ""))
+    L.append("The long form lives in `REPORT-APPENDIX.md` next to this file; it is the same data, "
+             "unsorted for reading.\n")
     L.append("| model | best KV | capability | runner-up | structural loops | decode t/s | why |")
     L.append("|---|---|---|---|---|---|---|")
     for row in _verdict_rows(out):
@@ -922,8 +986,13 @@ def write_markdown(out, raw, path):
     L.append("\n## Threats to validity (literal)\n")
     for t in THREATS:
         L.append(f"- {t}")
+    short = L[:split] if split else L
     with open(path, "w") as f:
-        f.write("\n".join(L) + "\n")
+        f.write("\n".join(short) + "\n")
+    appendix = os.path.join(os.path.dirname(path) or ".", "REPORT-APPENDIX.md")
+    with open(appendix, "w") as f:
+        f.write("\n".join(["# Appendix — every table, method and provenance"] +
+                           L[split:] if split else L) + "\n")
 
 
 def _fmt(v):
@@ -981,8 +1050,9 @@ def write_html(out, raw, path):
               '<span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> '
               '<span style="background:rgb(205,160,62);color:#0b0e12;padding:0 6px">amber = middle</span> '
               '<span style="background:rgb(200,74,58);color:#0b0e12;padding:0 6px">red = worst</span> '
-              '· "best" means high on the first two grids and low on the loop grid · '
-              '"—" means that arm was not run</div>')
+              '· "best" = high on the first two grids, low on the loop grid · '
+              'grey = not distinguishable from f16 (task-clustered pairs, Holm) · '
+              '"—" = arm not run</div>')
     taskplots = _task_dotplots(out)
     loopcounts, speed = _svg_loop_counts(out), _svg_speed(out)
     context_label = html.escape(_context_label(out))
@@ -1047,9 +1117,12 @@ output, not wrong output. The prose summary, with the caveats for this run writt
 <nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
 <button id="b-tasks" onclick="tab('tasks')">Tasks</button>
 <button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix">{verdict_html}{grids}{legend}<h2>Speed {context_label}</h2>{speed}
-<h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}</section>
-<section id="t-tasks" hidden>{taskplots}{_task_details(out)}</section>
+<section id="t-matrix">{verdict_html}{grids}{legend}
+<details><summary>All the numbers: speed, agreement, per-task tables</summary>
+<h2>Speed {context_label}</h2>{speed}
+<h2>Agreement with f16 (identical graded answers)</h2>{_agree_table(out)}{_cross_table(out)}
+</details></section>
+<section id="t-tasks" hidden>{taskplots}</section>
 <section id="t-loops" hidden>{loopcounts}{gallery}</section>
 <footer>{_manifest_block(raw, out.get('_hardware'), out.get('_timing'))}</footer>
 <script>
@@ -1123,21 +1196,20 @@ def _svg_grids(out):
     specs = [
         ("R accuracy", val_R, "R",
          "level in % of 30 points · change in points · n = 18 paired samples per arm, "
-         f"smallest attainable p = {2 / 2 ** 18:.7f} · rows ordered best overall first"),
+         f"smallest attainable p = {2 / 2 ** 18:.7f} · rows: best first"),
         ("C checks", val_C, "C",
          f"level in % of {checks_max} hidden checks · change in checks · n = 6 paired tasks per "
-         f"arm, smallest attainable p = 0.031 · rows ordered best overall first"),
+         f"arm, smallest attainable p = 0.031 · rows: best first"),
         ("structural repetition", val_L, "L",
          f"level in % of {loop_n} samples · change in samples · n = {loop_n} paired samples per "
-         f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f} · rows ordered best overall first"),
+         f"arm, smallest attainable p = {2 / 2 ** loop_n:.4f} · rows: best first"),
     ]
     cw, ch, pad, lw = 108, 56, 12, 150
     parts = ['<div class="grid">']
     for title, get, tier, caption in specs:
         w, h = lw + cw * len(kvs) + pad, 40 + ch * len(models) + pad
         parts.append(f'<div class="card"><div>{html.escape(title)}</div>')
-        parts.append(f'<div class="dim">{html.escape(caption)} · exact paired sign-flip test; '
-                     f'grey = not distinguishable from f16 at p &lt; {ALPHA}</div>')
+        parts.append(f'<div class="dim">{html.escape(caption)}</div>')
         parts.append(f'<svg width="{w}" height="{h}" role="img">'
                      f'<title>grid: {html.escape(title)}</title>')
         for j, kv in enumerate(kvs):
@@ -1202,8 +1274,7 @@ def _verdict_html(out):
     top = v["per_model"][om]
     rows = "".join(
         f'<tr><td>{html.escape(r[0])}</td><td><b>{r[1]}</b></td><td>{r[2]:.2f}</td>'
-        f'<td>{r[3]}</td><td>{r[4]}</td><td>{r[5]}</td><td style="text-align:left">'
-        f'{html.escape(r[6])}</td></tr>'
+        f'<td>{r[4]}</td><td>{r[5]}</td></tr>'
         for r in _verdict_rows(out))
     on_cpu = sum((top.get("knobs") or {}).values())
     summary = _plain_summary(out)
@@ -1217,13 +1288,11 @@ def _verdict_html(out):
             f'<details><summary>How sure are we, and how the ranking works</summary>'
             f'<div class="dim">{html.escape(_lead_sentence(out))} Capability = the average of the '
             f'retrieval score and the code score; ties go to the arm with fewer repeating samples, '
-            f'then to the faster one.'
-            + (" No arm differs from its own f16 arm at p &lt; 0.05 on any measurement, so these "
-               "ranks sit inside the noise this design can resolve."
-               if "f16" in (out.get("kvs") or []) else "")
-            + '</div></details>'
+            f'then to the faster one; every paired test clusters the three reps of a task and '
+            f'corrects across all 42 comparisons, so nothing here can separate on a handful of '
+            f'correlated samples.</div></details>'
             f'<table style="margin-top:8px"><tr><th>model</th><th>best KV</th><th>capability</th>'
-            f'<th>runner-up</th><th>structural loops</th><th>decode t/s</th><th>why</th></tr>'
+            f'<th>structural loops</th><th>decode t/s</th></tr>'
             f'{rows}</table></div>')
 
 
@@ -1698,7 +1767,7 @@ def _manifest_block(raw, hardware=None, timing=None):
         f"wall clock {_human(_clock_seconds(timing, raw))}")
     hw = hardware or (raw.get("manifest") or {}).get("host_runtime") or {}
     hwline = ("<b>Hardware</b> " + html.escape(hostinfo.one_line(hw)) + "<br>") if hw else ""
-    return ("<details><summary>Provenance</summary><div class=\"dim\">" + prov +
+    body = ("<details><summary>Provenance</summary><div class=\"dim\">" + prov +
             "</div></details>" + hwline + "<b>Manifest</b><pre>" + html.escape(json.dumps({
         "llama_cpp": man.get("llama_cpp"), "context": raw.get("context"),
         "seeds": man.get("seeds"), "budgets": man.get("budgets"), "reps": man.get("reps"),
@@ -1706,6 +1775,8 @@ def _manifest_block(raw, hardware=None, timing=None):
         "tokens_by_model": (raw.get("document") or {}).get("tokens_by_model"),
         "models": man.get("models"),
     }, indent=1)) + "</pre><b>Reproduce</b><pre>" + html.escape(cmds) + "</pre>")
+    return ('<details><summary>Hardware, manifest and reproduce commands</summary>' + body +
+            "</details>")
 
 
 # ---------------------------------------------------------------- csv

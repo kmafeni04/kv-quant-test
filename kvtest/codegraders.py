@@ -173,10 +173,23 @@ def grade_c(task, text, workdir):
     fails = [r.get("case") for r in (res.get("results") or []) if not r["ok"]]
     return dict(passed=res.get("passed", 0), of=res.get("of") or task["of"],
                 score=round((res.get("passed", 0) / max(res.get("of") or task["of"], 1)), 4),
-                resolved=(res.get("passed", 0) == (res.get("of") or task["of"])),
+                # resolved means the task is actually done: every hidden check passes AND the
+                # visible test passes, which is what METHOD.md and the plan promise
+                resolved=(res.get("passed", 0) == (res.get("of") or task["of"]) and visible_ok),
                 visible_test=visible_ok, visible_out=visible_out if not visible_ok else None,
                 lines=lines, load_error=res.get("load_error"), fails=fails[:12],
                 files_changed=sorted(edits))
+
+
+def is_resolved(task_id, grade):
+    """A task counts as resolved only when every hidden check passes AND, for repo_fix, the
+    visible test passes too. Applied to stored records as well, so an artifact regenerated from an
+    older samples.jsonl cannot keep an inflated count."""
+    if not grade or grade.get("passed") != grade.get("of"):
+        return False
+    if task_id == "repo_fix":
+        return bool(grade.get("visible_test"))
+    return True
 
 
 def check_id(task, i):
