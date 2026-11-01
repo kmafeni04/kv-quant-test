@@ -1,0 +1,36 @@
+{
+  "ctx": 16384,
+  "document_sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+  "done": [
+    "R:niah_multi:0",
+    "R:niah_deep:0",
+    "R:vt_trace:0",
+    "R:agg_sum:0",
+    "R:count_proj:0",
+    "R:fwe_count:0",
+    "C:cg_csvlite:0",
+    "C:cg_fixedpoint:0",
+    "C:cg_intervals:0",
+    "C:cg_semver:0",
+    "C:cg_statistics:0",
+    "C:repo_fix:0",
+    "L:gen_manual:0",
+    "L:copy_ledgers:0",
+    "L:enumerate_shards:0",
+    "L:tool_episode:0"
+  ],
+  "errors": [],
+  "finished": "2026-11-01T01:24:37Z",
+  "flags": {
+    "reasoning_supported": true
+  },
+  "knobs": {
+    "ncmoe": 26
+  },
+  "kv": "q4_0",
+  "load_s": 2.0,
+  "model": "qwen36-35b",
+  "started": "2026-11-01T01:11:39Z",
+  "vram_peak_mib": 9541,
+  "wall_s": 777.5
+}

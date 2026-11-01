@@ -1,0 +1,371 @@
+{
+  "attempts": [
+    {
+      "ctx": 102400,
+      "decode_tps": 36.4,
+      "depth_attempts": [
+        {
+          "decode_tps": 36.4,
+          "error": null,
+          "knobs": {
+            "ncmoe": 26
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 749.5,
+          "prompt_tokens": 91302,
+          "ttft_s": 121.8,
+          "vram_peak_mib": 11619
+        }
+      ],
+      "knobs": {
+        "ncmoe": 26
+      },
+      "load_s": 8.0,
+      "model": "qwen36-35b",
+      "ok": true,
+      "prefill_tps": 749.5,
+      "probe_decode_tps": 43.7,
+      "probe_prefill_tps": 804.6,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 121.8,
+      "vram_peak_mib": 11619,
+      "wall_s": 49.0
+    },
+    {
+      "ctx": 102400,
+      "decode_tps": 17.4,
+      "depth_attempts": [
+        {
+          "decode_tps": 17.4,
+          "error": null,
+          "knobs": {
+            "ncmoe": 48
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 305.6,
+          "prompt_tokens": 91302,
+          "ttft_s": 298.8,
+          "vram_peak_mib": 11259
+        }
+      ],
+      "knobs": {
+        "ncmoe": 48
+      },
+      "load_s": 14.0,
+      "model": "qwen38-flash",
+      "ok": true,
+      "prefill_tps": 305.6,
+      "probe_decode_tps": 16.5,
+      "probe_prefill_tps": 273.4,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 298.8,
+      "vram_peak_mib": 11259,
+      "wall_s": 133.3
+    },
+    {
+      "ctx": 102400,
+      "decode_tps": 12.2,
+      "depth_attempts": [
+        {
+          "decode_tps": 12.2,
+          "error": null,
+          "knobs": {
+            "ncffn": 8
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 420.1,
+          "prompt_tokens": 91302,
+          "ttft_s": 217.3,
+          "vram_peak_mib": 15895
+        }
+      ],
+      "knobs": {
+        "ncffn": 8
+      },
+      "load_s": 4.0,
+      "model": "qwen38-27b",
+      "ok": true,
+      "prefill_tps": 420.1,
+      "probe_decode_tps": 14.3,
+      "probe_prefill_tps": 524.1,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 217.3,
+      "vram_peak_mib": 15895,
+      "wall_s": 68.3
+    }
+  ],
+  "common_ctx": 102400,
+  "created": "2026-11-01T00:03:44Z",
+  "document": {
+    "calibration": [
+      {
+        "chars": 456405,
+        "counts": {
+          "qwen36-35b": 135049,
+          "qwen38-27b": 135049,
+          "qwen38-flash": 135049
+        },
+        "filler_chars": 430000,
+        "max_tokens": 135049,
+        "min_tokens": 135049
+      },
+      {
+        "chars": 315779,
+        "counts": {
+          "qwen36-35b": 94322,
+          "qwen38-27b": 94322,
+          "qwen38-flash": 94322
+        },
+        "filler_chars": 289380,
+        "max_tokens": 94322,
+        "min_tokens": 94322
+      },
+      {
+        "chars": 305234,
+        "counts": {
+          "qwen36-35b": 91284,
+          "qwen38-27b": 91284,
+          "qwen38-flash": 91284
+        },
+        "filler_chars": 278835,
+        "max_tokens": 91284,
+        "min_tokens": 91284
+      }
+    ],
+    "chars": 305234,
+    "filler_chars": 278835,
+    "fwe_count": 20,
+    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "target_tokens": 93696,
+    "tokens_by_model": {
+      "qwen36-35b": 91284,
+      "qwen38-27b": 91284,
+      "qwen38-flash": 91284
+    }
+  },
+  "free_vram_mib_at_start": 13,
+  "geometry": {
+    "gemma4-26b-a4b": {
+      "error": "missing model file"
+    },
+    "ornith-35b": {
+      "error": "missing model file"
+    },
+    "qwen36-35b": {
+      "arch": "qwen35moe",
+      "context_length": 262144,
+      "file": "/home/kome/.local/share/llm-models/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+      "full_attention_interval": 4,
+      "full_attn_layers": 10,
+      "gguf_version": 3,
+      "key_length": 256,
+      "kv_bytes_per_token": {
+        "f16": 20480,
+        "q4_0": 5760,
+        "q8_0": 10880
+      },
+      "model_name": "Qwen3.6-35B-A3B",
+      "n_heads": 16,
+      "n_kv_heads": 2,
+      "n_layers": 41,
+      "n_tensors": 753,
+      "rope_freq_base": 10000000.0,
+      "sliding_window": null,
+      "tensor_bytes": 22842671616,
+      "value_length": 256
+    },
+    "qwen38-27b": {
+      "arch": "qwen35",
+      "context_length": 262144,
+      "file": "/home/kome/.local/share/llm-models/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+      "full_attention_interval": 4,
+      "full_attn_layers": 16,
+      "gguf_version": 3,
+      "key_length": 256,
+      "kv_bytes_per_token": {
+        "f16": 65536,
+        "q4_0": 18432,
+        "q8_0": 34816
+      },
+      "model_name": "Qwen3.8-27B GSQ-RCO",
+      "n_heads": 24,
+      "n_kv_heads": 4,
+      "n_layers": 65,
+      "n_tensors": 866,
+      "rope_freq_base": 10000000.0,
+      "sliding_window": null,
+      "tensor_bytes": 11125694464,
+      "value_length": 256
+    },
+    "qwen38-flash": {
+      "arch": "qwen4exp",
+      "context_length": 262144,
+      "file": "/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+      "full_attention_interval": 4,
+      "full_attn_layers": 12,
+      "gguf_version": 3,
+      "key_length": 256,
+      "kv_bytes_per_token": {
+        "f16": 24576,
+        "q4_0": 6912,
+        "q8_0": 13056
+      },
+      "model_name": "Qwen3.8-Flash-Next GSQ-RCO",
+      "n_heads": 24,
+      "n_kv_heads": 2,
+      "n_layers": 48,
+      "n_tensors": 1223,
+      "rope_freq_base": 10000000.0,
+      "sliding_window": null,
+      "tensor_bytes": 65126192640,
+      "value_length": 256
+    }
+  },
+  "geometry_warnings": [],
+  "ladder": [
+    102400,
+    98304,
+    90112,
+    81920,
+    73728,
+    65536,
+    57344,
+    49152
+  ],
+  "models": {
+    "qwen36-35b": {
+      "ctx": 102400,
+      "decode_tps": 36.4,
+      "depth_attempts": [
+        {
+          "decode_tps": 36.4,
+          "error": null,
+          "knobs": {
+            "ncmoe": 26
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 749.5,
+          "prompt_tokens": 91302,
+          "ttft_s": 121.8,
+          "vram_peak_mib": 11619
+        }
+      ],
+      "knobs": {
+        "ncmoe": 26
+      },
+      "load_s": 8.0,
+      "model": "qwen36-35b",
+      "ok": true,
+      "prefill_tps": 749.5,
+      "probe_decode_tps": 43.7,
+      "probe_prefill_tps": 804.6,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 121.8,
+      "vram_peak_mib": 11619,
+      "wall_s": 49.0
+    },
+    "qwen38-27b": {
+      "ctx": 102400,
+      "decode_tps": 12.2,
+      "depth_attempts": [
+        {
+          "decode_tps": 12.2,
+          "error": null,
+          "knobs": {
+            "ncffn": 8
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 420.1,
+          "prompt_tokens": 91302,
+          "ttft_s": 217.3,
+          "vram_peak_mib": 15895
+        }
+      ],
+      "knobs": {
+        "ncffn": 8
+      },
+      "load_s": 4.0,
+      "model": "qwen38-27b",
+      "ok": true,
+      "prefill_tps": 420.1,
+      "probe_decode_tps": 14.3,
+      "probe_prefill_tps": 524.1,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 217.3,
+      "vram_peak_mib": 15895,
+      "wall_s": 68.3
+    },
+    "qwen38-flash": {
+      "ctx": 102400,
+      "decode_tps": 17.4,
+      "depth_attempts": [
+        {
+          "decode_tps": 17.4,
+          "error": null,
+          "knobs": {
+            "ncmoe": 48
+          },
+          "log_tail": null,
+          "ok": true,
+          "prefill_tps": 305.6,
+          "prompt_tokens": 91302,
+          "ttft_s": 298.8,
+          "vram_peak_mib": 11259
+        }
+      ],
+      "knobs": {
+        "ncmoe": 48
+      },
+      "load_s": 14.0,
+      "model": "qwen38-flash",
+      "ok": true,
+      "prefill_tps": 305.6,
+      "probe_decode_tps": 16.5,
+      "probe_prefill_tps": 273.4,
+      "probe_tokens": 31385,
+      "prompt_tokens": 91302,
+      "reverified": true,
+      "tiny_error": null,
+      "tiny_ok": true,
+      "ttft_s": 298.8,
+      "vram_peak_mib": 11259,
+      "wall_s": 133.3
+    }
+  },
+  "probe_document": {
+    "filler_chars": 72129,
+    "tokens": {
+      "qwen36-35b": 31367,
+      "qwen38-27b": 31367,
+      "qwen38-flash": 31367
+    }
+  },
+  "stamp": "2026-11-01",
+  "unfit": [],
+  "wall_s": 938.1
+}

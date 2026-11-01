@@ -1,0 +1,382 @@
+[
+ {
+  "func": "parse",
+  "args": [
+   "a,b,c"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b",
+    "c"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,b,c\\n"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b",
+    "c\\n"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,b\\nc,d\\n"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b\\nc",
+    "d\\n"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,,c"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "",
+    "c"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   ""
+  ],
+  "kwargs": {},
+  "expected": []
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\\n"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "\\n"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a\\n\\nb"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a\\n\\nb"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"a,b\",c"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a,b",
+    "c"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"say \"\"hi\"\"\",x"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "say \"hi\"",
+    "x"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"multi\\nline\",y"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "multi\\nline",
+    "y"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,\"b\\r\\nc\",d"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b\\r\\nc",
+    "d"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   " spaced , x "
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    " spaced ",
+    " x "
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"\",empty"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "",
+    "empty"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,b,"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b",
+    ""
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "x"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "x"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"quoted\""
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "quoted"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "a,b\\r\\nc,d\\r\\n"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a",
+    "b\\r\\nc",
+    "d\\r\\n"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"a\"\"b\",c"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "a\"b",
+    "c"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "1,2,3\\n4,5,6"
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "1",
+    "2",
+    "3\\n4",
+    "5",
+    "6"
+   ]
+  ]
+ },
+ {
+  "func": "parse",
+  "args": [
+   "\"trailing \""
+  ],
+  "kwargs": {},
+  "expected": [
+   [
+    "trailing "
+   ]
+  ]
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "a",
+     "b"
+    ],
+    [
+     "c",
+     "d"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "a,b\nc,d"
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "has,comma",
+     "plain"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "\"has,comma\",plain"
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "has\"quote",
+     "x"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "\"has\"\"quote\",x"
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "multi\\nline",
+     "y"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "multi\\nline,y"
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "",
+     "empty"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": ",empty"
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     " leading",
+     "trailing "
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "\" leading\",\"trailing \""
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "plain"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "plain"
+ },
+ {
+  "func": "format",
+  "args": [
+   []
+  ],
+  "kwargs": {},
+  "expected": ""
+ },
+ {
+  "func": "format",
+  "args": [
+   [
+    [
+     "a"
+    ],
+    [
+     "b"
+    ],
+    [
+     "c"
+    ]
+   ]
+  ],
+  "kwargs": {},
+  "expected": "a\nb\nc"
+ }
+]

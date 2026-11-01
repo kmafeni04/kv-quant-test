@@ -1,0 +1,3281 @@
+[
+ {
+  "func": "mean",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.6666666666666666
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.816496580927726
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -1.224744871391589,
+   0.0,
+   1.224744871391589
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 1.2
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 1.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 2.8
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 3.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 1.666
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 2.334
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.25
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.118033988749895
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -1.3416407864998738,
+   -0.4472135954999579,
+   0.4472135954999579,
+   1.3416407864998738
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 1.3
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 1.75
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 3.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 3.7
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 4.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 1.9989999999999999
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 3.0010000000000003
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.6666666666666667
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.2909944487358056
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    5
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.0
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.75
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.5
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.6875
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.82915619758885
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -0.9045340337332909,
+   -0.9045340337332909,
+   0.30151134457776363,
+   1.507556722888818
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 1.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 2.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 2.7
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 3.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 2.0010000000000003
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.9166666666666666
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1,
+    1,
+    2,
+    3
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.9574271077563381
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.6666666666666666
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.816496580927726
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": -1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -1.224744871391589,
+   0.0,
+   1.224744871391589
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": -1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": -0.8
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": -0.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 0.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 0.8
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": -0.3340000000000001
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 0.3340000000000001
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    -1,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.6666666666666666
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.816496580927726
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.5
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -1.224744871391589,
+   0.0,
+   1.224744871391589
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 1.7
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 3.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 3.3
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 3.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 2.166
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 2.834
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    1.5,
+    2.5,
+    3.5
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 30.0
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 30.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 200.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 14.142135623730951
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 10.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -1.414213562373095,
+   -0.7071067811865475,
+   0.0,
+   0.7071067811865475,
+   1.414213562373095
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 10.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 14.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 20.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 30.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 40.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 46.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 50.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 23.32
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 36.68
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 250.0
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    10,
+    20,
+    30,
+    40,
+    50
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 15.811388300841896
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.25
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.1875
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.4330127018922193
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -0.5773502691896258,
+   -0.5773502691896258,
+   -0.5773502691896258,
+   1.7320508075688774
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 0.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 0.7000000000000002
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 0.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 0.001000000000000334
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.25
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    0,
+    0,
+    0,
+    1
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 0.5
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 3.875
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 3.5
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 6.609375
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5708704751503917
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -0.3403516468284206,
+   -1.118298268150525,
+   0.048621663832631515,
+   -1.118298268150525,
+   0.4375949744936836,
+   1.9934882171378923,
+   -0.7293249574894728,
+   0.8265682851547358
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 1.75
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 3.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 5.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 6.8999999999999995
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 9.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 2.3309999999999995
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 4.6690000000000005
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 7.553571428571429
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    3,
+    1,
+    4,
+    1,
+    5,
+    9,
+    2,
+    6
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 2.748376143938713
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 4.857142857142857
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 6.122448979591837
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.4743582965269675
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   0.8660254037844388,
+   0.8660254037844388,
+   0.8660254037844388,
+   0.8660254037844388,
+   -1.1547005383792515,
+   -1.1547005383792515,
+   -1.1547005383792515
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 2.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 7.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 7.142857142857143
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    7,
+    7,
+    7,
+    7,
+    2,
+    2,
+    2
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 2.6726124191242437
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": -2.5
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": -2.5
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 31.25
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": 5.5901699437494745
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": -10.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   -0.4472135954999579,
+   -1.3416407864998738,
+   0.4472135954999579,
+   1.3416407864998738
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": -10.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": -8.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": -6.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": -2.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 1.25
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 3.500000000000001
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 5.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": -5.005000000000001
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 0.00500000000000167
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 41.666666666666664
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    -5,
+    -10,
+    0,
+    5
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 6.454972243679028
+ },
+ {
+  "func": "mean",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 50.333333333333336
+ },
+ {
+  "func": "median",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 50.0
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1633.5555555555554
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 40.41726803676314
+ },
+ {
+  "func": "mode",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "normalize",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {},
+  "expected": [
+   1.2288476950369422,
+   -1.2206003950702515,
+   -0.008247299966690946
+  ]
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   0
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   10
+  ],
+  "kwargs": {},
+  "expected": 10.8
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   25
+  ],
+  "kwargs": {},
+  "expected": 25.5
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   50
+  ],
+  "kwargs": {},
+  "expected": 50.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   75
+  ],
+  "kwargs": {},
+  "expected": 75.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   90
+  ],
+  "kwargs": {},
+  "expected": 90.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   100
+  ],
+  "kwargs": {},
+  "expected": 100.0
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   33.3
+  ],
+  "kwargs": {},
+  "expected": 33.63399999999999
+ },
+ {
+  "func": "percentile",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ],
+   66.7
+  ],
+  "kwargs": {},
+  "expected": 66.7
+ },
+ {
+  "func": "variance",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 2450.333333333333
+ },
+ {
+  "func": "stdev",
+  "args": [
+   [
+    100,
+    1,
+    50
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 49.50084174368485
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   [
+    4,
+    5,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.6666666666666666
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   [
+    4,
+    5,
+    6
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 1.0
+ },
+ {
+  "func": "correlation",
+  "args": [
+   [
+    1,
+    2,
+    3
+   ],
+   [
+    4,
+    5,
+    6
+   ]
+  ],
+  "kwargs": {},
+  "expected": 1.0
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    2,
+    4,
+    4,
+    8
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.25
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    2,
+    4,
+    4,
+    8
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 3.0
+ },
+ {
+  "func": "correlation",
+  "args": [
+   [
+    1,
+    2,
+    3,
+    4
+   ],
+   [
+    2,
+    4,
+    4,
+    8
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.9233805168766386
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    0,
+    1,
+    2
+   ],
+   [
+    2,
+    1,
+    0
+   ]
+  ],
+  "kwargs": {},
+  "expected": -0.6666666666666666
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    0,
+    1,
+    2
+   ],
+   [
+    2,
+    1,
+    0
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": -1.0
+ },
+ {
+  "func": "correlation",
+  "args": [
+   [
+    0,
+    1,
+    2
+   ],
+   [
+    2,
+    1,
+    0
+   ]
+  ],
+  "kwargs": {},
+  "expected": -1.0
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    2,
+    4,
+    6,
+    8
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 2.5
+ },
+ {
+  "func": "covariance",
+  "args": [
+   [
+    2,
+    4,
+    6,
+    8
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {
+   "sample": true
+  },
+  "expected": 3.3333333333333335
+ },
+ {
+  "func": "correlation",
+  "args": [
+   [
+    2,
+    4,
+    6,
+    8
+   ],
+   [
+    1,
+    2,
+    3,
+    4
+   ]
+  ],
+  "kwargs": {},
+  "expected": 0.9999999999999998
+ }
+]

@@ -1,0 +1,31 @@
+{
+  "document": {
+    "chars": 305234,
+    "filler_chars": 278835,
+    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "tokens_by_model": {
+      "qwen36-35b": 91284,
+      "qwen38-27b": 91284,
+      "qwen38-flash": 91284
+    }
+  },
+  "host": {
+    "cpu_cores": 16,
+    "gpu": "NVIDIA GeForce RTX 3080 Laptop GPU, 16384 MiB, sm_86",
+    "os": "Arch Linux, kernel 7.2.11",
+    "ram_gib": 62
+  },
+  "llama_cpp": {
+    "build_type": "Release",
+    "commit": "2a667032dc788c3a071d538e0b572e45a3f12731",
+    "cuda": "13.4 (V13.4.92)",
+    "cuda_arch": "86",
+    "driver": "615.78.08",
+    "ggml_cuda": true,
+    "ggml_cuda_fa": true,
+    "ggml_cuda_fa_all_quants": false,
+    "ggml_cuda_fa_quants": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
+    "version": "0.7.0-dev (build 11698)"
+  },
+  "models": {}
+}

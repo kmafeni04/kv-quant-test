@@ -1,0 +1,6 @@
+results/*/logs/
+results/*/scratch/
+results/*/document.txt
+results/*.out
+__pycache__/
+*.pyc

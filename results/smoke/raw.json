@@ -1,0 +1,184 @@
+{
+  "arms": {
+    "qwen36-35b__q4_0": {
+      "ctx": 16384,
+      "document_sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+      "done": [
+        "R:niah_multi:0",
+        "R:niah_deep:0",
+        "R:vt_trace:0",
+        "R:agg_sum:0",
+        "R:count_proj:0",
+        "R:fwe_count:0",
+        "C:cg_csvlite:0",
+        "C:cg_fixedpoint:0",
+        "C:cg_intervals:0",
+        "C:cg_semver:0",
+        "C:cg_statistics:0",
+        "C:repo_fix:0",
+        "L:gen_manual:0",
+        "L:copy_ledgers:0",
+        "L:enumerate_shards:0",
+        "L:tool_episode:0"
+      ],
+      "errors": [],
+      "finished": "2026-11-01T01:24:37Z",
+      "flags": {
+        "reasoning_supported": true
+      },
+      "knobs": {
+        "ncmoe": 26
+      },
+      "kv": "q4_0",
+      "load_s": 2.0,
+      "model": "qwen36-35b",
+      "started": "2026-11-01T01:11:39Z",
+      "vram_peak_mib": 9541,
+      "wall_s": 777.5
+    }
+  },
+  "context": 16384,
+  "created": "2026-11-01T01:24:37Z",
+  "deadline_reached": false,
+  "document": {
+    "chars": 26482,
+    "filler_chars": null,
+    "sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+    "tokens_by_model": null
+  },
+  "fit": {
+    "common_ctx": null,
+    "document": null,
+    "geometry": null,
+    "geometry_warnings": null,
+    "unfit": null
+  },
+  "manifest": {
+    "budgets": {
+      "C": 6144,
+      "L": 1536,
+      "R": 2048,
+      "tool_turn": 512
+    },
+    "context": 16384,
+    "context_ladder": [
+      102400,
+      98304,
+      90112,
+      81920,
+      73728,
+      65536,
+      57344,
+      49152
+    ],
+    "document_sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+    "host": "RTX 3080 Laptop 16384 MiB / 64 GiB RAM",
+    "knobs": {
+      "qwen36-35b": {
+        "ncmoe": 26
+      }
+    },
+    "kv_arms": [
+      "f16",
+      "q8_0",
+      "q4_0"
+    ],
+    "llama_cpp": {
+      "build_type": "Release",
+      "commit": "2a667032dc788c3a071d538e0b572e45a3f12731",
+      "cuda": "13.4 (V13.4.92)",
+      "cuda_arch": "86",
+      "driver": "615.78.08",
+      "ggml_cuda": true,
+      "ggml_cuda_fa": true,
+      "ggml_cuda_fa_all_quants": false,
+      "ggml_cuda_fa_quants": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
+      "version": "0.7.0-dev (build 11698)"
+    },
+    "models": {},
+    "reasoning_budget_tokens": {
+      "C": 3072,
+      "L": 256,
+      "R": 1024,
+      "tool_turn": 256
+    },
+    "reps": 3,
+    "sampling_graded": {
+      "dry_multiplier": 0.0,
+      "min_p": 0.0,
+      "repeat_last_n": 64,
+      "repeat_penalty": 1.05,
+      "temperature": 0.0,
+      "top_k": 20,
+      "top_p": 0.95
+    },
+    "sampling_loop": {
+      "dry_multiplier": 0.0,
+      "min_p": 0.0,
+      "repeat_last_n": 0,
+      "repeat_penalty": 1.0,
+      "temperature": 0.7,
+      "top_k": 20,
+      "top_p": 0.95
+    },
+    "seeds": [
+      1001,
+      1002,
+      1003
+    ],
+    "server_common": [
+      "-ngl",
+      "999",
+      "-fa",
+      "on",
+      "-np",
+      "1",
+      "-b",
+      "2048",
+      "--jinja",
+      "--no-warmup",
+      "--metrics",
+      "--cache-reuse",
+      "0",
+      "--ctx-checkpoints",
+      "8",
+      "--checkpoint-min-step",
+      "8192",
+      "--reasoning",
+      "on",
+      "--reasoning-effort",
+      "medium",
+      "--reasoning-budget",
+      "8192",
+      "--reasoning-format",
+      "deepseek"
+    ]
+  },
+  "samples": 16,
+  "stamp": "smoke",
+  "tasks": {
+    "C": [
+      "cg_csvlite",
+      "cg_fixedpoint",
+      "cg_intervals",
+      "cg_semver",
+      "cg_statistics",
+      "repo_fix"
+    ],
+    "L": [
+      "gen_manual",
+      "copy_ledgers",
+      "enumerate_shards",
+      "tool_episode"
+    ],
+    "R": [
+      "niah_multi",
+      "niah_deep",
+      "vt_trace",
+      "agg_sum",
+      "count_proj",
+      "fwe_count"
+    ]
+  },
+  "unrun_arms": []
+}
