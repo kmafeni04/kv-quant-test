@@ -516,11 +516,11 @@ def write_html(out, raw, rows, path):
                                          .get("matrix") or {}).get("wall_s"))}}
     gallery = _gallery(out, raw)
     grids, bars = _svg_grids(out), _svg_bars(rows)
-    legend = ('<div class="dim" style="margin-top:6px">colour scale: '
-              '<span style="background:rgb(30,160,90);color:#0b0e12;padding:0 6px">100</span> '
-              '<span style="background:rgb(130,130,70);color:#0b0e12;padding:0 6px">50</span> '
-              '<span style="background:rgb(230,100,50);color:#0b0e12;padding:0 6px">0</span> '
-              '· loop grid uses the same ramp inverted (0 loops = green) · '
+    legend = ('<div class="dim" style="margin-top:6px">colour scale, always the same way: '
+              '<span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> '
+              '<span style="background:rgb(205,160,62);color:#0b0e12;padding:0 6px">amber = middle</span> '
+              '<span style="background:rgb(200,74,58);color:#0b0e12;padding:0 6px">red = worst</span> '
+              '· "best" means high on the first two grids and low on the loop grid · '
               '"—" means that arm was not run</div>')
     taskbars, scatter = _svg_task_bars(out), _svg_scatter(out)
     doc = f"""<!doctype html>
@@ -558,10 +558,11 @@ in the matrix</div>
 <b>How to read this page</b>
 <div class="dim" style="margin-top:6px">
 Each <b>grid</b> is one measurement: rows are models, columns are the three KV cache types.
-A cell's number is that arm's result, and its colour is the same number on a 0–100 scale —
-<span style="color:#3fa05a">green = good</span>, <span style="color:#c9563d">red = bad</span>.
-For the first two grids higher is better; for the <b>loop</b> grid lower is better, so its colours
-are inverted. Hover any cell for the exact value.
+A cell's number is that arm's result. Colour always means the same thing:
+<span style="color:#3fa05a">green = best</span>, <span style="color:#c9563d">red = worst</span>.
+On the retrieval and code grids <b>best means highest</b>; on the <b>loop</b> grid <b>best means
+lowest</b>, and that grid is scaled to the observed range so small differences are visible. Each
+grid prints its own scale. Hover any cell for the exact value.
 </div>
 <div class="dim" style="margin-top:6px">
 What the tabs hold: <b>Matrix</b> — the 15-arm comparison, the change versus f16, and how often two
@@ -597,30 +598,48 @@ function tab(name) {{
         f.write(doc)
 
 
-def _color(v, lo=0.0, hi=100.0, invert=False):
-    if v is None:
+GREEN = (62, 170, 90)
+AMBER = (205, 160, 62)
+RED = (200, 74, 58)
+
+
+def _ramp(score):
+    """score 1.0 = best (green), 0.5 = middle (amber), 0.0 = worst (red)."""
+    score = max(0.0, min(1.0, 1.0 if score is None else score))
+    if score >= 0.5:
+        a, b, t = AMBER, GREEN, (score - 0.5) * 2.0
+    else:
+        a, b, t = RED, AMBER, score * 2.0
+    return "rgb(%d,%d,%d)" % tuple(round(a[i] + (b[i] - a[i]) * t) for i in range(3))
+
+
+def _color(value, lo, hi, higher_is_better=True):
+    """Colour a value on [lo, hi] where the GOOD end is green, whichever end that is."""
+    if value is None:
         return "#2a3138"
-    t = max(0.0, min(1.0, (v - lo) / (hi - lo) if hi != lo else 0.0))
-    if invert:
-        t = 1 - t
-    r = int(30 + 200 * t)
-    g = int(160 - 60 * t)
-    b = int(90 - 40 * t)
-    return f"rgb({r},{g},{b})"
+    span = (hi - lo) or 1.0
+    frac = (value - lo) / span
+    return _ramp(frac if higher_is_better else 1.0 - frac)
 
 
 def _svg_grids(out):
     kvs = out["kvs"]
     models = out["models"]
+    loops = [100 * (c["loop_rate"] or 0) for c in out["arms"].values()]
+    loop_hi = max(25, int((max(loops) if loops else 0) // 10 * 10 + 10))
+    # (title, getter, lo, hi, higher-is-better, scale note)
+    metrics = [
+        ("R accuracy %", lambda c: c["R"]["pct"], 0, 100, True, "0–100 · higher is better"),
+        ("C checks %", lambda c: c["C"]["pct"], 0, 100, True, "0–100 · higher is better"),
+        ("loop rate %", lambda c: None if c["loop_rate"] is None else 100 * c["loop_rate"],
+         0, loop_hi, False, f"0–{loop_hi} · LOWER is better (green = no loops)"),
+    ]
     cw, ch, pad, lw = 92, 30, 10, 150
-    metrics = [("R accuracy %", lambda c: c["R"]["pct"], False),
-               ("C checks %", lambda c: c["C"]["pct"], False),
-               ("loop rate %", lambda c: None if c["loop_rate"] is None else 100 * c["loop_rate"],
-                True)]
     parts = ['<div class="grid">']
-    for title, get, invert in metrics:
+    for title, get, lo, hi, higher, note in metrics:
         w, h = lw + cw * len(kvs) + pad, 34 + ch * len(models) + pad
-        parts.append(f'<div class="card"><div class="dim">{html.escape(title)}</div>')
+        parts.append(f'<div class="card"><div>{html.escape(title)}</div>'
+                     f'<div class="dim">{html.escape(note)}</div>')
         parts.append(f'<svg width="{w}" height="{h}" role="img">')
         for j, kv in enumerate(kvs):
             parts.append(f'<text x="{lw + j * cw + cw / 2}" y="16" fill="#9aa4b2" '
@@ -631,11 +650,12 @@ def _svg_grids(out):
             for j, kv in enumerate(kvs):
                 c = out["arms"].get(f"{model}__{kv}")
                 v = get(c) if c else None
-                label = "—" if v is None else (f"{v:.1f}" if title != "loop rate %" else f"{v:.0f}")
+                label = "—" if v is None else (f"{v:.0f}" if title.startswith("loop") else f"{v:.1f}")
                 parts.append(
                     f'<rect x="{lw + j * cw + 2}" y="{34 + i * ch + 2}" width="{cw - 4}" '
-                    f'height="{ch - 4}" rx="4" fill="{_color(v, 0, 100, invert)}">'
-                    f'<title>{html.escape(model)} {kv}: {label}</title></rect>')
+                    f'height="{ch - 4}" rx="4" fill="{_color(v, lo, hi, higher)}">'
+                    f'<title>{html.escape(model)} {kv}: {label}'
+                    f'{" loops (lower is better)" if title.startswith("loop") else ""}</title></rect>')
                 parts.append(f'<text x="{lw + j * cw + cw / 2}" y="{34 + i * ch + 19}" '
                              f'fill="#0b0e12" font-size="12" text-anchor="middle">{label}</text>')
         parts.append("</svg></div>")
@@ -693,7 +713,7 @@ def _svg_task_bars(out):
             parts.append(f'<text x="4" y="{y + 11}" fill="#e8ecf1" font-size="11">'
                          f'{html.escape(c["model"])} {c["kv"]}</text>')
             parts.append(f'<rect x="{lw}" y="{y + 2}" width="{cw * 3 * frac:.1f}" height="12" '
-                         f'rx="2" fill="{_color(100 * frac, 0, 100)}"/>')
+                         f'rx="2" fill="{_color(frac, 0.0, 1.0, True)}"/>')
         parts.append("</svg>")
     parts.append("</div>")
     return "".join(parts)
@@ -715,7 +735,8 @@ def _svg_scatter(out):
     for lr, dec, c in pts:
         x = pad + lr * (w - pad - 20)
         y = (h - pad) - (dec / dmax) * (h - pad - 20)
-        parts.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="6" fill="{_color(100 * lr, 0, 1, True)}" '
+        parts.append(f'<circle cx="{x:.0f}" cy="{y:.0f}" r="6" '
+                     f'fill="{_color(lr, 0.0, max(l for l, _, _ in pts) or 1.0, False)}" '
                      f'fill-opacity="0.85"><title>{html.escape(c["model"])} {c["kv"]}: '
                      f'loop {lr:.2f}, {dec} t/s</title></circle>')
     parts.append("</svg></div>")
