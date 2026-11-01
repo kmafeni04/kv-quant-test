@@ -46,23 +46,25 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 
 ## Loop table — flagged samples / samples (reasoning and content split)
 
-| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union (L) | reasoning | content | any tier |
-|---|---|---|---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | f16 | 1/3 | 0/3 | 2/3 | 1/3 | 4/12 | 1 | 3 | 14 |
-| `gemma4-26b-a4b` | q8_0 | 0/3 | 0/3 | 2/3 | 0/3 | 2/12 | 0 | 2 | 13 |
-| `gemma4-26b-a4b` | q4_0 | 0/3 | 0/3 | 3/3 | 0/3 | 3/12 | 0 | 3 | 16 |
-| `ornith-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 4 |
-| `ornith-35b` | q8_0 | 3/3 | 0/3 | 1/3 | 0/3 | 4/12 | 0 | 4 | 4 |
-| `ornith-35b` | q4_0 | 3/3 | 0/3 | 0/3 | 0/3 | 3/12 | 0 | 3 | 5 |
-| `qwen36-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 3 |
-| `qwen36-35b` | q8_0 | 2/3 | 0/3 | 1/3 | 0/3 | 3/12 | 0 | 3 | 4 |
-| `qwen36-35b` | q4_0 | 0/3 | 0/3 | 0/3 | 0/3 | 0/12 | 0 | 0 | 2 |
-| `qwen38-27b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 4 |
-| `qwen38-27b` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 2 |
-| `qwen38-27b` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 3 |
-| `qwen38-flash` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 2 |
-| `qwen38-flash` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 2 |
-| `qwen38-flash` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0 | 2 | 2 |
+`union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; `hard repetition` counts only samples with a repeated line, n-gram, 200-char block or tail cycle. The gap between the two columns is formulaic prose, not looping.
+
+| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union (L) | hard repetition | reasoning | content | any tier |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `gemma4-26b-a4b` | f16 | 1/3 | 0/3 | 2/3 | 1/3 | 4/12 | 3/12 | 1 | 3 | 14 |
+| `gemma4-26b-a4b` | q8_0 | 0/3 | 0/3 | 2/3 | 0/3 | 2/12 | 2/12 | 0 | 2 | 13 |
+| `gemma4-26b-a4b` | q4_0 | 0/3 | 0/3 | 3/3 | 0/3 | 3/12 | 3/12 | 0 | 3 | 16 |
+| `ornith-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
+| `ornith-35b` | q8_0 | 3/3 | 0/3 | 1/3 | 0/3 | 4/12 | 1/12 | 0 | 4 | 4 |
+| `ornith-35b` | q4_0 | 3/3 | 0/3 | 0/3 | 0/3 | 3/12 | 0/12 | 0 | 3 | 5 |
+| `qwen36-35b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
+| `qwen36-35b` | q8_0 | 2/3 | 0/3 | 1/3 | 0/3 | 3/12 | 1/12 | 0 | 3 | 4 |
+| `qwen36-35b` | q4_0 | 0/3 | 0/3 | 0/3 | 0/3 | 0/12 | 0/12 | 0 | 0 | 2 |
+| `qwen38-27b` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 4 |
+| `qwen38-27b` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
+| `qwen38-27b` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 3 |
+| `qwen38-flash` | f16 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
+| `qwen38-flash` | q8_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
+| `qwen38-flash` | q4_0 | 2/3 | 0/3 | 0/3 | 0/3 | 2/12 | 0/12 | 0 | 2 | 2 |
 
 ## Paired deltas vs f16 (positive = worse looping, positive R/C = better)
 

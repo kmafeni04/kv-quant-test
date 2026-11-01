@@ -128,7 +128,11 @@ contract (hidden tests, FAIL_TO_PASS, partial credit) at zero provisioning cost.
    on three tasks — so `out_tokens`, `finish_reason` and emitted line count are reported per sample
    and every re-run at a larger budget is marked `budget_raised`. (c) The zlib-ratio loop threshold
    fires on templated prose: 25 of 45 `gen_manual` samples cross 0.42 with no line/ngram/cycle
-   signal, uniformly across arms; the hard repetition counters are reported separately.
+   signal, uniformly across arms. The report therefore prints two counts: `union (L)` (any verdict)
+   and `hard repetition` (repeated line, n-gram, 200-char block or tail cycle only). Example measured
+   in this run: qwen36-35b's f16 "loops" are two `gen_manual` samples at zip 0.424/0.420 with
+   `line_run=1`, i.e. formulaic prose on the wrong side of a threshold, while its one structural loop
+   is at q8_0.
 9. **The GPU was left free.** The Strata service that had been holding it was already stopped by the
    operator before this study began, so nothing was restarted at the end; the final state is
    13 MiB used on the GPU and no `llama-server` process.

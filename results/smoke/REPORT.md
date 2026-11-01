@@ -24,9 +24,11 @@ Total test wall clock (fit probe + matrix + harness validation, model downloads 
 
 ## Loop table — flagged samples / samples (reasoning and content split)
 
-| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union (L) | reasoning | content | any tier |
-|---|---|---|---|---|---|---|---|---|---|
-| `qwen36-35b` | q4_0 | 0/1 | 0/1 | 0/1 | 0/1 | 0/4 | 0 | 0 | 1 |
+`union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; `hard repetition` counts only samples with a repeated line, n-gram, 200-char block or tail cycle. The gap between the two columns is formulaic prose, not looping.
+
+| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union (L) | hard repetition | reasoning | content | any tier |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `qwen36-35b` | q4_0 | 0/1 | 0/1 | 0/1 | 0/1 | 0/4 | 0/4 | 0 | 0 | 1 |
 
 ## Paired deltas vs f16 (positive = worse looping, positive R/C = better)
 

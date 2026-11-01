@@ -148,6 +148,25 @@ def _fmt1(v):
 
 
 # ---------------------------------------------------------------- aggregation
+def hard_flag(metrics_list):
+    """Repetition proven by structure: repeated lines, n-grams, blocks or a tail cycle.
+
+    The zlib ratio is deliberately excluded here: it fires on formulaic prose (a 12-paragraph
+    manual written from 12 fixed rules) without any repetition, so it cannot answer "did the model
+    loop?". Both counts are reported side by side.
+    """
+    for m in metrics_list:
+        if (m.get("line_run") or 0) >= 5:
+            return True
+        if max(m.get("word_run_1") or 0, m.get("word_run_4") or 0, m.get("word_run_8") or 0) >= 6:
+            return True
+        if m.get("cycle") and m["cycle"][0] >= 8:
+            return True
+        if m.get("block") and m["block"][1] >= 3:
+            return True
+    return False
+
+
 def agg(raw, samples, arms):
     models = []
     for m, _ in arms:
@@ -157,7 +176,7 @@ def agg(raw, samples, arms):
     for model, kv in arms:
         cell = dict(model=model, kv=kv, R={"points": 0, "of": 0, "n": 0},
                     C={"passed": 0, "of": 0, "n": 0, "resolved": 0},
-                    L={}, loops={"flagged": 0, "n": 0}, flagged_all=0,
+                    L={}, loops={"flagged": 0, "n": 0, "hard": 0}, flagged_all=0,
                     loop_reasoning=0, loop_content=0,
                     prompt_tokens=[], prefill=[], decode=[], out_tokens=0, errors=0,
                     cache_hits=0, cache_checks=0, budget_raised=0, per_task={},
@@ -196,6 +215,8 @@ def agg(raw, samples, arms):
             if tier == "L":
                 cell["loops"]["n"] += 1
                 cell["loops"]["flagged"] += 1 if flagged else 0
+                cell["loops"]["hard"] += 1 if hard_flag(
+                    [v.get("metrics") or {} for v in (s.get("loops") or {}).values()]) else 0
                 cell["L"][task] = cell["L"].get(task, {"flagged": 0, "n": 0})
                 cell["L"][task]["n"] += 1
                 cell["L"][task]["flagged"] += 1 if flagged else 0
@@ -383,9 +404,12 @@ def write_markdown(out, raw, rows, path):
                      f"{c['C']['pct']} | {c['C']['resolved']}/{c['C']['n']} | "
                      f"{', '.join(out.get('too_hard') or []) or '—'} |")
     L.append("\n## Loop table — flagged samples / samples (reasoning and content split)\n")
+    L.append("`union (L)` counts every verdict from the zlib-ratio heuristic or a structural signal; "
+             "`hard repetition` counts only samples with a repeated line, n-gram, 200-char block or "
+             "tail cycle. The gap between the two columns is formulaic prose, not looping.\n")
     L.append("| model | KV | gen_manual | copy_ledgers | enumerate_shards | tool_episode | union "
-             "(L) | reasoning | content | any tier |")
-    L.append("|---|---|---|---|---|---|---|---|---|---|")
+             "(L) | hard repetition | reasoning | content | any tier |")
+    L.append("|---|---|---|---|---|---|---|---|---|---|---|")
     for model in out["models"]:
         for kv in out["kvs"]:
             c = out["arms"].get(f"{model}__{kv}")
@@ -396,7 +420,8 @@ def write_markdown(out, raw, rows, path):
                 v = c["L"].get(t)
                 cells.append(f"{v['flagged']}/{v['n']}" if v else "—")
             L.append(f"| `{model}` | {kv} | " + " | ".join(cells) +
-                     f" | {c['loops']['flagged']}/{c['loops']['n']} | {c['loop_reasoning']} | "
+                     f" | {c['loops']['flagged']}/{c['loops']['n']} | "
+                     f"{c['loops']['hard']}/{c['loops']['n']} | {c['loop_reasoning']} | "
                      f"{c['loop_content']} | {c['flagged_all']} |")
     L.append("\n## Paired deltas vs f16 (positive = worse looping, positive R/C = better)\n")
     L.append("| model | KV | ΔR pp | ΔC pp | Δloop-rate | answer agreement | n(R/C/L) |")
@@ -842,7 +867,8 @@ def _manifest_block(raw):
 # ---------------------------------------------------------------- csv
 def write_csv(out, path):
     cols = ["model", "kv", "R_pct", "R_points", "R_of", "C_pct", "C_passed", "C_of", "C_resolved",
-            "loop_flagged", "loop_samples", "loop_rate", "loop_reasoning", "loop_content",
+            "loop_flagged", "loop_samples", "loop_rate", "loop_hard", "loop_reasoning",
+            "loop_content",
             "agree_f16", "prompt_tokens", "prefill_tps", "decode_tps", "cache_hit_rate",
             "vram_peak_mib", "knobs"]
     with open(path, "w") as f:
@@ -850,7 +876,8 @@ def write_csv(out, path):
         for c in out["arms"].values():
             row = [c["model"], c["kv"], c["R"]["pct"], c["R"]["points"], c["R"]["of"],
                    c["C"]["pct"], c["C"]["passed"], c["C"]["of"], c["C"]["resolved"],
-                   c["loops"]["flagged"], c["loops"]["n"], c["loop_rate"], c["loop_reasoning"],
+                   c["loops"]["flagged"], c["loops"]["n"], c["loop_rate"], c["loops"]["hard"],
+                   c["loop_reasoning"],
                    c["loop_content"], c.get("agree"), c["prompt_tokens_med"], c["prefill_tps"],
                    c["decode_tps"], c["cache_hit_rate"], c["vram_peak_mib"],
                    json.dumps(c.get("knobs") or {})]

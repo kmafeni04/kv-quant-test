@@ -83,18 +83,42 @@ requires both and is rarely earned.
 
 ## Loops — the direct test of the original question
 
-L-tier probes, 12 samples per arm (3 probes × 3 reps + 3 tool episodes):
+L-tier probes, 12 samples per arm (3 probes × 3 reps + 3 tool episodes). Two counts are given,
+because the difference between them is the whole point: **union** is every verdict the detector
+raised, **hard** is only samples that contain a repeated line, n-gram, 200-char block or tail cycle.
 
-| model | f16 | q8_0 | q4_0 |
+| model | f16 union / hard | q8_0 union / hard | q4_0 union / hard |
 |---|---|---|---|
-| `gemma4-26b-a4b` | 4/12 | 2/12 | 3/12 |
-| `ornith-35b` | 2/12 | 4/12 | 3/12 |
-| `qwen36-35b` | 2/12 | 3/12 | 0/12 |
-| `qwen38-27b` | 2/12 | 2/12 | 2/12 |
-| `qwen38-flash` | 2/12 | 2/12 | 2/12 |
+| `gemma4-26b-a4b` | 4 / **3** | 2 / **2** | 3 / **3** |
+| `ornith-35b` | 2 / 0 | 4 / **1** | 3 / 0 |
+| `qwen36-35b` | 2 / 0 | 3 / **1** | 0 / 0 |
+| `qwen38-27b` | 2 / 0 | 2 / 0 | 2 / 0 |
+| `qwen38-flash` | 2 / 0 | 2 / 0 | 2 / 0 |
 
-**Quantizing the KV cache did not increase looping.** The direction is not monotone for any model,
-and the only arm with zero flags is qwen36-35b at q4_0.
+**Quantizing the KV cache did not increase looping.** Structural repetition is 0–3 of 12 per arm,
+it is present at every KV type for the only model that repeats (Gemma), and the two arms with one
+hard flag each are q8_0 (ornith, qwen36), not q4_0.
+
+### Why the union column can look backwards
+
+qwen36-35b reads 2/12 at f16, 3/12 at q8_0 and 0/12 at q4_0, which invites the reading "q4_0 fixed
+it". The samples say otherwise:
+
+- The f16 and q8_0 verdicts are all `gen_manual` samples flagged *only* by the zlib ratio, at
+  0.424 / 0.420 (f16) and 0.421 / 0.429 (q8_0) against a 0.42 threshold. No repeated line, no
+  repeated n-gram, no cycle: those three samples have `line_run=1` and `word_run_4=1`, i.e. nothing
+  repeats. A 12-paragraph manual generated from twelve fixed rules is formulaic by construction, so
+  it compresses to ~0.42 whether or not anything is wrong.
+- q4_0's manuals landed at 0.419 / 0.416 / 0.391 — three thousandths under the line, from **longer**
+  text (6,354–9,245 characters vs 4,803–6,149 at f16). Longer, more varied text compresses less, so
+  the arm scored "cleaner" mainly by being more verbose. One of those q4_0 samples ran to the
+  2,048-token cap while narrating its own process ("I will scan the document to find exactly where
+  each rule is stated…"), which is sloppier behaviour, not better.
+- The single structural repetition in qwen36-35b's whole ladder is at **q8_0**: a 75-character tail
+  repeated 3× in the shard listing. So the model's one real loop sits in the middle arm.
+
+This is why the raw metrics are printed beside every verdict, and why `docs/METHOD.md` records the
+threshold as a heuristic with a measured false-positive rate on templated text.
 
 What the flags actually are matters more than the rate:
 
