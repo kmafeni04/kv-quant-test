@@ -2,16 +2,18 @@
 
 ## Question
 
-At one identical long context, on five models served by llama.cpp, does the KV cache quantization
-(f16 → q8_0 → q4_0) degrade (a) hard, automatically verifiable task performance and (b) the
-model's tendency to loop — repeat the same words, commands or tool calls without doing work?
+At one identical long context, on five models served by llama.cpp, does quantizing the KV cache (the
+key/value cache that holds every earlier token's attention state) from f16 to q8_0 to q4_0 degrade two
+things: (a) hard, automatically verifiable task performance, and (b) the model's tendency to loop, by
+which I mean repeating the same words, commands or tool calls without doing work?
 
 ## Hypotheses
 
 - **H1 (capability):** q8_0 is indistinguishable from f16; q4_0 loses some points on the retrieval
-  and code tiers. Prior art at 32k on the dense 27B read flat on capability and separated only in
-  KL (0 → 0.00066 → 0.0032 mean KLD vs f16, same-top 100 → 99.1 → 97.4 %). This study pushes the
-  same ladder to ~96k tokens, where every full-attention layer has seen 3× more positions.
+  and code tiers. Prior art at 32k on the dense 27B read flat on capability and separated only in KLD
+  (KL divergence, a distributional distance from the f16 model: 0, then 0.00066, then 0.0032 mean KLD,
+  with same-top agreement falling 100, 99.1, 97.4 %). This study pushes the same ladder to ~96k tokens,
+  where every full-attention layer has seen three times as many positions.
 - **H2 (degeneration):** q4_0 increases the loop rate. This is the metric the earlier study did not
   have: KV quantization perturbs the attention distribution a little, and a small perturbation near
   a repetition attractor can flip a sample into a loop without changing its answer.
@@ -21,6 +23,10 @@ model's tendency to loop — repeat the same words, commands or tool calls witho
   structural, not evidence that KV quantization is harmless in general.
 
 ## Design
+
+The experiment crosses five models with three cache types and three task tiers. Only the cache type is
+the variable under test; the context length, the document, the task text, the seeds and the sampling
+are held fixed, and the table below records how each factor is set.
 
 | factor | levels |
 |---|---|
@@ -37,17 +43,18 @@ every sample and `cache_hit_rate` is reported). That makes 3 reps of 6 tasks aff
 expensive prefill is paid once per arm, not once per task.
 
 **Why these tasks.** Everything is graded by regex or by running hidden checks. No judge model, no
-human reading. Tier R answers are short strings or integers; tier C is the SWE-bench contract
-(hidden tests, partial credit, plus an all-or-nothing "resolved" count); tier L is the degenerate
-output measurement itself.
+human reading. Tier R answers are short strings or integers; tier C is the SWE-bench contract, meaning
+the standard software-engineering benchmark's arrangement of hidden tests, partial credit and an
+all-or-nothing "resolved" count; tier L is the degenerate output measurement itself.
 
-**Why symmetric KV and flash attention.** A quantized V cache refuses to load without flash
-attention, and the pinned build compiled CUDA flash-attention kernels for exactly
+**Why symmetric KV and flash attention.** A quantized V cache refuses to load without flash attention,
+and the pinned build compiled NVIDIA CUDA flash-attention kernels for exactly
 `q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`. Asymmetric K/V is not a production setting here.
 
-**Why no speculative decoding.** Speculative decoding verifies against the target model and cannot
-change the output distribution, so it is irrelevant to the question, it costs VRAM the f16 arm
-needs, and the MTP drafters would be extra downloads.
+**Why no speculative decoding.** Speculative decoding verifies candidate tokens against the target
+model and cannot change the output distribution, so it is irrelevant to the question. It also costs
+VRAM (graphics memory) that the f16 arm needs, and the MTP drafters, meaning the model's own
+multi-token-prediction heads used as the draft model, would be extra downloads.
 
 **Per-request thinking cap.** Reasoning is on at `--reasoning-effort medium` for every tier, and the
 server is started with `--reasoning-budget 8192`. On top of that, each request carries

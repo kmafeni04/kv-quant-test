@@ -1,10 +1,11 @@
 # KV-cache quant × long-context: 5 models at f16 / q8_0 / q4_0 through llama.cpp
 
 Goal: at one identical long context, for each model, measure (a) whether hard, automatically
-verifiable tasks get worse as the KV cache is quantized (f16 → q8_0 → q4_0) and (b) whether the
-model starts **looping** — repeating the same words, commands, tool calls or actions without
-doing work. Deliver a runnable harness, the results, and a single-file HTML report; make the
-whole thing reproducible by a third party.
+verifiable tasks get worse as the KV cache, meaning the stored attention state for every token already
+read, is quantized from f16 to q8_0 to q4_0, and (b) whether the model starts **looping**, which here
+means repeating the same words, commands, tool calls or actions without doing work. Deliver a runnable
+harness, the results, and a single-file HTML report, and make the whole thing reproducible by a third
+party.
 
 Everything below was verified on this machine unless marked **UNVERIFIED** (those are listed in
 §12 and are the points where a smaller model must not assume).
@@ -17,7 +18,7 @@ Everything below was verified on this machine unless marked **UNVERIFIED** (thos
 |---|---|
 | project dir (new, empty) | `/home/kome/Projects/kv-quant-test` |
 | host | Arch Linux, kernel 7.2.11, 16 cores, 62 GiB RAM, **240 GB free on /home** |
-| GPU | RTX 3080 Laptop, **16,023 MiB**, sm_86; driver 615.78.08; **CUDA 13.4** |
+| GPU | RTX 3080 Laptop, **16,023 MiB**, sm_86; driver 615.78.08; **CUDA 13.4**, meaning version 13.4 of NVIDIA's GPU compute toolkit |
 | llama.cpp | `/home/kome/Projects/code/clones/llama.cpp`, commit `2a667032dc788c3a071d538e0b572e45a3f12731`, version `0.7.0-dev (build 11698)`, clean tree |
 | binaries | `.../llama.cpp/build/bin/{llama-server,llama-tokenize,llama-perplexity,llama-bench}` |
 | build flags that matter | `GGML_CUDA=ON`, `CMAKE_CUDA_ARCHITECTURES=86`, **`GGML_CUDA_FA_QUANTS=q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`**, `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=OFF` |
@@ -49,12 +50,14 @@ and grader contract and deliberately *does not* modify it.
    Do not pass `--spec-type`.
 3. **Gemma 4 31B is dropped** — consequence of your rule "dense models: pick the quant that fits
    VRAM". Numbers: 10 global attention layers × 4 KV heads × 512 dim × K+V × 2 B = **80 KiB/token
-   at f16 → 7.8 GiB at 100k**, plus 838 MiB of sliding-window caches, plus 18.0 GB of Q4_0
+   while the cache is at f16, which becomes 7.8 GiB at 100k tokens**, plus 838 MiB of sliding-window
+   caches, plus 18.0 GB of Q4_0
    weights against a 15.3 GiB budget. No published quant of that model (smallest: unsloth Q3_K_S,
    13.2 GB) fits at 100k with an f16 KV cache. It comes back only if the common context drops to
    ~65k; record that in `docs/RESULTS.md` as a conscious exclusion.
-4. **Weights per model**: dense 27B keeps IQ3_XXS (already on disk, dense → must fit); MoEs may be
-   large because expert weights spill to RAM (`--n-cpu-moe`).
+4. **Weights per model**: the dense 27B keeps IQ3_XXS, which is already on disk, and because the model
+   is dense its full weight set has to fit; the mixture-of-experts models may be larger, because their
+   expert weights spill to RAM through `--n-cpu-moe`.
 5. **Common context = one number for every arm**, resolved empirically by the fit probe (§5) from
    the ladder `102400, 98304, 90112, 81920, 73728, 65536, 57344, 49152`. Target is 102,400; the
    binding constraint is the dense 27B at f16 (prior measurement: 81,920 max with *no* offload;
@@ -80,7 +83,8 @@ and grader contract and deliberately *does not* modify it.
     (27B at 128k, q4_0 KV, MTP) and this experiment must not disturb it. All flags live in
     `kvtest/config.py`.
 11. **No network at run time.** Model downloads happen once, up front, with sha256 verification.
-    After that the harness runs offline (`file://` HTML, no CDN).
+    After that the harness runs offline: the report is an HTML file opened from `file://` with every
+    asset inlined, so it needs no CDN, meaning no content-delivery network to fetch scripts or fonts.
 
 ---
 
@@ -109,9 +113,10 @@ $H/ornith-ai/Ornith-1.5-35B-A3B-GGUF/resolve/main/Ornith-1.5-35B-Q4_K_M.gguf    
 ```
 
 Land them in `/home/kome/.local/share/llm-models/<repo-dir>/` alongside the existing models.
-`scripts/download_models.sh` does: skip if the file exists with the right size → `curl -L --retry 5
--C -` → `sha256sum` compare against `models.lock.json` → write `<file>.sha256.ok`. Total ~36 GB,
-240 GB free, fine.
+`scripts/download_models.sh` works through each file in three steps. It skips the download when a file
+of the right size already exists; otherwise it fetches with `curl -L --retry 5 -C -`. It then compares
+`sha256sum` against `models.lock.json` and writes `<file>.sha256.ok` on a match. Total transfer is
+about 36 GB, which fits comfortably in the 240 GB free on this host.
 
 ---
 
@@ -216,23 +221,24 @@ Algorithm, in order:
 1. For each model, **only the f16 arm** is probed (it is the most expensive KV; q8/q4 are strictly
    smaller, and each arm is still health-checked when the run starts it).
 2. Start at `CONTEXT_LADDER[0]` = 102400 and the model's starting knobs.
-3. `start_server(...)` → wait for `GET /health` returning `{"status":"ok"}` (timeout 600 s).
-   Then send one 64-token completion. Success = HTTP 200 and `usage.prompt_tokens > 0`.
-4. On failure: read the server stderr. If it contains `out of memory`, `failed to allocate`,
-   `CUDA error`, or the process exited → bump the knob (`knob_bump`) and retry, up to `knob_max`.
-   If the knob is exhausted → drop one rung and reset the knob to its start value, repeat.
+3. Call `start_server(...)` and wait for `GET /health` to return `{"status":"ok"}`, with a 600 s
+   timeout. Then send one 64-token completion; success means HTTP 200 and `usage.prompt_tokens > 0`.
+4. On failure, read the server stderr. If it contains `out of memory`, `failed to allocate` or
+   `CUDA error`, or the process exited, bump the knob with `knob_bump` and retry, up to `knob_max`.
+   When the knob is exhausted, drop one rung, reset the knob to its start value, and repeat.
 5. If a model fails at 49152, mark it `unfit` and **exclude it from the matrix** (the common
    context is defined over the arms that run; log loudly).
 6. `common_ctx = min(highest passing rung per model)`; re-verify every model at `common_ctx`.
 7. Record per model: rung attempted, knob used, peak VRAM (sample `nvidia-smi --query-gpu=memory.used`
    every 1 s while the server is up), time to first token at that depth.
 
-Expected outcomes to sanity-check against: 35B / Flash-Next / Gemma-26B / Ornith pass at 102400
-with a handful of expert layers offloaded; the **27B at f16 needs ≈2.6 GiB moved off the GPU**
-(6.25 GiB KV + 10.36 GiB weights + 0.58 GiB recurrent state + ~0.7 GiB compute = 17.9 GiB vs a
-~15.3 GiB budget) → `--n-cpu-ffn` around 24–32, i.e. prefill will be slower than the production
-preset. If even `-ncffn 44` fails, the ladder drops the whole matrix to 98304, then 90112, then
-**81920** (the prior no-offload f16 ceiling). Whatever it lands on, every arm uses it.
+Expected outcomes to sanity-check against: the 35B, Flash-Next, Gemma-26B and Ornith pass at 102400
+with a handful of expert layers offloaded. The **27B at f16 needs about 2.6 GiB moved off the GPU**,
+because 6.25 GiB of KV, 10.36 GiB of weights, 0.58 GiB of recurrent state and roughly 0.7 GiB of compute
+add up to 17.9 GiB against a budget of about 15.3 GiB. That puts `--n-cpu-ffn` around 24 to 32, so
+prefill will be slower than the production preset. If even `-ncffn 44` fails, the ladder drops the whole
+matrix to 98304, then 90112, then **81920**, which was the f16 ceiling in the earlier study without
+offload. Whatever rung it lands on, every arm uses that value.
 
 Also probe the *decode rate* while you are there (the tiny request plus a 64-token generation) and
 write it to `fit.json`; the orchestrator uses it to estimate whether the next arm fits under the
@@ -340,7 +346,8 @@ ANSWER: <value>
 ```
 
 `extract_answer(text)` = the value of the **last** `^ANSWER:\s*(.+)$` line (models sometimes write
-one inside reasoning). If absent → `ok=False, why="no ANSWER line"`.
+one inside reasoning). When no such line is present the grader records `ok=False` with
+`why="no ANSWER line"`.
 
 **R tier — retrieval / tracing / aggregation (RULER-derived), graded, 3 reps at temp 0.7:**
 
@@ -353,8 +360,8 @@ one inside reasoning). If absent → `ok=False, why="no ANSWER line"`.
 | `count_proj` | how many RECORD rows have `project=PRJ-k` | int | exact |
 | `fwe_count` | how many times the exact token `ZQ-7731` appears (decoys present) | int | exact |
 
-Each answer is a short string → cheap to grade, zero judge variance. Partial credit: 1 point per
-correct sub-value (so `agg_sum` is 2 points, `niah_multi` 3).
+Each answer is a short string, which makes grading cheap and leaves no judge variance to argue about.
+Partial credit is 1 point per correct sub-value, so `agg_sum` is worth 2 points and `niah_multi` 3.
 
 **L tier — loop probes, 3 reps at temp 0.7, repetition suppression OFF:**
 
@@ -524,7 +531,8 @@ python3 -m kvtest.run --stamp 2026-10-29T22 --deadline-hours 22 [--models a,b] [
 
 Per arm, in this order (f16 first *within* each model because it is the reference):
 
-1. `Server.start(model, kv, ctx)` — command:
+1. `Server.start(model, kv, ctx)` runs this command, where `<BIN>` is the directory holding the
+   llama.cpp build (the `BASE` constant in `config.py`):
    ```
    <BIN>/llama-server -m <weights> --alias <model>-<kv> --port 18400
      -c <common_ctx> -ctk <kv> -ctv <kv> <SERVER_COMMON> <model extra> <knob flags>
@@ -542,6 +550,8 @@ Per arm, in this order (f16 first *within* each model because it is the referenc
 
 Request body (all of these were verified accepted per request):
 
+Here `DOC` is the shared document text and `task_text` is the task instruction appended to it:
+
 ```python
 {"messages": [{"role": "user", "content": DOC + "\n\n" + task_text}],
  "max_tokens": budget, "stream": False, "cache_prompt": True,
@@ -549,12 +559,14 @@ Request body (all of these were verified accepted per request):
  "repeat_penalty": rp, "repeat_last_n": rln, "dry_multiplier": 0.0}
 ```
 
-Read back: `choices[0].message.content`, `.reasoning_content`, `.tool_calls`, `usage.*`, and
-`timings.{prompt_n, prompt_ms, predicted_n, predicted_ms, cache_n}` → classify `reasoning_supported`
-= `bool(reasoning_content)` on the first request; if false, record once per arm and continue.
+Read back `choices[0].message.content`, `.reasoning_content`, `.tool_calls` and `usage.*`, plus the
+`timings` block (`prompt_n`, `prompt_ms`, `predicted_n`, `predicted_ms`, `cache_n`). Those fields also
+decide `reasoning_supported`: it is `bool(reasoning_content)` on the first request, and if it is false
+the harness records that once per arm and carries on.
 
-Deadline governor: before each arm compute `est = median(completed arm durations)`; if
-`now + est > deadline` → stop, write `raw.json` from what exists, set `"deadline_reached": true`
+Deadline governor: before each arm, compute `est` as the median duration of the arms already
+completed. If `now + est` would pass the deadline, stop, write `raw.json` from what exists, and set
+`"deadline_reached": true`
 and the list of unrun arms. Priority order guarantees Gemma/Ornith are the casualties, never
 half of a KV ladder.
 
@@ -590,10 +602,11 @@ Outputs into `results/<stamp>/`: `raw.json` (merged, with provenance), `samples.
 
 - Data embedded as `const RAW = {...};` from `raw.json`.
 - Three tabs (vanilla JS, `<button>` + `hidden` attribute): **Matrix**, **Tasks**, **Loops**.
-- **Matrix tab**: heatmap grids drawn as inline `<svg>` by Python: rows = 5 models, columns =
-  `f16 | q8_0 | q4_0`, three grids side by side — R accuracy, C checks %, loop rate. Colour scale
-  computed in Python (`green→amber→red` for degradation), numbers printed in each cell, `<title>`
-  tooltips. Under each grid, the paired delta bars (`<rect>` per cell, zero line at f16).
+- **Matrix tab**: three heatmap grids drawn as inline `<svg>` by Python, side by side for R accuracy,
+  C checks as a percentage, and loop rate. Rows are the five models with the f16, q8_0 and q4_0 arms as
+  columns. The colour scale is computed in Python and runs green to amber to red as degradation
+  increases; every cell also prints its number and carries a `<title>` tooltip. Under each grid sit the
+  paired delta bars, one `<rect>` per cell with the zero line at f16.
 - **Tasks tab**: per task, a grouped bar chart of all 15 arms + a `<details>` per arm listing the
   failed check ids and the emitted code size.
 - **Loops tab**: a gallery — one card per flagged sample: model, KV, tier, probe, rep, the verdict
@@ -628,11 +641,13 @@ artifacts from `raw.json`/`samples.jsonl` with no server and no models.
    reference implementation at 261/261 and a deliberately broken one below; `report.py` produces
    `report.html` containing 3 tabs and 15 cells per grid. Prints `selftest OK`. **No GPU, no
    models, no network** — so anyone can validate the harness in seconds before downloading 36 GB.
-5. **`--smoke` profile** — 1 model × q4_0, `-c 8192`, `--reps 1`, R+C+L tiers → ~10 minutes,
-   produces a complete (tiny) report. Documented as the first command in `REPRODUCE.md`.
+5. **`--smoke` profile**: 1 model at q4_0, `-c 8192`, `--reps 1`, all three tiers, taking about ten
+   minutes and producing a complete but tiny report. It is documented as the first command in
+   `REPRODUCE.md`.
 6. **`docs/REPRODUCE.md`** — hardware classes and what auto-adapts (offload knobs and the context
    ladder are *measured*, not hardcoded, so a 24 GB card lands on 102400 with no changes and a
-   12 GB card lands lower); the exact sequence `selftest → smoke → full`; expected wall clock;
+   12 GB card lands lower); the exact sequence of selftest, then smoke, then the full matrix;
+   expected wall clock;
    and a "what will differ on your machine" section (tokenizer spread, achieved context rung,
    decode rates — never the *scoring* rules).
 7. **Copyleft/licensing note** — the codegen/repofixture task fixtures came from the user's own
@@ -672,19 +687,21 @@ artifacts from `raw.json`/`samples.jsonl` with no server and no models.
 
 1. `scripts/preflight.sh` — assert: `nvidia-smi` answers, no `llama-server` running, ≥60 GB free
    disk, no `.part` model files. Capture the Strata command line into
-   `results/<stamp>/strata-cmd.txt` (`ps -o args= -p 2556064` → `readlink /proc/2556064/cwd`).
+   `results/<stamp>/strata-cmd.txt`, taking the command line from `ps -o args= -p 2556064` and the
+   working directory from `readlink /proc/2556064/cwd`.
 2. `scripts/download_models.sh` — the two new GGUFs, sha256-verified. Write `models.lock.json`.
-3. `cp -a` the fixtures and runners; `python3 -m kvtest.selftest` → **must print `selftest OK`**
-   before anything touches the GPU.
+3. `cp -a` the fixtures and runners, then run `python3 -m kvtest.selftest`, which **must print
+   `selftest OK`** before anything touches the GPU.
 4. `kill -TERM 2556064`, wait for VRAM < 1024 MiB (poll `nvidia-smi --query-gpu=memory.used`),
    escalate to `-KILL` after 120 s. Record the free-VRAM number in the stamp.
-5. `python3 -m kvtest.fit --ladder 102400 --stamp <stamp>` → `fit.json` with the resolved common
-   context and per-model knobs. **Read it**: if it is below 81920, mention it in the report header;
-   if a model is `unfit`, it is out of the matrix.
+5. Run `python3 -m kvtest.fit --ladder 102400 --stamp <stamp>`, which writes `fit.json` with the
+   resolved common context and the per-model knobs. **Read it**: if the resolved context is below 81920,
+   say so in the report header, and if a model is `unfit` it is out of the matrix.
 6. `python3 -m kvtest.run --stamp <stamp> --resume --deadline-hours 22` — the long one. Run it
    under `nohup … &` with output to `results/<stamp>/run.out` so a closed terminal does not kill
    it; it is resumable with `--resume`.
-7. `python3 -m kvtest.report results/<stamp>` → `REPORT.md`, `report.html`, `matrix.csv`.
+7. Run `python3 -m kvtest.report results/<stamp>`, which writes `REPORT.md`, `report.html` and
+   `matrix.csv`.
 8. **Restart Strata** (a `trap` in `run_all.sh` also does it on failure): relaunch the captured
    command line from the captured cwd with `nohup setsid`, then verify a new pid exists, the
    process is `strata --serve`, and its listening port (`ss -ltnp | grep strata`) answers. Only
@@ -724,9 +741,9 @@ included. Governor at 22 h, Ornith last, `--only`/`--resume` for everything in b
 ## 16. Self-check before declaring the work done
 
 - Make sure to compare the answers of each model between itself at different kv quants as well as between the other models
-- `python3 -m kvtest.selftest` → `selftest OK` (no GPU).
-- `python3 -m kvtest.run --smoke --stamp smoke` → `results/smoke/report.html` exists, contains 3
-  tabs and a 15-cell grid, and `REPORT.md` is non-empty.
+- `python3 -m kvtest.selftest` prints `selftest OK`, and it does so without a GPU.
+- `python3 -m kvtest.run --smoke --stamp smoke` leaves `results/smoke/report.html` in place, with 3
+  tabs and a 15-cell grid, and leaves `REPORT.md` non-empty.
 - `python3 -c "import json;d=json.load(open('results/<stamp>/raw.json'));assert d['manifest']['llama_cpp']['commit'].startswith('2a667032d')"`
 - `grep -c '"loop"' results/<stamp>/samples.jsonl` > 0 and at least one sample has
   `"loop": true` (the mock exercising it proves the detector wired in, the real run decides).

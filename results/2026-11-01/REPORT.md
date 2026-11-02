@@ -1,21 +1,40 @@
 # KV-cache quantization at long context: 5 models × 3 cache types
 
-One context for every arm: **-c 102400** · 15 arms · 540 samples · llama.cpp `2a667032d`. Seeds, budgets and the document hash are in the appendix.
+One context for every arm: **-c 102400** · 15 arms · 540 samples · llama.cpp `2a667032d`. Seeds,
+budgets and the document hash are in the appendix.
 
-Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **15 h 27 m** (14 h 12 m of it the matrix).
+Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **15 h 27 m**
+(14 h 12 m of it the matrix).
 
+KV here means the key/value cache: the stored attention state for every token the model has already
+read, which is what a long-context run keeps in memory.
 
 ## Verdict
 
-No model scored differently from its own f16 arm by more than this test can resolve. gemma4-26b-a4b is the exception: at q4_0 its code score was 41 of 100 against 89 at f16, and it ran out of room on 3 of 6 coding tasks, so it was cut off rather than wrong. On this build the quantized cache was also 17–28 % slower to answer with than f16, so it buys memory, not speed. No cache setting made a model repeat itself more often by a difference this test can resolve.
+No model scored differently from its own f16 arm by more than this test can resolve. gemma4-26b-a4b is
+the exception: at q4_0 its code score was 41 of 100 against 89 at f16, and it ran out of room on 3 of 6
+coding tasks, so it was cut off rather than wrong. On this build the quantized cache was also 17–28 %
+slower to answer with than f16, so it buys memory, not speed. No cache setting made a model repeat
+itself more often by a difference this test can resolve.
 
-**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.94 of 100 (R 80.00% and C 89.87%, averaged before rounding), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB of graphics memory with 48 layers of the model kept in system RAM. **Its lead is not established: 14 other arms, including its own f16 arm, cannot be distinguished from it (task-clustered pairs, Holm over 42 comparisons).**
+**Best overall: `qwen38-flash` with a `q4_0` KV cache** — capability 84.94 of 100 (R 80.00% and C
+89.87%, averaged before rounding), 0/12 structural-loop samples, 12.3 t/s decode, 9107 MiB of graphics
+memory with 48 layers of the model kept in system RAM. **Its lead is not established: 14 other arms,
+including its own f16 arm, cannot be distinguished from it (task-clustered pairs, Holm over 42
+comparisons).**
 
-The next arms are `qwen38-flash` f16 (83.33), `qwen38-27b` q8_0 (83.33) — the top three sit within 1.6 capability points of each other, which is one or two graded outcomes.
+The next arms are `qwen38-flash` f16 (83.33) and `qwen38-27b` q8_0 (83.33). The top three sit within
+1.6 capability points of each other, which is one or two graded outcomes.
 
-Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer repeating samples, then the faster one. Every paired test clusters the three reps of a task into one observation and then applies a Holm correction across all 42 arm x tier comparisons, so nothing here can separate on a handful of correlated samples.
+Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer repeating samples,
+then the faster one. Every paired test clusters the three reps of a task into one observation and then
+applies a Holm correction across all 42 arm x tier comparisons, so nothing here can separate on a
+handful of correlated samples.
 
 ### Every arm, one line each
+
+The table ranks all 15 arms by that rule. Capability is the mean of the two columns after it, retrieval
+and code, and the last two columns are the loop count and the decode speed that break ties.
 
 | arm | capability | retrieval | code | structural loops | decode t/s |
 |---|---|---|---|---|---|
@@ -37,7 +56,19 @@ Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer
 
 ### What this does not show
 
-- **No arm is statistically separable.** Each tier has 6 task clusters (4 loop probes), so the smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons puts every adjusted p at 1.00. The test can exclude a large, consistent difference and nothing smaller. 'No difference' here means 'not resolvable at this sample size'.
-- **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the 6,144-token cap on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its retrieval failures are content-side repetition loops, not truncated thinking.
-- **Two tasks carry most of the code score.** `semver` is 261 of 780 checks and moves on a single decision; `intervals` and `statistics` are saturated in 14 of 15 arms. `count_proj` is degenerate (every project has the same count, so guessing 3 scores).
-- **The loop probes only see the first ~2,000 tokens**, so a loop that starts later is invisible; `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain literal `\n` text, so newline handling was not actually tested.
+Four limits matter for reading the result, and the first is the one that constrains every claim in this
+report.
+
+- **No arm is statistically separable.** Each tier has 6 task clusters (4 for the loop probes), so the
+  smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons puts every adjusted p
+  at 1.00. The test can exclude a large, consistent difference and nothing smaller. "No difference"
+  here means "not resolvable at this sample size", not "equal".
+- **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the 6,144-token cap
+  on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its
+  retrieval failures are content-side repetition loops, not truncated thinking.
+- **Two tasks carry most of the code score.** `semver` is 261 of 780 checks and moves on a single
+  decision; `intervals` and `statistics` are saturated in 14 of 15 arms. `count_proj` is degenerate,
+  because every project has the same count, so guessing 3 scores.
+- **The loop probes only see the first ~2,000 tokens**, so a loop that starts later is invisible;
+  `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain literal `\n` text, so
+  newline handling was not actually tested.

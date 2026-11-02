@@ -2,7 +2,11 @@
 
 One context for every arm: **-c 16384** · 1 arms · 16 samples · llama.cpp `2a667032d`. Seeds, budgets and the document hash are in the appendix.
 
-Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **—** (13 m 12 s of it the matrix).
+Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **—**
+(13 m 12 s of it the matrix).
+
+KV here means the key/value cache: the stored attention state for every token the model has already
+read, which is what a long-context run keeps in memory.
 
 
 ## Verdict
@@ -13,11 +17,17 @@ Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer
 
 ### Every arm, one line each
 
+This smoke run has a single arm, so the table shows one row rather than a ranking. Capability is the
+mean of the retrieval and code columns after it.
+
 | arm | capability | retrieval | code | structural loops | decode t/s |
 |---|---|---|---|---|---|
 | `qwen36-35b` q4_0 | 81.2 | 70.0 % | 92.4 % | 0/4 | 45.6 |
 
 ### What this does not show
+
+The limits below apply to a one-arm smoke run as much as to the full matrix, and the first one is why
+nothing here can be read as a ranking.
 
 - **No arm is statistically separable.** Each tier has 6 task clusters (4 loop probes), so the smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons puts every adjusted p at 1.00. The test can exclude a large, consistent difference and nothing smaller. 'No difference' here means 'not resolvable at this sample size'.
 - **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the 6,144-token cap on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its retrieval failures are content-side repetition loops, not truncated thinking.

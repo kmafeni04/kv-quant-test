@@ -1,9 +1,10 @@
 # Results
 
-Run `results/2026-11-01/`: five models at `-c 102400`, each with f16, q8_0 and q4_0 KV caches, 540
-requests, no failed requests, no deadline cut. Grading and statistics were corrected after the run
-(`repo_fix` now needs its visible test; every paired test clusters the reps of a task and Holm-corrects
-across comparisons), and every number below is from the corrected artifacts.
+Run `results/2026-11-01/`: five models at `-c 102400`, each with f16, q8_0 and q4_0 KV caches (the
+key/value cache holding every earlier token's attention state), 540 requests, no failed requests, no
+deadline cut. Grading and statistics were corrected after the run: `repo_fix` now needs its visible
+test, and every paired test clusters the reps of a task and Holm-corrects across comparisons. Every
+number below is from the corrected artifacts.
 
 **The loop probes are too short to settle the looping question.** They see about 1,000 visible tokens
 per probe and four independent probes per arm. The design that replaces them is in
@@ -15,6 +16,9 @@ Quantizing the KV cache made no resolvable difference on four of the five models
 exception, and it failed by writing too long, not by answering wrong: at q4_0 it hit the code tier's
 token ceiling on three of six tasks and its code score fell from 89 to 41. On this build the quantized
 cache is also 17–28 % slower to decode at depth, so it buys context, not speed.
+
+The table ranks all 15 arms by capability, which is the mean of the retrieval and code percentages,
+with ties going to the arm with fewer repeating samples and then to the faster one.
 
 | arm | capability | retrieval | code | structural loops | decode t/s |
 |---|---|---|---|---|---|

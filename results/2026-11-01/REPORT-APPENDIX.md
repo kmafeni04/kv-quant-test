@@ -5,6 +5,10 @@
 
 ## Hardware and build this ran on
 
+The machine and the compiler settings decide how much of the model fits on the GPU and how fast it
+answers, so they are recorded next to the scores. Everything below was captured on the host that ran
+the matrix.
+
 | item | value |
 |---|---|
 | GPU | NVIDIA GeForce RTX 3080 Laptop GPU, 16384 MiB total, compute 8.6 |
@@ -27,6 +31,10 @@ The long form lives in `REPORT-APPENDIX.md` next to this file; it is the same da
 | `gemma4-26b-a4b` | **f16** | 62.82 | q8_0 | 3/12 | 46.9 | f16 keeps the lead; q4_0 loses 29.1 capability points; the arm q4_0 hit the 6144-token code cap on 3 of 6 tasks, so its checks are truncated output, not wrong code; 3/12 structural-loop samples, 46.9 t/s decode |
 
 ### All 15 arms, ranked by the same rule
+
+The table ranks the arms by capability, best first. The `p vs #1` column is the paired test against
+the top arm and the last column says whether that test separated the two from each other; in this
+run nothing separates.
 
 | rank | arm | capability | structural loops | decode t/s | p vs #1 | distinguishable from #1? |
 |---|---|---|---|---|---|---|
@@ -64,6 +72,10 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 
 ## R tier: retrieval, tracing, aggregation (partial credit, %)
 
+Retrieval is scored per sub-value rather than per task, so a task asking for three values
+contributes three points. The table gives each model's share of the 30 available points, with the
+three reps already pooled, which is why there is no error bar here.
+
 | model | f16 | q8_0 | q4_0 |
 |---|---|---|---|
 | `qwen38-flash` | 76.7 | 80.0 | 80.0 |
@@ -73,6 +85,10 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 | `gemma4-26b-a4b` | 36.7 | 23.3 | 26.7 |
 
 ## C tier: hidden checks passed / total, and resolved tasks
+
+Code is scored two ways from the same generations: checks passed out of 780 hidden checks, and whole
+tasks resolved out of 6, where resolved means every check on that task passes. Each task got one
+greedy pass, so these counts carry no sampling noise and no error bar.
 
 | model | KV | checks | % | resolved | too-hard tasks |
 |---|---|---|---|---|---|
@@ -116,6 +132,11 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 
 ## Paired tests vs f16 (exact sign-flip, paired by task and seed)
 
+Each row compares one arm with its own model's f16 arm on one tier, and `change` is the arm minus
+f16 in that tier's units. An arm therefore appears three times: once for retrieval points, once for
+code checks, once for loop flags, because pooling those units into one number would let the
+780-check tier outweigh the 0/1 flags.
+
 | model | KV | metric | level | change | p | direction |
 |---|---|---|---|---|---|---|
 | `qwen38-flash` | q8_0 | R | 80.0 % of 30 points | +1 points | 1.0000 | higher · not significant |
@@ -153,6 +174,12 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 
 ## Agreement with f16 per model (share of identical graded answers)
 
+Agreement measures something pass rates cannot: whether the quantized arm produced the same answer
+as f16 even when both were right. Each line gives one model and the share of graded answers that
+were byte-identical to its f16 answer, over the samples the pair had in common. A share near 1.0
+means the cache setting did not change the output at all, and the denominator after each share shows
+how much the comparison rests on; Gemma's five samples are small for that reason.
+
 - `qwen38-flash` — q8_0: 0.611 of 18 samples; q4_0: 0.667 of 18 samples
 - `qwen38-27b` — q8_0: 0.722 of 18 samples; q4_0: 0.722 of 18 samples
 - `qwen36-35b` — q8_0: 0.722 of 18 samples; q4_0: 0.556 of 18 samples
@@ -161,6 +188,10 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 
 ## Cross-model answer agreement (same R task + seed, same KV)
 
+Two models answering the same retrieval task, with the same seed and the same cache type, can agree
+or disagree, and the share that agree says how much of the answer comes from the document rather
+than from the model. Each block below is one cache type and each row is a model pair, so the f16
+block is the baseline to read the other two against.
 
 **f16**
 
@@ -209,6 +240,11 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 
 ## Speed and realized context
 
+The table prices the three cache settings against each other on the same work: prompt tokens
+actually used after tokenization, prefill and decode rates at depth, the share of the prompt served
+from the reused prefix, and total tokens generated. A high decode rate with a low generated count
+means the arm answered less, not that it was faster.
+
 | model | KV | prompt tokens | prefill t/s | decode t/s | cache hit rate | out tokens |
 |---|---|---|---|---|---|---|
 | `qwen38-flash` | f16 | 91357 | 21.5 | 16.6 | 1.0 | 43678 |
@@ -228,6 +264,10 @@ Knobs are identical for a model's three arms; the VRAM peak and speeds below are
 | `gemma4-26b-a4b` | q4_0 | 81845 | 51.7 | 34.3 | 1.0 | 153433 |
 
 ## How long this took
+
+Wall clock is reported per phase because the phases cost different amounts: the matrix dominates,
+and the fit probe pays for itself by resolving the context once instead of once per arm. The `when`
+column gives UTC start and end times, which is what makes a resumed or restarted run auditable.
 
 | phase | wall clock | when (UTC) |
 |---|---|---|
@@ -264,6 +304,11 @@ Per-arm wall clock (includes the document prefill and the server load):
 | `ornith-35b__q4_0` | 26 m 34 s | 35.2 | 36 |
 
 ## Threats to validity (literal)
+
+Ten limits apply to every number in this report, ordered so that the ones deciding how far a
+comparison reaches come first: one document is not one token sequence, and only some layers hold a
+cache that grows with depth. The rest describe scoring artefacts that are visible in the artifacts,
+and each names the column or flag that shows it.
 
 - Text-identical is not token-identical: one document, five tokenizers; realized prompt lengths are reported and `-c` is identical everywhere.
 - Only full-attention layers accumulate KV damage over depth, so a model with few global attention layers can only show a small effect; the per-model layer counts for this run are in fit.json's geometry block.
