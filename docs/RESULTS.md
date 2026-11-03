@@ -1,4 +1,10 @@
-# Results
+# Results — the prior study (archived)
+
+These are the findings of the 15-arm, short-answer study that [AGENTIC-BENCH-PLAN.md](AGENTIC-BENCH-PLAN.md)
+replaces. They are kept because they define what the new harness had to fix: a generation cap, a
+reasoning budget, a repeat penalty and three reps at 0.7 sampled away the very failure modes the new
+study measures. Nothing below was produced by the current harness and none of it is comparable with a
+run of it.
 
 Run `results/2026-11-01/`: five models at `-c 102400`, each with f16, q8_0 and q4_0 KV caches (the
 key/value cache holding every earlier token's attention state), 540 requests, no failed requests, no
@@ -61,23 +67,34 @@ directions happened: `qwen38-flash` q4_0 beat its own f16 arm by one retrieval s
 and Gemma q4_0 lost 376 checks to truncation.
 
 Evidence that quantization helps would be an advantage that survives more seeds and more tasks, or a
-distributional measure (KL against the f16 model, which separated q4_0 at 32k in the earlier study). A
-one-point difference on 30 points is neither.
+distributional measure (KL against the f16 model, which separated q4_0 at 32k in the earlier study).
+Here KL means Kullback–Leibler divergence, a measure of how far one next-token distribution has moved
+from another. A one-point difference on 30 points is neither.
 
 ## What each tier actually measured
 
-**Retrieval (30 points per arm).** Four of the six tasks saturate or floor: `niah_multi` is 9/9 in all
+The task names below (`niah_multi`, `vt_trace`, `agg_sum`, `fwe_count`, `count_proj`, `semver`,
+`intervals`, `statistics`, `csvlite`, `repo_fix`) are the harness task ids; `csvlite` is a small
+CSV-parsing fixture and `repo_fix` is the repository-repair fixture.
+
+### Retrieval: 30 points per arm
+
+Four of the six tasks saturate or floor: `niah_multi` is 9/9 in all
 15 arms, `vt_trace` 6/6 in 14, `agg_sum` 0/6 in 11, `fwe_count` 0/3 in 13. `count_proj` is degenerate
 — every project has the same record count, so guessing 3 scores. This tier is a control for depth, not
 an instrument.
 
-**Code (780 hidden checks).** Three modules carry 84 % of it and two of those are saturated in 14 of 15
+### Code: 780 hidden checks
+
+Three modules carry 84 % of it and two of those are saturated in 14 of 15
 arms; `semver` alone is 261 checks that move as one bit (118, 190 or 261 depending on how prerelease
 ordering is implemented). The four arms that resolved the most tasks resolved four of six; `repo_fix`
 was resolved by no arm because its visible test is not scoreable by the hidden suite (fixture defect,
 recorded).
 
-**Loops (12 samples per arm).** Seven of the ten structural repetition events are Gemma on
+### Loops: 12 samples per arm
+
+Seven of the ten structural repetition events are Gemma on
 `enumerate_shards`, at every cache type: identical lines up to 159 times, 200-character blocks up to
 15 times, tail cycles of 105–300 characters. Gemma's retrieval failures are the same failure in another
 form — 447 repeated lines and no `ANSWER` line — not truncated thinking. A further 25 of 45
@@ -86,13 +103,21 @@ artefact and it is excluded from the structural count.
 
 ## What this run cannot tell you
 
-- **Looping at depth.** The probes stop at ~1,000 visible tokens by construction.
-- **Whether q4_0 is safe in agentic use.** Nothing here runs a tool loop longer than five calls, and
-  the one model that did fail did so by writing, not by looping.
-- **Cross-model comparisons.** One document, five tokenizers (81,765 to 91,357 prompt tokens), and
-  every claim in this file is about a model's own KV ladder.
-- **`csvlite`.** Its fixture checks contain literal `\n` text, so the newline rules the spec centres on
-  were never tested. Its scores are not a clean CSV measurement.
+The limits below are structural, not incidental: each one follows from how the prior study was built,
+and each one is why the replacement study changes that part of the harness.
+
+Looping at depth is unmeasured. The probes stop at roughly 1,000 visible tokens by construction, which
+is too short for a model to reach a repetition attractor that needs thousands of tokens to form.
+
+Whether q4_0 is safe in agentic use is unmeasured. Nothing here runs a tool loop longer than five
+calls, and the one model that did fail did so by writing, not by looping.
+
+Cross-model comparisons are not available. One document was tokenized five ways (81,765 to 91,357
+prompt tokens), and every claim in this file is about a model's own KV ladder rather than about one
+model against another.
+
+`csvlite` is not a clean CSV measurement. Its fixture checks contain literal `\n` text, so the newline
+rules the spec centres on were never tested.
 
 The full tables, per-task breakdown, cross-model agreement, timing and hardware are in
 [`REPORT-APPENDIX.md`](../results/2026-11-01/REPORT-APPENDIX.md); the method and threats are in

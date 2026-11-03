@@ -1,2 +1,3 @@
-model,kv,R_pct,R_points,R_of,C_pct,C_passed,C_of,C_resolved,loop_flagged,loop_samples,loop_rate,loop_hard,loop_reasoning,loop_content,agree_f16,prompt_tokens,prefill_tps,decode_tps,cache_hit_rate,vram_peak_mib,knobs
-qwen36-35b,q4_0,70.0,7,10,92.4,721,780,3,0,4,0.0,0,0,0,,10679,642.6,45.6,1.0,9541,{"ncmoe": 26}
+arm,model,kv,ctx,w2_mean,w2_sd,w2_diff,w2_lo,w2_hi,w2_decision,w3_mean,w3_phase_b,kld_mean,kld_unc,same_top,log_ppl_ratio_own,deep_ppl,deep_ppl_ratio,w4_hash_ok,w4_invariants_ok,w5_keys_total,w5_of_total,w6_sections,w6_refs,loop_halts,context_full,ceiling,out_tokens,wall_s
+ornith-35b__f16,ornith-35b,f16,32768,20.0,0.0,0.0,0.0,0.0,tie (interval includes 0),,,,,,,,,0,0,0,0,0,0,0,0,0,2122,55.9
+ornith-35b__q4_0,ornith-35b,q4_0,32768,20.0,0.0,0.0,0.0,0.0,tie (interval includes 0),,,,,,,,,0,0,0,0,0,0,0,0,0,1758,50.1

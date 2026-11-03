@@ -1,96 +1,124 @@
-"""Single source of truth for the KV-quant x long-context study.
+"""Single source of truth for the full-context KV-quant study.
 
-Every number that changes what is measured lives here: model paths, offload knobs, the context
-ladder, sampling, budgets, seeds, the shared document parameters.
+One rung per model, greedy decode, no reasoning budget, six workflows, fixed tranches. Everything
+that changes what is measured lives here.
 """
 import json
 import os
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE = "/home/kome/Projects/code/clones/llama.cpp/build/bin"
-LLAMA_DIR = "/home/kome/Projects/code/clones/llama.cpp"
+BASE = os.environ.get("KV_LLAMA_BIN", "/home/kome/Projects/code/clones/llama.cpp/build/bin")
+LLAMA_DIR = os.environ.get("LLAMA_DIR", "/home/kome/Projects/code/clones/llama.cpp")
 MODELS_ROOT = os.environ.get("KV_MODELS_ROOT", "/home/kome/.local/share/llm-models")
 FIXTURES = os.path.join(ROOT, "fixtures")
 
 SERVER_BIN = os.path.join(BASE, "llama-server")
 TOKENIZE_BIN = os.path.join(BASE, "llama-tokenize")
+PERPLEXITY_BIN = os.path.join(BASE, "llama-perplexity")
 
+# D2: the largest ladder entry that loads with a >= 91k-token prompt. The ladder is only used to
+# report which rungs a model can reach; every arm of a model runs at that model's resolved rung.
 CONTEXT_LADDER = [102400, 98304, 90112, 81920, 73728, 65536, 57344, 49152]
-KV_ARMS = ["f16", "q8_0", "q4_0"]
-GEN_HEADROOM = 8192          # a -c value must exceed prompt + this
+CONTEXT_FLOOR = 90112
+KV_ARMS = ["f16", "q4_0"]
 PORT = 18400
 
-# Per-arm offload knob. `knob_bump` is applied when the server cannot allocate at the current
-# rung; `knob_max` is where the rung is abandoned. Fixed per model across the three KV arms,
-# because moving layers on and off the GPU between arms is not the variable under test.
+# D5: temperature 0 and nothing else. No top_k, top_p, min_p, repeat penalty, seeds or reps.
+SAMPLING = {"temperature": 0.0}
+# D6: the only cap left, and only as a runaway guard.
+MAX_OUTPUT_TOKENS = 65536
+
 MODELS = {
+    "gemma4-26b-a4b": dict(
+        path=f"{MODELS_ROOT}/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+        knobs={"ncmoe": 8}, knob_flag="--n-cpu-moe",
+        knob_bump=lambda n: n + 6, knob_max=30,
+        extra=["-ub", "512"], priority=1, tranche="T1"),
+    "ornith-35b": dict(
+        path=f"{MODELS_ROOT}/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+        knobs={"ncmoe": 10}, knob_flag="--n-cpu-moe",
+        knob_bump=lambda n: n + 6, knob_max=40,
+        extra=["-ub", "1024"], priority=2, tranche="T2"),
     "qwen36-35b": dict(
         path=f"{MODELS_ROOT}/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
         knobs={"ncmoe": 26}, knob_flag="--n-cpu-moe",
         knob_bump=lambda n: n + 4, knob_max=40,
-        extra=["-ub", "1024"], priority=1),
+        extra=["-ub", "1024"], priority=3, tranche="T3"),
+    # Dropped by D7, kept so they can be run later on the two cheap probes.
     "qwen38-27b": dict(
         path=f"{MODELS_ROOT}/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
         knobs={"ncffn": 8}, knob_flag="--n-cpu-ffn",
         knob_bump=lambda n: n + 6, knob_max=44,
-        extra=["-ub", "512"], priority=2),
+        extra=["-ub", "512"], priority=4, tranche=None),
     "qwen38-flash": dict(
         path=(f"{MODELS_ROOT}/Qwen3.8-Flash-Next-GSQ-RCO/"
               "Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf"),
         knobs={"ncmoe": 48}, knob_flag="--n-cpu-moe",
         knob_bump=lambda n: n + 4, knob_max=64,
         extra=["--moe-cache-mib", "2900", "-lm", "mmap", "-lzm", "on", "-ub", "1024"],
-        priority=3),
-    "gemma4-26b-a4b": dict(
-        path=f"{MODELS_ROOT}/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
-        knobs={"ncmoe": 8}, knob_flag="--n-cpu-moe",
-        knob_bump=lambda n: n + 6, knob_max=30,
-        extra=["-ub", "512"], priority=4),
-    "ornith-35b": dict(
-        path=f"{MODELS_ROOT}/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
-        knobs={"ncmoe": 10}, knob_flag="--n-cpu-moe",
-        knob_bump=lambda n: n + 6, knob_max=40,
-        extra=["-ub", "1024"], priority=5),
+        priority=5, tranche=None),
 }
+STUDY_MODELS = [k for k, _ in sorted(MODELS.items(), key=lambda kv: kv[1]["priority"])
+                if MODELS[k].get("tranche")]
 
-# -fa on is mandatory: a quantized V cache refuses to load without flash attention. The build's
-# GGML_CUDA_FA_QUANTS covers exactly f16/f16, q8_0/q8_0, q4_0/q4_0.
+# -fa on is mandatory: a quantized V cache refuses to load without flash attention. No reasoning
+# budget, no reasoning flags, no sampler flags: the model file's own defaults are never overridden.
+# -v makes llama-server print the resolved sampler chain and params, which is captured per arm.
 SERVER_COMMON = ["-ngl", "999", "-fa", "on", "-np", "1", "-b", "2048",
-                 "--jinja", "--no-warmup", "--metrics",
-                 "--cache-reuse", "0", "--ctx-checkpoints", "8", "--checkpoint-min-step", "8192",
-                 "--reasoning", "on", "--reasoning-effort", "medium",
-                 "--reasoning-budget", "8192", "--reasoning-format", "deepseek"]
-
-SAMPLING_GRADED = dict(temperature=0.0, top_k=20, top_p=0.95, min_p=0.0,
-                       repeat_penalty=1.05, repeat_last_n=64, dry_multiplier=0.0)
-# Repetition suppression off: a repeat penalty is exactly the thing that masks looping.
-SAMPLING_LOOP = dict(temperature=0.7, top_k=20, top_p=0.95, min_p=0.0,
-                     repeat_penalty=1.0, repeat_last_n=0, dry_multiplier=0.0)
-# L was 1,536 in the design; the measured 40-shard listing ran out of room at exactly 1,536 tokens
-# (88 lines emitted, 39/40 shards present, finish_reason=length), so 2,048 is used for every arm so
-# that a complete answer can fit. A truncation artefact must not read as "did no work".
-BUDGETS = {"R": 2048, "C": 6144, "L": 2048, "tool_turn": 512}
-# Thinking is capped per REQUEST (`reasoning_budget_tokens`) so the answer always has room: with an
-# uncapped medium-effort template the code tier spent all 6,144 tokens thinking and emitted zero
-# characters of code (measured twice on the dense 27B, and the earlier 32k study hit the same wall
-# at 32,489 completion tokens with 0 lines). The cap is identical for every arm, and the sampler
-# forces the end-of-thinking tag when it is reached, so the model still answers.
-REASONING_BUDGET_TOKENS = {"R": 1024, "C": 3072, "L": 256, "tool_turn": 256}
-# A thinking model can spend the whole budget before it answers. When a sample ends at the cap
-# with no answer, run.py retries that one sample at this multiple and logs `budget_raised`; the
-# default path stays at the budgets above so the run stays inside its deadline.
-BUDGET_RETRY_MULT = 4
-REPS = 3
-SEEDS = [1001, 1002, 1003]
+                 "--jinja", "--no-warmup", "--metrics", "--cache-reuse", "0",
+                 "--ctx-checkpoints", "8", "--checkpoint-min-step", "8192", "-v"]
 
 DOC_SEED = 7
-DOC_TARGET_TOKENS = 96000     # <= this for the LARGEST of the five tokenizations
-DOC_FILLER_TARGET = 430000    # characters of filler before task blocks; recalibrated in fit
+# D2: the document alone is 92-95k tokens in the LARGEST of the three active tokenizers.
+DOC_FILLER_TARGET = 400000
+DOC_TARGET_TOKENS = 94000
+DOC_TARGET_MIN = 92000
+DOC_TARGET_MAX = 95000
 
 ANSWER_INSTRUCTION = (
     "Answer with a single final line of exactly this form, and nothing after it:\n"
     "ANSWER: <value>"
 )
+
+# ---------------------------------------------------------------- workflows
+# Instances are per arm and set by information per hour (D1/D3 and the workflow table).
+WORKFLOWS = {
+    "W1": dict(name="KLD and perplexity", instances=3, guard=None, tier="instrument"),
+    "W2": dict(name="20-key retrieval", instances=12, guard="1 request", tier="counted"),
+    "W3": dict(name="Compaction", instances=12, guard="2 requests", tier="counted"),
+    "W4": dict(name="Long-horizon ledger", instances=6, guard=120, tier="long"),
+    "W5": dict(name="Agentic search", instances=6, guard=60, tier="long"),
+    "W6": dict(name="Unbounded long-form", instances=6, guard=None, tier="long"),
+}
+WORKFLOW_IDS = ["W1", "W2", "W3", "W4", "W5", "W6"]
+
+# Fixed in advance: a deadline cut lands on the least informative remaining cell.
+TRANCHES = [
+    dict(id="T1", model="gemma4-26b-a4b", workflows=["W1", "W2", "W3", "W4", "W5", "W6"],
+         hours=5.2, decision="whole result on the model with the only prior large effect"),
+    dict(id="T2", model="ornith-35b", workflows=["W1", "W2", "W3", "W4", "W5", "W6"],
+         hours=5.0, decision="clean second architecture, and the long workflows finish"),
+    dict(id="T3", model="qwen36-35b", workflows=["W1", "W2", "W3"],
+         hours=2.0, decision="counted probes and instrument on a third architecture"),
+    dict(id="T4", model="qwen36-35b", workflows=["W4", "W5", "W6"],
+         hours=4.0, decision="long-horizon workflows on the third model, only on slack"),
+]
+
+# ---------------------------------------------------------------- compaction (D3)
+BRIEF_WORD_CAP = 1500
+COMPACT_WALL_FRACTION = 0.90      # model-driven variant: compact before 90% of the window
+
+# ---------------------------------------------------------------- KLD/PPL (D4)
+# The f16 logits baseline is tokens x vocabulary x 2 bytes. The 4k scored slice keeps it ~1.2 GB,
+# and the file is written outside the results tree.
+KLD_CACHE = os.environ.get("KV_KLD_CACHE", os.path.join(ROOT, ".cache", "kv-quant-test"))
+KLD_SLICE_TOKENS = 4000           # scored context; the file carries >= 2x that (tool guard)
+KLD_CTX = 4000
+DEEP_PPL_CTX = 65536              # tool needs ctx/2 x vocab x 4 B of host logits; 102400 aborts
+
+# ---------------------------------------------------------------- statistics
+BOOTSTRAP_RESAMPLES = 1000
+BOOTSTRAP_SEED = 20261101
 
 
 def lock():
@@ -98,6 +126,10 @@ def lock():
     if not os.path.exists(p):
         return {}
     return json.load(open(p))
+
+
+def model_sha(key):
+    return ((lock().get("models") or {}).get(key) or {}).get("sha256")
 
 
 def build_manifest():
@@ -108,14 +140,14 @@ def build_manifest():
         "models": {k: {"path": v.get("path"), "sha256": v.get("sha256"), "bytes": v.get("bytes")}
                    for k, v in (lk.get("models") or {}).items()},
         "document_sha256": (lk.get("document") or {}).get("sha256"),
-        "context_ladder": CONTEXT_LADDER,
         "kv_arms": KV_ARMS,
         "server_common": SERVER_COMMON,
-        "sampling_graded": SAMPLING_GRADED,
-        "sampling_loop": SAMPLING_LOOP,
-        "budgets": BUDGETS,
-        "reasoning_budget_tokens": REASONING_BUDGET_TOKENS,
-        "reps": REPS,
-        "seeds": SEEDS,
+        "sampling": SAMPLING,
+        "max_output_tokens": MAX_OUTPUT_TOKENS,
+        "reasoning_budget": None,
+        "workflows": WORKFLOWS,
+        "tranches": TRANCHES,
+        "kld_slice_tokens": KLD_SLICE_TOKENS,
+        "bootstrap": {"resamples": BOOTSTRAP_RESAMPLES, "seed": BOOTSTRAP_SEED},
         "host": (lock().get("host") or {}),
     }

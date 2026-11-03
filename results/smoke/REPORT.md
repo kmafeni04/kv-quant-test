@@ -1,35 +1,96 @@
-# KV-cache quantization at long context: 1 models × 3 cache types
+# Full-context KV quantization: a smoke run of the 20-key retrieval probe
 
-One context for every arm: **-c 16384** · 1 arms · 16 samples · llama.cpp `2a667032d`. Seeds, budgets and the document hash are in the appendix.
+Both Ornith arms answered the one 20-key instance on this short control document and scored 20/20, so the probe is answerable and the per-key grader works. One instance per arm cannot show whether f16 or q4_0 is better, and the probe saturated at its twenty-key ceiling. This run skipped the distribution instrument (W1) and the compaction (W3), ledger (W4), search (W5) and long-form (W6) workflows. It therefore says nothing about how compression affects deep retrieval or the other five workflows.
 
-Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **—**
-(13 m 12 s of it the matrix).
+The run answered one question before the full matrix started. Can the harness put a 20-key retrieval task in front of a model at 32k, grade the answer per key, and record a clean halt or a loop? Two arms of Ornith-1.5-35B-A3B ran the task once each: one with an uncompressed 16-bit key/value cache (f16), one with a 4-bit cache (q4_0). A key/value cache, the KV cache, is the stored attention state for every token the model has already read. Compressing it is the treatment this study measures. A single instance on a short control document cannot tell the two cache types apart.
 
-KV here means the key/value cache: the stored attention state for every token the model has already
-read, which is what a long-context run keeps in memory.
+## Premise, power and disclosure
+
+- Instances per arm: W2 n=1.
+- One greedy draw per instance (`temperature: 0.0`, no other sampling key, no seeds, no reps). Greedy decode is not a production setting and can be more or less loop-prone than a sampled one; every loop count below is a statement about greedy decoding.
+- No reasoning budget and no retry path. The only cap is the 65536-token response ceiling, recorded as `ceiling`.
+- Unit = workflow instance. Smallest attainable two-sided p: W2 1.0000.
+- Pairwise tests are the paired difference against that model's f16 arm, cluster bootstrap over instances (1000 resamples, seeded). An arm is worse only when the interval excludes 0 and the point estimate is worse.
+- Document 42,837 characters, sha256 `4f9468d0ba794767`; tokens per model: not measured for this stamp.
+
+## Cells run
+
+| arm | wall |
+|---|---|
+| `ornith-35b__q4_0` | 50 s |
+
+## W1: KLD and perplexity (the fast instrument)
+
+No arm ran W1 in this stamp.
+
+## W2: 20-key retrieval
+
+| model | KV | mean /20 | sd | min | max | scored | halts | q4_0 − f16 | interval | decision |
+|---|---|---|---|---|---|---|---|---|---|---|
+| `ornith-35b` | `f16` | 20.00 | 0.00 | 20 | 20 | 1/1 | 0 | 0.00 | [0.00, 0.00] | tie (interval includes 0) |
+| `ornith-35b` | `q4_0` | 20.00 | 0.00 | 20 | 20 | 1/1 | 0 | 0.00 | [0.00, 0.00] | tie (interval includes 0) |
+
+A scored instance is one that produced an `ANSWER:` line. Instances halted by the loop detector, the window or the ceiling are counted in `halts` and excluded from the score, per the rule that a halt is its own counter and is never folded into a score.
+
+### Hit rate by planted depth
+
+Every scored arm hit all keys in all five depth bands; arms with no scored instance have empty cells instead.
 
 
-## Verdict
+**SATURATED.** Every scored arm holds all twenty keys. Per the stop rules the probe widens to all forty shards before the second model runs; otherwise it is measuring format compliance rather than cache damage.
 
-**Best overall: `qwen36-35b` with a `q4_0` KV cache** — capability 81.22 of 100 (R 70.00% and C 92.44%, averaged before rounding), 0/4 structural-loop samples, 45.6 t/s decode, 9541 MiB of graphics memory with 26 layers of the model kept in system RAM. **No other arm is comparable on this result, so the ranking is descriptive only.**
+## W3: compaction
 
-Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer repeating samples, then the faster one. Every paired test clusters the three reps of a task into one observation and then applies a Holm correction across all 42 arm x tier comparisons, so nothing here can separate on a handful of correlated samples.
+No arm ran W3 in this stamp.
 
-### Every arm, one line each
+## W4: long-horizon ledger
 
-This smoke run has a single arm, so the table shows one row rather than a ranking. Capability is the
-mean of the retrieval and code columns after it.
+No arm ran W4 in this stamp.
 
-| arm | capability | retrieval | code | structural loops | decode t/s |
-|---|---|---|---|---|---|
-| `qwen36-35b` q4_0 | 81.2 | 70.0 % | 92.4 % | 0/4 | 45.6 |
+## W5: agentic search
 
-### What this does not show
+No arm ran W5 in this stamp.
 
-The limits below apply to a one-arm smoke run as much as to the full matrix, and the first one is why
-nothing here can be read as a ranking.
+## W6: unbounded long-form
 
-- **No arm is statistically separable.** Each tier has 6 task clusters (4 loop probes), so the smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons puts every adjusted p at 1.00. The test can exclude a large, consistent difference and nothing smaller. 'No difference' here means 'not resolvable at this sample size'.
-- **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the 6,144-token cap on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its retrieval failures are content-side repetition loops, not truncated thinking.
-- **Two tasks carry most of the code score.** `semver` is 261 of 780 checks and moves on a single decision; `intervals` and `statistics` are saturated in 14 of 15 arms. `count_proj` is degenerate (every project has the same count, so guessing 3 scores).
-- **The loop probes only see the first ~2,000 tokens**, so a loop that starts later is invisible; `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain literal `\n` text, so newline handling was not actually tested.
+No arm ran W6 in this stamp.
+
+## Behaviour, halts and cost
+
+| arm | completed | loop [95%] | context full [95%] | ceiling [95%] | error | thinking share | out tokens | mean wall / instance |
+|---|---|---|---|---|---|---|---|---|
+| `ornith-35b__f16` | 1 | 0 [0.0%, 79.3%] | 0 [0.0%, 79.3%] | 0 [0.0%, 79.3%] | 0 | 83.6% | 2122 | 49 s |
+| `ornith-35b__q4_0` | 1 | 0 [0.0%, 79.3%] | 0 [0.0%, 79.3%] | 0 [0.0%, 79.3%] | 0 | 80.2% | 1758 | 46 s |
+
+The intervals are wide with this many instances, so the rates describe behaviour and never rank arms.
+
+Loop detection runs on `reasoning_content` and `content` separately for single responses and per step on tool transcripts (identical consecutive call, an identical call three times, A↔B oscillation, a no-progress window). `context_full` with zero visible tokens is a recorded outcome, never retried.
+
+### Mean wall per instance
+
+| arm | W1 | W2 | W3 | W4 | W5 | W6 |
+|---|---|---|---|---|---|---|
+| `ornith-35b__f16` | — | 49 s | — | — | — | — |
+| `ornith-35b__q4_0` | — | 46 s | — | — | — | — |
+
+## Decision rule
+
+An arm is worse if the lower bound of its paired interval excludes 0 and its point estimate is worse than that model's f16 arm; ties otherwise. With 1000 resamples the interval is a percentile interval over instances, and the smallest attainable p at these instance counts is in the premise above. No comparison in this report is a ranking on a behaviour count alone.
+
+## Appendix: per-instance records
+
+The first table summarises each arm's workflows; the second lists only the instances that did not reach a full score, so a miss can be traced without paging through rows that all say `20` or `complete`.
+
+| arm | workflow | instances | score range | halted |
+|---|---|---|---|---|
+| `ornith-35b__f16` | W2 | 1 | 20–20 | 0 |
+| `ornith-35b__q4_0` | W2 | 1 | 20–20 | 0 |
+
+## Provenance
+
+- llama.cpp `2a667032dc78` · 0.7.0-dev (build 11698) · flags `q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`
+- sampling sent: `{"temperature": 0.0}`; resolved per arm: `ornith-35b__f16` temp=0.000 greedy=True, `ornith-35b__q4_0` temp=0.000 greedy=True.
+- rungs: `{"ornith-35b": 32768}`
+- model sha256: `ornith-35b` `42739874cc2c`
+- KLD baselines: `ornith-35b__f16` `` ctx=None, `ornith-35b__q4_0` `` ctx=None (stored outside the results tree).
+- document sha256 `4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908`; instances `{"W2": 1}`

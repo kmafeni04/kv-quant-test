@@ -1,6 +1,6 @@
 # Next study: agentic workflows at full context, scored per key
 
-Design document only — nothing here was run. It replaces the current study, which measured short
+This is a design document; nothing here was run. It replaces the current study, which measured short
 answers at a shrinking context with sampler settings it imposed on the models.
 
 ## What the current probes cannot see
@@ -12,16 +12,39 @@ ended.
 
 | limit | number | consequence |
 |---|---|---|
-| Generation cap | 2,048 tokens (1,024 of them thinking) | ~1,000 visible tokens per probe. A long answer reaches the grader looking the same as a cut-off one. |
-| Task size | `copy_ledgers` = 12 rows, codegen fixtures = one short script | Both finish or truncate before any long-horizon failure mode appears; `enumerate_shards` hit the cap in most arms, so its "loop" flag is partly a truncation artefact. |
-| Multi-key breadth | 3 keys | 9/9 in every graded arm: the probe could not separate arms, and with three keys it also could not show a gradient. |
-| Interaction | 5 fixed tool calls, one round | Cannot show re-reading the same file, A↔B edit oscillation, re-running a failing test unchanged, or declaring done unverified. |
-| Context depth | samples ran on a ladder down to 49k | Cache damage scales with the number of cached tokens; a 49k rung is half the dose and every model gets a different test. |
-| Sampling | harness-forced `temperature 0.7, top_k 20, top_p 0.95, repeat_penalty 1.05` | Three of five arms were sampled outside their own declared distribution, and the repeat penalty sits directly on top of the loop detector. |
-| Thinking | `--reasoning-budget 8192` plus an end-of-thinking tag forced at the cap | The harness breaks reasoning loops for the model. A model that loops in thinking answers normally, and the loop never reaches the output. |
-| Statistics | 12 samples/arm = 4 probes × 3 reps | Smallest attainable p = 0.125 before correction; the earlier "three separable arms" was pseudo-replication, counting three reps of one task as three independent observations. |
+| Generation cap | 2,048 tokens (1,024 of them thinking) | ~1,000 visible tokens per probe |
+| Task size | `copy_ledgers` = 12 rows, codegen fixtures = one short script | Long-horizon failures never appear |
+| Multi-key breadth | 3 keys | 9/9 in every graded arm |
+| Interaction | 5 fixed tool calls, one round | No re-read or oscillation observed |
+| Context depth | samples ran on a ladder down to 49k | Half the dose, unequal tests |
+| Sampling | harness-forced `temperature 0.7, top_k 20, top_p 0.95, repeat_penalty 1.05` | Arms sampled off-distribution |
+| Thinking | `--reasoning-budget 8192` plus an end-of-thinking tag forced at the cap | Harness breaks thinking loops |
+| Statistics | 12 samples/arm = 4 probes × 3 reps | p = 0.125 before correction |
+
+Each short cell above is one reason the earlier study could not answer its question:
+
+- The generation cap left about 1,000 visible tokens per probe, so a long answer reached the grader
+  looking the same as a cut-off one.
+- The tasks were short enough to finish or truncate before any long-horizon failure appeared;
+  `enumerate_shards` hit the cap in most arms, so its "loop" flag is partly a truncation artefact.
+- Three keys were answered 9/9 in every graded arm, so the probe could not separate arms or show a
+  gradient.
+- Five fixed tool calls in one round cannot show re-reading a file, oscillation between edits,
+  re-running a failing test unchanged, or declaring done unverified.
+- The ladder ran down to 49k, where cache damage is half the dose and every model gets a different
+  test.
+- Sampling was forced to `temperature 0.7`, `top_k 20`, `top_p 0.95` and `repeat_penalty 1.05`, which
+  put three of five arms outside their declared distribution and put the repeat penalty on top of the
+  loop detector.
+- The reasoning budget forced an end-of-thinking tag at the cap, so a model that looped in thinking
+  still answered normally and the loop never reached the output.
+- Twelve samples per arm gave the smallest attainable p = 0.125 before correction; the earlier
+  "three separable arms" was pseudo-replication, counting three reps of one task as independent.
 
 ## Decisions
+
+The seven decisions below are the design's fixed choices. The right-hand column names what each one
+replaces, so a reader can see which limit of the earlier study it removes.
 
 | # | decision | replaces |
 |---|---|---|
@@ -50,8 +73,8 @@ read.
   same order. Two of the five are slow in both directions, which is what D7 acts on.
 - The pinned build's `llama-perplexity` supports `-ctk`/`-ctv`, `--save-all-logits` (the
   `--kl-divergence-base` file), `--kl-divergence`, `--chunks` and `--ppl-stride`, and with
-  `--kl-divergence` it reports mean KLD, the PPL ratio, the RMS probability change, the Pearson
-  correlation and same-top agreement, each with uncertainty. Its own README puts the logits file at
+  `--kl-divergence` it reports mean KLD (Kullback–Leibler divergence), the PPL
+  (perplexity) ratio, the RMS probability change, the Pearson correlation and same-top agreement, each with uncertainty. Its own README puts the logits file at
   11 GiB for a 240k-token corpus, which is why D4 uses a 4k-token slice.
 
 ## D1 — W2: 20-key retrieval, scored out of 20
@@ -61,9 +84,10 @@ instrument for that is a count, not a verdict, because the count says *how much*
 verdict only says that something did.
 
 **The task.** Twenty shard codes, in the answer order asked. The twenty are every second shard of the
-forty planted, so their depths run from 2% of the document to 98% of it, and each position is a
-different distance into the cache. Each shard has a near-miss decoy, either a code differing in one or
-two digits or a codeless shard with a similar name, so surface matching does not score.
+forty planted, so their depths spread across the whole document: the shallowest sits near the opening
+and the deepest near the closing lines, which means each answer position tests a different distance
+into the cache. Each shard has a near-miss decoy, either a code differing in one or two digits or a
+codeless shard with a similar name, so surface matching does not score.
 
 **The score.** Each sample gets an integer out of 20: the number of positions holding the correct code.
 Wrong, missing and duplicated all count as zero for that position, which makes the score monotone in
@@ -108,7 +132,7 @@ Operationally:
   (`halted_by=context_full`), and D3 exists to measure whether the model survives being forced to make
   room;
 - `fit.json` still records which rungs load, because a model that needs a lower rung to start must be
-  reported, not quietly moved down and compared anyway.
+  reported rather than moved down without a note and compared anyway.
 
 ## D3 — W3: compaction
 
@@ -131,7 +155,7 @@ different things:
 |---|---|---|
 | Brief retention | count of 20 planted facts present in the brief, with `absent`/`mutated` split per fact | A full-cache read that lost a deep value. This is the cache-damage channel, and it is a count out of 20 for the same reason W2 is. |
 | Phase-B answers | keys correct given only the brief | If the fact is in the brief and the answer is still wrong, the failure is short-context reasoning, not cache depth. |
-| Degeneration | loop detector over both responses, halt position | Summarising is a long generation under maximum attention span; loops here are the long-horizon symptom the current study could not reach. |
+| Degeneration | loop detector over both responses, and where it fires | Summarising is a long generation under maximum attention span, so a loop here is the long-horizon symptom the earlier study could not reach. |
 
 The primary endpoint is **brief retention count**, because it is measured on a full-depth read with no
 chance of confusion from later context. Phase B is reported alongside it to show the consequence, not
@@ -156,18 +180,19 @@ at all (mean KLD 0, 0.00066, 0.0032; same-top agreement 100, 99.1, 97.4 %), and 
 in this study that has an error bar on every arm by construction.
 
 **How it runs.** `llama-perplexity` from the pinned build, with the arm's `-ctk`/`-ctv` and the same
-offload knobs the server used, over three passes:
+offload knobs the server used, runs three passes. KLD here is Kullback–Leibler divergence, and PPL is
+perplexity.
 
-1. **f16 baseline, once per model.** `--save-all-logits base.kld` over a fixed 4,000-token slice of the
-   shared document. The file is tokens × vocabulary × 2 bytes, about 1.2 GB at this slice length; the
-   tool's README puts the same file at 11 GiB for a 240k-token corpus, which is why the slice is short.
-2. **Every arm, distribution.** `--kl-divergence --kl-divergence-base base.kld` on the same slice,
-   which prints mean KLD, the PPL ratio and its log, the mean change in correct-token probability, the
-   Pearson correlation of those probabilities, their RMS change and same-top agreement, each with
+1. The first pass writes the f16 baseline logits once per model with `--save-all-logits base.kld` over a
+   fixed 4,000-token slice of the shared document. The file is tokens × vocabulary × 2 bytes, about
+   1.2 GB at this slice length; the tool's README puts the same file at 11 GiB for a 240k-token corpus,
+   which is why the slice is short.
+2. The second pass runs every arm with `--kl-divergence --kl-divergence-base base.kld` on the same
+   slice. It prints mean KLD, the PPL ratio and its log, the mean change in correct-token probability,
+   the Pearson correlation of those probabilities, their RMS change and same-top agreement, each with
    propagated uncertainty.
-3. **Every arm, depth.** Perplexity with no KLD file over an 80k-token slice at `-c 102400`. This is
-   the depth measurement: pass 2 tests the distribution, pass 3 tests the cache with 80k tokens in it,
-   and the two can disagree.
+3. The third pass runs perplexity with no KLD file over an 80k-token slice at `-c 102400`. Pass 2 tests
+   the distribution and pass 3 tests the cache with 80k tokens in it; the two can disagree.
 
 **What is reported.** Mean KLD with its interval and a test against zero; same-top agreement; the log
 PPL ratio; and deep-context PPL per arm as a ratio to that model's own f16 arm. Perplexity is not
@@ -278,49 +303,39 @@ the 64k ceiling, and no per-arm budget exists. The asymmetric 4× retry that gav
 
 ## Statistics
 
-- **Unit = workflow instance.** No reps and no seeds, because decode is greedy: one draw per instance is
-  the whole sample. n per workflow is in the workflow table, so the smallest attainable p is
-  2/2¹² = 0.0005 for W2 and W3, and 0.031 for W4, W5 and W6.
-- **W2 and W3 are counts, not verdicts.** Report the mean score out of 20 with its standard deviation,
-  the distribution across instances, and the paired difference against that model's f16 arm with a
-  cluster bootstrap over instances (1,000 resamples, seeded). A one-key shift is visible in the mean and
-  in the per-depth curve even when no instance is dramatically wrong.
-- **Curves, not totals, for depth.** Per-depth hit rate for W2 and retention by depth band for W3, with
-  Wilson intervals. A loss at 90% depth is a different finding from a loss at 40%, and the report says
-  which it was.
-- **Rates with intervals for behaviour**: loop halts, context-full halts, no-progress windows, thinking
-  share, tokens and wall clock per instance. Secondary, reported with intervals, never the basis of a
-  ranking on its own.
-- **Pre-registered decision rule**: an arm is worse if the lower bound of the paired interval excludes 0
-  *and* the point estimate is worse. Ties otherwise. Power statement in the report header: instances,
-  comparisons, smallest attainable p.
+The unit of analysis is a workflow instance, not a request or a repetition. No reps and no seeds are
+needed because decode is greedy: one draw per instance is the whole sample. The instance count per
+workflow is in the workflow table, so the smallest attainable p is 2/2¹² = 0.0005 for W2 and W3, and
+0.031 for W4, W5 and W6.
+
+W2 and W3 are counts rather than verdicts. The report gives the mean score out of 20 with its standard
+deviation, the distribution across instances, and the paired difference against that model's f16 arm
+with a cluster bootstrap over instances (1,000 resamples, seeded). A one-key shift is visible in the
+mean and in the per-depth curve even when no instance is dramatically wrong.
+
+Depth is reported as a curve, not a total: per-depth hit rate for W2 and retention by depth band for
+W3, with Wilson intervals. A loss at 90% depth is a different finding from a loss at 40%, and the
+report says which it was. Behaviour rates (loop halts, context-full halts, no-progress windows,
+thinking share, tokens and wall clock per instance) are reported with intervals and are never the
+basis of a ranking on their own.
+
+The decision rule is pre-registered: an arm is worse if the lower bound of the paired interval excludes
+0 *and* the point estimate is worse. Ties otherwise. The power statement in the report header gives
+the instance counts, the number of comparisons, and the smallest attainable p.
 
 ## Harness changes
 
-1. **Multi-turn tool runner** with step budget, transcript recorder (tool, args, ok, state diff), and
-   per-step loop detection: identical consecutive calls, identical calls ≥3, no-progress windows,
-   A↔B oscillation.
-2. **Compaction engine**: prompt rewrite at a fixed boundary, brief re-inserted verbatim, document
-   removed, compaction event recorded with token positions; plus the model-driven `compact` tool and
-   the 90% wall.
-3. **KLD/PPL runner**: drives `llama-perplexity` with the arm's `-ctk`/`-ctv`, writes the f16 logits
-   baseline once per model, parses the metrics it prints into the arm record, and keeps the 1.2 GB base
-   files out of the results tree.
-4. **Greedy sampling everywhere**: `temperature: 0.0` and no other sampling key in any payload, no
-   seeds, no reps, `sampler_resolved` captured per arm from the server's trace line. Reasoning budget
-   machinery deleted; the 64k ceiling is the only cap.
-5. **20-key task builder**: every second shard, per-key grading with the `absent`/`mutated`/
-   `misordered` split, integer score out of 20, and the per-depth hit matrix.
-6. **State graders**: ledger hash plus invariants, brief retention count, search counts, and the
-   long-form structural checks.
-7. **`extract_*` hardening**: reject `../` paths, parse `ANSWER:` from reasoning as well as content
-   (the docstring promises it, the code does not), and accept a 20-value answer line when it is
-   comma- or newline-separated.
-8. **Manifest**: single rung per model, model-file sha256, the declared `general.sampling.*` block,
-   `sampler_resolved` per arm, KLD baseline file hashes and slice offsets, hardware captured at matrix
-   start.
-9. **Retirements**: codegen tier, repo tier, tier budgets, `REASONING_BUDGET_TOKENS`,
-   `BUDGET_RETRY_MULT`, `SAMPLING_LOOP`, and the per-tier seed list.
+Nine changes separate this harness from the earlier one; METHOD.md carries the detail.
+
+1. Tool runner: step budget, transcript with state hashes, and per-step loop detection.
+2. Compaction engine: fixed-boundary rewrite, verbatim brief, and recorded token positions.
+3. KLD/PPL runner: f16 logits baseline once per model, arm metrics parsed into the arm record.
+4. Greedy sampling only: no seeds, no reps, and `sampler_resolved` captured per arm.
+5. 20-key builder: per-key grading, integer score out of 20, and a depth matrix.
+6. State graders: ledger hash and invariants, brief retention, search counts, long-form structure.
+7. Extraction hardening: `ANSWER:` from reasoning, and wrapped or newline-separated answer lists.
+8. Manifest: rung, model hash, declared sampling, resolved sampler, baseline hashes, hardware.
+9. Retirement of the codegen and repo tiers, tier budgets and reasoning-budget machinery.
 
 ## Budget: 12 h target, 24 h hard cap
 

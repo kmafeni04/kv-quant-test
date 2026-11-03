@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Full-context KV quantization: agentic workflows, zero–20 key scores</title>
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0b0f14; --fg: #e5e7eb; --muted: #9ca3af; --border: #2a3542;
+  --head: #111821; --lead: #cbd5e1; --grid: #2a3542; --svg-bg: #0b0f14;
+  --c-f16: #4ade80; --c-q4_0: #fb923c; --c-q8_0: #60a5fa;
+}
+body { font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--fg); margin: 0 auto; max-width: 1120px; padding: 28px;
+        background: var(--bg); }
+h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; }
+h2 { font-size: 19px; margin: 34px 0 10px; border-bottom: 1px solid var(--border);
+      padding-bottom: 4px; }
+p.lead { font-size: 16px; color: var(--lead); }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 13px; }
+th, td { border: 1px solid var(--border); padding: 5px 7px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: var(--head); font-weight: 600; }
+code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: var(--head); padding: 1px 4px; border-radius: 3px; }
+ul { margin: 8px 0 16px 20px; padding: 0; }
+.note { color: var(--muted); font-size: 13px; }
+figure { margin: 14px 0; }
+figcaption { color: var(--muted); font-size: 12px; }
+</style></head><body>
+<h1>Full-context KV quantization: agentic workflows, zero–20 key scores</h1>
+<p class="lead">W2: q4_0 worse on 0/2 paired arms, ties on the rest; W2 had no scored instance on <code>gemma4-26b-a4b__f16</code>, <code>gemma4-26b-a4b__q4_0</code>; W3 retention: q4_0 worse on 0/2 paired arms; W4: 0/36 ledger reconciliations reached the expected hash; W5 answer keys fell on <code>ornith-35b__q4_0</code> (12/18); W1 mean KLD q4_0: gemma4-26b-a4b=0.20515, ornith-35b=0.03125, qwen36-35b=0.00951; 64 loop-halted instance(s), 12 context-full halt(s) over 6 arms.</p>
+<p>Compressing the cache to q4_0 changed what all three models predicted, but most task probes could not turn that into a measurable loss. Against each model's own f16 run, mean KLD was 0.2052 on Gemma, 0.0313 on Ornith and 0.0095 on Qwen3.6, and same-top agreement fell to 81.2%, 88.9% and 90.7%. Deep-context perplexity moved by +3.1%, -3.8% and +1.1%, so the effect is model-specific rather than a uniform penalty.</p>
+<p>The counted workflows mostly saturated or failed for reasons unrelated to the cache. Ornith and Qwen3.6 scored 20/20 on both the 20-key retrieval and the compaction brief in both cache types. Gemma produced no scored 20-key answer in either arm because it looped in reasoning, and both arms failed the same way.</p>
+<p>No arm reconciled the ledger (0/36 attempts), and Qwen3.6 wrote all six manual sections in both arms. The one graded loss that tracks the cache is Ornith's search arm: q4_0 answered 12/18 keys against 18/18 at f16 and made six searches instead of nine, skipping a hop.</p>
+<p>The distribution shift is real and largest on Gemma, but the study can attribute a task-level loss to q4_0 only on that search probe; it cannot say compression made the other workflows worse.</p>
+<p>This page compares an uncompressed 16-bit key/value cache (f16) with a 4-bit cache (q4_0) inside
+three models, at one full-context rung each. KV is the key/value cache, the stored attention state
+for every token the model has already read. KLD is Kullback–Leibler divergence and PPL is
+perplexity. The workflow labels W1–W6 mean the distribution instrument, the 20-key retrieval probe,
+compaction, the ledger, agentic search and long-form writing, in that order.</p>
+<h2>Premise, power and disclosure</h2>
+<p>The list below states the sample sizes and rules that apply to every table on the page; read it
+before comparing arms.</p>
+<ul><li>Instances per arm: W2 n=12; smallest attainable p=0.0005.</li><li>Instances per arm: W3 n=12; smallest attainable p=0.0005.</li><li>Instances per arm: W4 n=6; smallest attainable p=0.0312.</li><li>Instances per arm: W5 n=6; smallest attainable p=0.0312.</li><li>Instances per arm: W6 n=6; smallest attainable p=0.0312.</li><li>One greedy draw per instance: <code>temperature: 0.0</code>, no other sampling key, no seeds, no reps. Greedy is not a production setting; every loop count is about greedy decoding.</li><li>No reasoning budget, no retry path. The only cap is the 64k response ceiling, recorded as <code>ceiling</code>.</li><li>Pairwise rule: paired difference against the same model's f16 arm, cluster bootstrap over instances (1,000 resamples, seeded); worse only when the interval excludes 0 and the point estimate is worse.</li></ul>
+<h2>W1 — KLD and perplexity</h2>
+<p class="note">W1 compares each arm with the f16 arm's own next-token probabilities. The f16 rows
+are self-checks and should read 0 and 100%; the deep-PPL column is a separate pass at 65,536 tokens
+and is comparable only within a model.</p>
+<table class=""><thead><tr><th>model</th><th>KV</th><th>mean KLD</th><th>±</th><th>same top p</th><th>ln PPL ratio</th><th>deep PPL</th><th>deep PPL / f16</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b</code></td><td><code>f16</code></td><td>0</td><td>0</td><td>100.0%</td><td>0.00000</td><td>177.164</td><td>1.0000</td></tr><tr><td><code>gemma4-26b-a4b</code></td><td><code>q4_0</code></td><td>0.2052</td><td>0.0084</td><td>81.2%</td><td>-0.08176</td><td>182.718</td><td>1.0313</td></tr><tr><td><code>ornith-35b</code></td><td><code>f16</code></td><td>0</td><td>0</td><td>100.0%</td><td>0.00000</td><td>19.560</td><td>1.0000</td></tr><tr><td><code>ornith-35b</code></td><td><code>q4_0</code></td><td>0.0313</td><td>0.0013</td><td>88.9%</td><td>-0.03999</td><td>18.821</td><td>0.9622</td></tr><tr><td><code>qwen36-35b</code></td><td><code>f16</code></td><td>0</td><td>0</td><td>100.0%</td><td>0.00000</td><td>14.500</td><td>1.0000</td></tr><tr><td><code>qwen36-35b</code></td><td><code>q4_0</code></td><td>0.0095</td><td>0.0006</td><td>90.7%</td><td>0.00357</td><td>14.656</td><td>1.0107</td></tr></tbody></table>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="520" height="196" viewBox="0 0 520 196" role="img" aria-label="W1 mean KLD by arm">
+<rect width="520" height="196" fill="var(--svg-bg, #ffffff)"/>
+<text x="12" y="18" font-size="11" fill="var(--fg, #111827)">W1 mean KLD against the f16 baseline (log scale)</text>
+<text x="12" y="44" font-size="9" fill="var(--fg, #374151)">gemma4-26b-a4b__f16</text>
+<rect x="140" y="34" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="44" font-size="9" fill="var(--fg, #374151)">0</text>
+<text x="12" y="66" font-size="9" fill="var(--fg, #374151)">ornith-35b__f16</text>
+<rect x="140" y="56" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="66" font-size="9" fill="var(--fg, #374151)">0</text>
+<text x="12" y="88" font-size="9" fill="var(--fg, #374151)">qwen36-35b__f16</text>
+<rect x="140" y="78" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="88" font-size="9" fill="var(--fg, #374151)">0</text>
+<text x="12" y="110" font-size="9" fill="var(--fg, #374151)">qwen36-35b__q4_0</text>
+<rect x="140" y="100" width="280.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="424.0" y="110" font-size="9" fill="var(--fg, #374151)">0.0095</text>
+<text x="12" y="132" font-size="9" fill="var(--fg, #374151)">ornith-35b__q4_0</text>
+<rect x="140" y="122" width="311.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="455.0" y="132" font-size="9" fill="var(--fg, #374151)">0.0313</text>
+<text x="12" y="154" font-size="9" fill="var(--fg, #374151)">gemma4-26b-a4b__q4_0</text>
+<rect x="140" y="144" width="360.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="504.0" y="154" font-size="9" fill="var(--fg, #374151)">0.2052</text>
+</svg><figcaption>Mean KLD against the f16 baseline, log scale.</figcaption></figure>
+<p class="note">Perplexity is comparable only within a model. A tight zero KLD on every arm means
+the instrument did not reach the cache.</p>
+<h2>W2 — 20-key retrieval</h2>
+<p class="note">Each instance asks for twenty codes in order. A point is awarded per position that
+holds the correct code; a missing, wrong or near-miss value scores zero there. Instances halted by
+the detector, the window or the ceiling are counted in <code>halts</code> and left out of the mean.</p>
+<table class=""><thead><tr><th>arm</th><th>mean /20</th><th>sd</th><th>min</th><th>max</th><th>scored</th><th>halts</th><th>diff vs f16</th><th>interval</th><th>decision</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b__f16</code></td><td>—</td><td>—</td><td>—</td><td>—</td><td>0/12</td><td>12</td><td>—</td><td>[—, —]</td><td>no paired instances</td></tr><tr><td><code>gemma4-26b-a4b__q4_0</code></td><td>—</td><td>—</td><td>—</td><td>—</td><td>0/12</td><td>12</td><td>—</td><td>[—, —]</td><td>no paired instances</td></tr><tr><td><code>ornith-35b__f16</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>12/12</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>12/12</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr><tr><td><code>qwen36-35b__f16</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>12/12</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr><tr><td><code>qwen36-35b__q4_0</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>12/12</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr></tbody></table>
+<h2>Hit rate by planted depth</h2>
+<p class="note">Every scored arm hit all keys in all five depth bands; Gemma produced no scored instance, so its cells would be empty.</p>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240" role="img" aria-label="W2 hit rate by depth">
+<rect width="520" height="240" fill="var(--svg-bg, #ffffff)"/>
+<line x1="44" y1="196.0" x2="476" y2="196.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="199.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">0%</text>
+<line x1="44" y1="158.0" x2="476" y2="158.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="161.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">25%</text>
+<line x1="44" y1="120.0" x2="476" y2="120.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="123.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">50%</text>
+<line x1="44" y1="82.0" x2="476" y2="82.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="85.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">75%</text>
+<line x1="44" y1="44.0" x2="476" y2="44.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="47.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">100%</text>
+<text x="44.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">0–20%</text>
+<text x="152.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">20–40%</text>
+<text x="260.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">40–60%</text>
+<text x="368.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">60–80%</text>
+<text x="476.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">80–100%</text>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-f16, #2d6a4f)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-q4_0, #c2410c)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-f16, #2d6a4f)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-q4_0, #c2410c)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<text x="44" y="18" font-size="11" fill="var(--fg, #111827)">W2 hit rate by planted depth (5 bands, 0–100% of document)</text>
+</svg><figcaption>Hit rate by planted depth; deeper positions are the ones a lossy
+cache drops first.</figcaption></figure>
+<h2>W3 — compaction</h2>
+<p class="note">Phase A asks for a brief carrying twenty identifiers, the ledger rows a tenant's
+mutations touch and five invariants. Phase B sends only that brief and asks five questions. The
+table reports how many identifiers survived and whether the answers still worked.</p>
+<table class=""><thead><tr><th>arm</th><th>retention /20</th><th>sd</th><th>scored</th><th>halts</th><th>mutated</th><th>absent</th><th>phase-B keys /5</th><th>within cap</th><th>decision</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b__q4_0</code></td><td>20.00</td><td>0.00</td><td>1/12</td><td>11</td><td>0</td><td>0</td><td>0.00</td><td>1/1</td><td>no paired instances</td></tr><tr><td><code>ornith-35b__f16</code></td><td>20.00</td><td>0.00</td><td>12/12</td><td>0</td><td>0</td><td>0</td><td>3.00</td><td>12/12</td><td>tie (interval includes 0)</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>20.00</td><td>0.00</td><td>12/12</td><td>0</td><td>0</td><td>0</td><td>3.00</td><td>12/12</td><td>tie (interval includes 0)</td></tr><tr><td><code>qwen36-35b__f16</code></td><td>20.00</td><td>0.00</td><td>12/12</td><td>0</td><td>0</td><td>0</td><td>3.00</td><td>12/12</td><td>tie (interval includes 0)</td></tr><tr><td><code>qwen36-35b__q4_0</code></td><td>20.00</td><td>0.00</td><td>12/12</td><td>0</td><td>0</td><td>0</td><td>3.00</td><td>12/12</td><td>tie (interval includes 0)</td></tr></tbody></table>
+<p class="note">Every scored brief kept all twenty identifiers in all five depth bands; Gemma's f16 arm produced no scored brief.</p>
+<p class="note">Primary endpoint is brief retention on a full-depth read; phase B shows the
+consequence, not a substitute.</p>
+<h2>W4, W5, W6 — long-horizon workflows</h2>
+<p class="note">W4 reports how many ledger reconciliations reached the expected hash and how many
+satisfied all five invariants. W5 reports answer keys and search calls. W6 counts section headings
+and resolved cross-references.</p>
+<table class=""><thead><tr><th>arm</th><th>W4 hash ok</th><th>W4 invariants</th><th>W5 keys</th><th>W5 calls</th><th>W6 sections</th><th>W6 refs</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b__f16</code></td><td>0/6</td><td>0/6</td><td>18/18</td><td>9–9</td><td>0/36</td><td>0/36</td></tr><tr><td><code>gemma4-26b-a4b__q4_0</code></td><td>0/6</td><td>0/6</td><td>18/18</td><td>9–9</td><td>0/36</td><td>0/36</td></tr><tr><td><code>ornith-35b__f16</code></td><td>0/6</td><td>0/6</td><td>18/18</td><td>9–9</td><td>0/36</td><td>0/36</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>0/6</td><td>0/6</td><td>12/18</td><td>6–6</td><td>6/36</td><td>0/36</td></tr><tr><td><code>qwen36-35b__f16</code></td><td>0/6</td><td>0/6</td><td>18/18</td><td>9–9</td><td>36/36</td><td>36/36</td></tr><tr><td><code>qwen36-35b__q4_0</code></td><td>0/6</td><td>0/6</td><td>18/18</td><td>9–9</td><td>36/36</td><td>36/36</td></tr></tbody></table>
+<h2>Behaviour, halts and cost</h2>
+<p class="note">The table counts each instance by how it ended and gives the 95% Wilson interval beside each halt count. Thinking share is the fraction of generated tokens that arrived on the reasoning stream rather than as visible text.</p>
+<table class=""><thead><tr><th>arm</th><th>completed</th><th>loop [95%]</th><th>context full [95%]</th><th>ceiling [95%]</th><th>error</th><th>thinking share</th><th>out tokens (W2, W3, W6)</th><th>mean wall</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b__f16</code></td><td>7</td><td>31 [58.9%, 84.7%]</td><td>0 [0.0%, 8.4%]</td><td>4 [3.8%, 22.1%]</td><td>0</td><td>100.0%</td><td>327452</td><td>5 m 55 s</td></tr><tr><td><code>gemma4-26b-a4b__q4_0</code></td><td>7</td><td>31 [58.9%, 84.7%]</td><td>0 [0.0%, 8.4%]</td><td>4 [3.8%, 22.1%]</td><td>0</td><td>100.0%</td><td>375290</td><td>7 m 24 s</td></tr><tr><td><code>ornith-35b__f16</code></td><td>35</td><td>1 [0.4%, 12.3%]</td><td>6 [6.7%, 27.8%]</td><td>0 [0.0%, 8.4%]</td><td>0</td><td>86.1%</td><td>112410</td><td>2 m 24 s</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>34</td><td>1 [0.4%, 12.3%]</td><td>6 [6.7%, 27.8%]</td><td>1 [0.4%, 12.3%]</td><td>0</td><td>89.4%</td><td>117069</td><td>3 m 46 s</td></tr><tr><td><code>qwen36-35b__f16</code></td><td>42</td><td>0 [0.0%, 8.4%]</td><td>0 [0.0%, 8.4%]</td><td>0 [0.0%, 8.4%]</td><td>0</td><td>89.8%</td><td>156610</td><td>5 m 4 s</td></tr><tr><td><code>qwen36-35b__q4_0</code></td><td>42</td><td>0 [0.0%, 8.4%]</td><td>0 [0.0%, 8.4%]</td><td>0 [0.0%, 8.4%]</td><td>0</td><td>90.2%</td><td>154787</td><td>5 m 23 s</td></tr></tbody></table>
+<p class="note"><code>out tokens (W2, W3, W6)</code> covers only the workflows that record a completion count; W4 and W5 do not, so their tokens are absent from this column.</p>
+<h2>Cost</h2>
+<p class="note">Wall time is split by workflow below. The intervals above are wide with 42 instances per arm, so the rates describe behaviour and never rank arms.</p>
+<table class=""><thead><tr><th>arm</th><th>W1</th><th>W2</th><th>W3</th><th>W4</th><th>W5</th><th>W6</th></tr></thead><tbody><tr><td><code>gemma4-26b-a4b__f16</code></td><td>—</td><td>2 m 29 s</td><td>4 m 29 s</td><td>20 m 21 s</td><td>22 s</td><td>6 m 45 s</td></tr><tr><td><code>gemma4-26b-a4b__q4_0</code></td><td>—</td><td>6 m 22 s</td><td>5 m 46 s</td><td>20 m 7 s</td><td>25 s</td><td>6 m 59 s</td></tr><tr><td><code>ornith-35b__f16</code></td><td>—</td><td>44 s</td><td>1 m 13 s</td><td>9 m 13 s</td><td>27 s</td><td>3 m 13 s</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>—</td><td>1 m 16 s</td><td>1 m 31 s</td><td>15 m 41 s</td><td>25 s</td><td>4 m 46 s</td></tr><tr><td><code>qwen36-35b__f16</code></td><td>—</td><td>1 m 32 s</td><td>3 m 46 s</td><td>20 m 54 s</td><td>47 s</td><td>3 m 12 s</td></tr><tr><td><code>qwen36-35b__q4_0</code></td><td>—</td><td>1 m 51 s</td><td>3 m 54 s</td><td>22 m 18 s</td><td>42 s</td><td>3 m 11 s</td></tr></tbody></table>
+<h2>Decision rule</h2>
+<p>An arm is worse if the lower bound of its paired interval excludes 0 and its point estimate is
+worse than that model's f16 arm; ties otherwise. Behaviour counts are reported with intervals and
+are never the basis of a ranking on their own.</p>
+<h2>Provenance</h2>
+<p class="note">The record below names the build, sampler configuration and hashes. Sampling sent
+only <code>temperature: 0.0</code>; the resolved block confirms greedy decoding on every arm.</p>
+<p class="note">llama.cpp <code>2a667032dc78</code> ·
+0.7.0-dev (build 11698) · flags <code>q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16
+</code> · sampling <code>{&quot;temperature&quot;: 0.0}</code> ·
+rungs <code>{&quot;gemma4-26b-a4b&quot;: 102400, &quot;ornith-35b&quot;: 102400, &quot;qwen36-35b&quot;: 102400}</code> ·
+document <code>11e504b3f33395bc55eae9a1b669a19cc18bf18c0fbf47792b2854aa08fa3cc2</code>.</p>
+</body></html>

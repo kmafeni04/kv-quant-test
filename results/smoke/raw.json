@@ -1,67 +1,577 @@
 {
   "arms": {
-    "qwen36-35b__q4_0": {
-      "ctx": 16384,
-      "document_sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+    "ornith-35b__f16": {
+      "ctx": 32768,
+      "cut": null,
+      "declared_sampling": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "document_sha256": "4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908",
       "done": [
-        "R:niah_multi:0",
-        "R:niah_deep:0",
-        "R:vt_trace:0",
-        "R:agg_sum:0",
-        "R:count_proj:0",
-        "R:fwe_count:0",
-        "C:cg_csvlite:0",
-        "C:cg_fixedpoint:0",
-        "C:cg_intervals:0",
-        "C:cg_semver:0",
-        "C:cg_statistics:0",
-        "C:repo_fix:0",
-        "L:gen_manual:0",
-        "L:copy_ledgers:0",
-        "L:enumerate_shards:0",
-        "L:tool_episode:0"
+        "W2:0"
       ],
       "errors": [],
-      "finished": "2026-11-01T02:14:58Z",
-      "flags": {
-        "reasoning_supported": true
-      },
+      "finished": "2026-11-02T04:53:51Z",
+      "flags": {},
+      "kld_baseline": null,
       "knobs": {
-        "ncmoe": 26
+        "ncmoe": 16
+      },
+      "kv": "f16",
+      "load_s": 6.0,
+      "model": "ornith-35b",
+      "sampler_resolved": {
+        "greedy": true,
+        "min_p": 0.05,
+        "raw": "sampler params: \n\trepeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000\n\tdry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64\n\ttop_k = 20, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000\n\tmirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900\n0.05.995.209 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.05.995.210 D que    start_loop: update slots\n0.05.995.211 D srv  update_slots: posting NEXT_RESPONSE\n0.05.995.213 D que          post: new task, id = 1, front = 0\n0.05.995.220 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 15938\n0.05.995.226 D res          send: sending result for task id = 0\n0.05.995.226 D res          send: task id = 0 pushed to result queue\n0.05.995.230 I slot   operator(): id  0 | task 0 | cached n_tokens = 0, memory_seq_rm [0, end)\n0.05.995.274 D srv          stop: all tasks already finished, no need to cancel\n0.05.995.305 D slot   operator(): id  0 | task 0 | main/do_checkpoint =",
+        "repeat_penalty": 1.0,
+        "temperature": 0.0,
+        "top_k": 20.0,
+        "top_p": 0.95
+      },
+      "started": "2026-11-02T04:52:55Z",
+      "vram_peak_mib": 13950,
+      "wall_s": 55.9,
+      "workflows": {
+        "W2": {
+          "instances": [
+            {
+              "cache_n": 0,
+              "content": "orion: AK-3652\nlyra: CZ-1593\ncygnus: EG-8452\nrigel: JP-4425\ncapella: LR-4477\narcturus: AK-8761\ncastor: CZ-8763\nelara: EG-1406\ngemma: JP-2090\nizar: LR-1964\nkochab: AK-2480\nmira: CZ-2539\nokab: EG-1514\nquintet: JP-6573\nsaiph: LR-5796\nunukalhai: AK-7507\nwasat: CZ-1670\nytterbium: EG-3813\nachernar: JP-1967\ncanopus: LR-2245\n\nANSWER: AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+              "decode_tps": 62.8,
+              "error": null,
+              "finish_reason": "stop",
+              "first_visible_s": 43.829,
+              "grade": {
+                "answer": "AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+                "codes": 20,
+                "extras": 0,
+                "keys": [
+                  {
+                    "depth": 0.02,
+                    "expected": "AK-3652",
+                    "got": "AK-3652",
+                    "name": "orion",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.0692,
+                    "expected": "CZ-1593",
+                    "got": "CZ-1593",
+                    "name": "lyra",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.1185,
+                    "expected": "EG-8452",
+                    "got": "EG-8452",
+                    "name": "cygnus",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.1677,
+                    "expected": "JP-4425",
+                    "got": "JP-4425",
+                    "name": "rigel",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.2169,
+                    "expected": "LR-4477",
+                    "got": "LR-4477",
+                    "name": "capella",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.2662,
+                    "expected": "AK-8761",
+                    "got": "AK-8761",
+                    "name": "arcturus",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.3154,
+                    "expected": "CZ-8763",
+                    "got": "CZ-8763",
+                    "name": "castor",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.3646,
+                    "expected": "EG-1406",
+                    "got": "EG-1406",
+                    "name": "elara",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.4138,
+                    "expected": "JP-2090",
+                    "got": "JP-2090",
+                    "name": "gemma",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.4631,
+                    "expected": "LR-1964",
+                    "got": "LR-1964",
+                    "name": "izar",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.5123,
+                    "expected": "AK-2480",
+                    "got": "AK-2480",
+                    "name": "kochab",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.5615,
+                    "expected": "CZ-2539",
+                    "got": "CZ-2539",
+                    "name": "mira",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.6108,
+                    "expected": "EG-1514",
+                    "got": "EG-1514",
+                    "name": "okab",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.66,
+                    "expected": "JP-6573",
+                    "got": "JP-6573",
+                    "name": "quintet",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.7092,
+                    "expected": "LR-5796",
+                    "got": "LR-5796",
+                    "name": "saiph",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.7585,
+                    "expected": "AK-7507",
+                    "got": "AK-7507",
+                    "name": "unukalhai",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.8077,
+                    "expected": "CZ-1670",
+                    "got": "CZ-1670",
+                    "name": "wasat",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.8569,
+                    "expected": "EG-3813",
+                    "got": "EG-3813",
+                    "name": "ytterbium",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.9062,
+                    "expected": "JP-1967",
+                    "got": "JP-1967",
+                    "name": "achernar",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.9554,
+                    "expected": "LR-2245",
+                    "got": "LR-2245",
+                    "name": "canopus",
+                    "status": "hit"
+                  }
+                ],
+                "of": 20,
+                "score": 20,
+                "source": "content"
+              },
+              "halt_token_pos": null,
+              "halted_by": "completed",
+              "instance": 0,
+              "loop_halt": null,
+              "loops": {
+                "content": {
+                  "flagged": false,
+                  "metrics": {
+                    "block": null,
+                    "chars": 506,
+                    "cycle": null,
+                    "distinct_4": 1.0,
+                    "flag_pos": 0,
+                    "flag_token_est": 0,
+                    "line_run": 1,
+                    "span": "orion: AK-3652\nlyra: CZ-1593\ncygnus: EG-8452\nrigel: JP-4425\ncapella: LR-4477\narcturus: AK-8761\ncastor: CZ-8763\nelara: EG-1406\ngemma: JP-2090\nizar: LR-1964\nkochab: AK-2480\nmira: CZ-2539\nokab: EG-1514\nquintet: JP-6573\nsaiph: LR-5796\nunukalhai: AK-7507\nwasat: CZ-1670\nytterbium: EG-3813\nachernar: JP-1967\ncanopus: LR-2245\n\nANSWER: AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+                    "template_pos": 320,
+                    "template_run": 1,
+                    "word_run_1": 1,
+                    "word_run_2": 1,
+                    "word_run_4": 1,
+                    "word_run_8": 1,
+                    "zip_ratio": 0.573
+                  },
+                  "reason": "",
+                  "token_pos": null
+                },
+                "reasoning_content": {
+                  "flagged": false,
+                  "metrics": {
+                    "block": null,
+                    "chars": 4293,
+                    "cycle": null,
+                    "distinct_4": 0.76,
+                    "flag_pos": 0,
+                    "flag_token_est": 0,
+                    "line_run": 1,
+                    "span": "Let me find each shard's live code. I need to be careful about superseded codes.\n\nLet me go through the document and find each shard.\n\norion:\nSHARD orion code=AK-3652 custodian=EMP-0504\n  superseded-note: revision AK-3655 was retired and is not the live code\nLive code: AK-3652\n\nlyra:\nSHARD lyra code=CZ-1593 custodian=EMP-0474\n  superseded-note: revision CZ-1595 was retired and is not the live code\nLive code: CZ-1593\n\ncygnus:\nSHARD cygnus code=EG-8452 custodian=EMP-0138\n  superseded-note: revision EG-8456 was retired and is not the live code\nLive code: EG-8452\n\nrigel:\nSHARD rigel code=JP-4425 c",
+                    "template_pos": 4217,
+                    "template_run": 1,
+                    "word_run_1": 1,
+                    "word_run_2": 1,
+                    "word_run_4": 1,
+                    "word_run_8": 1,
+                    "zip_ratio": 0.216
+                  },
+                  "reason": "",
+                  "token_pos": null
+                }
+              },
+              "out_tokens": 2122,
+              "prefill_tps": 1022.4,
+              "prompt_tokens": 15938,
+              "reasoning_content": "Let me find each shard's live code. I need to be careful about superseded codes.\n\nLet me go through the document and find each shard.\n\norion:\nSHARD orion code=AK-3652 custodian=EMP-0504\n  superseded-note: revision AK-3655 was retired and is not the live code\nLive code: AK-3652\n\nlyra:\nSHARD lyra code=CZ-1593 custodian=EMP-0474\n  superseded-note: revision CZ-1595 was retired and is not the live code\nLive code: CZ-1593\n\ncygnus:\nSHARD cygnus code=EG-8452 custodian=EMP-0138\n  superseded-note: revision EG-8456 was retired and is not the live code\nLive code: EG-8452\n\nrigel:\nSHARD rigel code=JP-4425 custodian=EMP-0346\n  superseded-note: revision JP-4427 was retired and is not the live code\nLive code: JP-4425\n\ncapella:\nSHARD capella code=LR-4477 custodian=EMP-0946\n  superseded-note: revision LR-4478 was retired and is not the live code\nLive code: LR-4477\n\narcturus:\nSHARD arcturus code=AK-8761 custodian=EMP-0745\n  superseded-note: revision AK-8765 was retired and is not the live code\nLive code: AK-8761\n\ncastor:\nSHARD castor code=CZ-8763 custodian=EMP-0690\n  superseded-note: revision CZ-8764 was retired and is not the live code\nLive code: CZ-8763\n\nelara:\nSHARD elara code=EG-1406 custodian=EMP-0147\n  superseded-note: revision EG-1410 was retired and is not the live code\nLive code: EG-1406\n\ngemma:\nSHARD gemma code=JP-2090 custodian=EMP-0529\n  superseded-note: revision JP-2095 was retired and is not the live code\nLive code: JP-2090\n\nizar:\nSHARD izar code=LR-1964 custodian=EMP-0673\n  superseded-note: revision LR-1969 was retired and is not the live code\nLive code: LR-1964\n\nkochab:\nSHARD kochab code=AK-2480 custodian=EMP-0695\n  superseded-note: revision AK-2482 was retired and is not the live code\nLive code: AK-2480\n\nmira:\nSHARD mira code=CZ-2539 custodian=EMP-0199\n  superseded-note: revision CZ-2545 was retired and is not the live code\nLive code: CZ-2539\n\nokab:\nSHARD okab code=EG-1514 custodian=EMP-0733\n  superseded-note: revision EG-1515 was retired and is not the live code\nLive code: EG-1514\n\nquintet:\nSHARD quintet code=JP-6573 custodian=EMP-0895\n  superseded-note: revision JP-6580 was retired and is not the live code\nLive code: JP-6573\n\nsaiph:\nSHARD saiph code=LR-5796 custodian=EMP-0470\n  superseded-note: revision LR-5804 was retired and is not the live code\nLive code: LR-5796\n\nunukalhai:\nSHARD unukalhai code=AK-7507 custodian=EMP-0815\n  superseded-note: revision AK-7510 was retired and is not the live code\nLive code: AK-7507\n\nwasat:\nSHARD wasat code=CZ-1670 custodian=EMP-0637\n  superseded-note: revision CZ-1675 was retired and is not the live code\nLive code: CZ-1670\n\nytterbium:\nSHARD ytterbium code=EG-3813 custodian=EMP-0394\n  superseded-note: revision EG-3821 was retired and is not the live code\nLive code: EG-3813\n\nachernar:\nSHARD achernar code=JP-1967 custodian=EMP-0268\n  superseded-note: revision JP-1974 was retired and is not the live code\nLive code: JP-1967\n\ncanopus:\nSHARD canopus code=LR-2245 custodian=EMP-0531\n  superseded-note: revision LR-2253 was retired and is not the live code\nLive code: LR-2245\n\nLet me double-check each one by searching the document.\n\norion - found at \"SHARD orion code=AK-3652 custodian=EMP-0504\" \u2713\nlyra - \"SHARD lyra code=CZ-1593 custodian=EMP-0474\" \u2713\ncygnus - \"SHARD cygnus code=EG-8452 custodian=EMP-0138\" \u2713\nrigel - \"SHARD rigel code=JP-4425 custodian=EMP-0346\" \u2713\ncapella - \"SHARD capella code=LR-4477 custodian=EMP-0946\" \u2713\narcturus - \"SHARD arcturus code=AK-8761 custodian=EMP-0745\" \u2713\ncastor - \"SHARD castor code=CZ-8763 custodian=EMP-0690\" \u2713\nelara - \"SHARD elara code=EG-1406 custodian=EMP-0147\" \u2713\ngemma - \"SHARD gemma code=JP-2090 custodian=EMP-0529\" \u2713\nizar - \"SHARD izar code=LR-1964 custodian=EMP-0673\" \u2713\nkochab - \"SHARD kochab code=AK-2480 custodian=EMP-0695\" \u2713\nmira - \"SHARD mira code=CZ-2539 custodian=EMP-0199\" \u2713\nokab - \"SHARD okab code=EG-1514 custodian=EMP-0733\" \u2713\nquintet - \"SHARD quintet code=JP-6573 custodian=EMP-0895\" \u2713\nsaiph - \"SHARD saiph code=LR-5796 custodian=EMP-0470\" \u2713\nunukalhai - \"SHARD unukalhai code=AK-7507 custodian=EMP-0815\" \u2713\nwasat - \"SHARD wasat code=CZ-1670 custodian=EMP-0637\" \u2713\nytterbium - \"SHARD ytterbium code=EG-3813 custodian=EMP-0394\" \u2713\nachernar - \"SHARD achernar code=JP-1967 custodian=EMP-0268\" \u2713\ncanopus - \"SHARD canopus code=LR-2245 custodian=EMP-0531\" \u2713\n\nAll confirmed.\n",
+              "score": 20,
+              "thinking_share": 0.8362435110901368,
+              "thinking_tokens": 1772,
+              "wall_s": 49.4,
+              "window_full": false,
+              "workflow": "W2"
+            }
+          ]
+        }
+      }
+    },
+    "ornith-35b__q4_0": {
+      "ctx": 32768,
+      "cut": null,
+      "declared_sampling": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "document_sha256": "4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908",
+      "done": [
+        "W2:0"
+      ],
+      "errors": [],
+      "finished": "2026-11-02T04:54:41Z",
+      "kld_baseline": null,
+      "knobs": {
+        "ncmoe": 16
       },
       "kv": "q4_0",
       "load_s": 4.0,
-      "model": "qwen36-35b",
-      "started": "2026-11-01T02:01:46Z",
-      "vram_peak_mib": 9541,
-      "wall_s": 791.2
+      "model": "ornith-35b",
+      "sampler_resolved": {
+        "greedy": true,
+        "min_p": 0.05,
+        "raw": "sampler params: \n\trepeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000\n\tdry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64\n\ttop_k = 20, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000\n\tmirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900\n0.03.993.779 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.03.993.780 D que    start_loop: update slots\n0.03.993.780 D srv  update_slots: posting NEXT_RESPONSE\n0.03.993.783 D que          post: new task, id = 1, front = 0\n0.03.993.789 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 15938\n0.03.993.795 D res          send: sending result for task id = 0\n0.03.993.796 D res          send: task id = 0 pushed to result queue\n0.03.993.799 I slot   operator(): id  0 | task 0 | cached n_tokens = 0, memory_seq_rm [0, end)\n0.03.993.846 D srv          stop: all tasks already finished, no need to cancel\n0.03.993.875 D slot   operator(): id  0 | task 0 | main/do_checkpoint =",
+        "repeat_penalty": 1.0,
+        "temperature": 0.0,
+        "top_k": 20.0,
+        "top_p": 0.95
+      },
+      "started": "2026-11-02T04:53:51Z",
+      "vram_peak_mib": 13492,
+      "wall_s": 50.1,
+      "workflows": {
+        "W2": {
+          "instances": [
+            {
+              "cache_n": 0,
+              "content": "orion: AK-3652\nlyra: CZ-1593\ncygnus: EG-8452\nrigel: JP-4425\ncapella: LR-4477\narcturus: AK-8761\ncastor: CZ-8763\nelara: EG-1406\ngemma: JP-2090\nizar: LR-1964\nkochab: AK-2480\nmira: CZ-2539\nokab: EG-1514\nquintet: JP-6573\nsaiph: LR-5796\nunukalhai: AK-7507\nwasat: CZ-1670\nytterbium: EG-3813\nachernar: JP-1967\ncanopus: LR-2245\n\nANSWER: AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+              "decode_tps": 58.3,
+              "error": null,
+              "finish_reason": "stop",
+              "first_visible_s": 39.608,
+              "grade": {
+                "answer": "AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+                "codes": 20,
+                "extras": 0,
+                "keys": [
+                  {
+                    "depth": 0.02,
+                    "expected": "AK-3652",
+                    "got": "AK-3652",
+                    "name": "orion",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.0692,
+                    "expected": "CZ-1593",
+                    "got": "CZ-1593",
+                    "name": "lyra",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.1185,
+                    "expected": "EG-8452",
+                    "got": "EG-8452",
+                    "name": "cygnus",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.1677,
+                    "expected": "JP-4425",
+                    "got": "JP-4425",
+                    "name": "rigel",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.2169,
+                    "expected": "LR-4477",
+                    "got": "LR-4477",
+                    "name": "capella",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.2662,
+                    "expected": "AK-8761",
+                    "got": "AK-8761",
+                    "name": "arcturus",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.3154,
+                    "expected": "CZ-8763",
+                    "got": "CZ-8763",
+                    "name": "castor",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.3646,
+                    "expected": "EG-1406",
+                    "got": "EG-1406",
+                    "name": "elara",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.4138,
+                    "expected": "JP-2090",
+                    "got": "JP-2090",
+                    "name": "gemma",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.4631,
+                    "expected": "LR-1964",
+                    "got": "LR-1964",
+                    "name": "izar",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.5123,
+                    "expected": "AK-2480",
+                    "got": "AK-2480",
+                    "name": "kochab",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.5615,
+                    "expected": "CZ-2539",
+                    "got": "CZ-2539",
+                    "name": "mira",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.6108,
+                    "expected": "EG-1514",
+                    "got": "EG-1514",
+                    "name": "okab",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.66,
+                    "expected": "JP-6573",
+                    "got": "JP-6573",
+                    "name": "quintet",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.7092,
+                    "expected": "LR-5796",
+                    "got": "LR-5796",
+                    "name": "saiph",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.7585,
+                    "expected": "AK-7507",
+                    "got": "AK-7507",
+                    "name": "unukalhai",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.8077,
+                    "expected": "CZ-1670",
+                    "got": "CZ-1670",
+                    "name": "wasat",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.8569,
+                    "expected": "EG-3813",
+                    "got": "EG-3813",
+                    "name": "ytterbium",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.9062,
+                    "expected": "JP-1967",
+                    "got": "JP-1967",
+                    "name": "achernar",
+                    "status": "hit"
+                  },
+                  {
+                    "depth": 0.9554,
+                    "expected": "LR-2245",
+                    "got": "LR-2245",
+                    "name": "canopus",
+                    "status": "hit"
+                  }
+                ],
+                "of": 20,
+                "score": 20,
+                "source": "content"
+              },
+              "halt_token_pos": null,
+              "halted_by": "completed",
+              "instance": 0,
+              "loop_halt": null,
+              "loops": {
+                "content": {
+                  "flagged": false,
+                  "metrics": {
+                    "block": null,
+                    "chars": 506,
+                    "cycle": null,
+                    "distinct_4": 1.0,
+                    "flag_pos": 0,
+                    "flag_token_est": 0,
+                    "line_run": 1,
+                    "span": "orion: AK-3652\nlyra: CZ-1593\ncygnus: EG-8452\nrigel: JP-4425\ncapella: LR-4477\narcturus: AK-8761\ncastor: CZ-8763\nelara: EG-1406\ngemma: JP-2090\nizar: LR-1964\nkochab: AK-2480\nmira: CZ-2539\nokab: EG-1514\nquintet: JP-6573\nsaiph: LR-5796\nunukalhai: AK-7507\nwasat: CZ-1670\nytterbium: EG-3813\nachernar: JP-1967\ncanopus: LR-2245\n\nANSWER: AK-3652, CZ-1593, EG-8452, JP-4425, LR-4477, AK-8761, CZ-8763, EG-1406, JP-2090, LR-1964, AK-2480, CZ-2539, EG-1514, JP-6573, LR-5796, AK-7507, CZ-1670, EG-3813, JP-1967, LR-2245",
+                    "template_pos": 320,
+                    "template_run": 1,
+                    "word_run_1": 1,
+                    "word_run_2": 1,
+                    "word_run_4": 1,
+                    "word_run_8": 1,
+                    "zip_ratio": 0.573
+                  },
+                  "reason": "",
+                  "token_pos": null
+                },
+                "reasoning_content": {
+                  "flagged": false,
+                  "metrics": {
+                    "block": null,
+                    "chars": 2783,
+                    "cycle": null,
+                    "distinct_4": 0.87,
+                    "flag_pos": 0,
+                    "flag_token_est": 0,
+                    "line_run": 1,
+                    "span": "Let me find each shard's live code in the order requested:\norion, lyra, cygnus, rigel, capella, arcturus, castor, elara, gemma, izar, kochab, mira, okab, quintet, saiph, unukalhai, wasat, ytterbium, achernar, canopus\n\nLet me search the document for each shard.\n\norion:\n\"SHARD orion code=AK-3652 custodian=EMP-0504\"\n\u2192 AK-3652\n\nlyra:\n\"SHARD lyra code=CZ-1593 custodian=EMP-0474\"\n\u2192 CZ-1593\n\ncygnus:\n\"SHARD cygnus code=EG-8452 custodian=EMP-0138\"\n\u2192 EG-8452\n\nrigel:\n\"SHARD rigel code=JP-4425 custodian=EMP-0346\"\n\u2192 JP-4425\n\ncapella:\n\"SHARD capella code=LR-4477 custodian=EMP-0946\"\n\u2192 LR-4477\n\narcturus:\n\"SHA",
+                    "template_pos": 2712,
+                    "template_run": 1,
+                    "word_run_1": 1,
+                    "word_run_2": 1,
+                    "word_run_4": 1,
+                    "word_run_8": 1,
+                    "zip_ratio": 0.28
+                  },
+                  "reason": "",
+                  "token_pos": null
+                }
+              },
+              "out_tokens": 1758,
+              "prefill_tps": 1029.9,
+              "prompt_tokens": 15938,
+              "reasoning_content": "Let me find each shard's live code in the order requested:\norion, lyra, cygnus, rigel, capella, arcturus, castor, elara, gemma, izar, kochab, mira, okab, quintet, saiph, unukalhai, wasat, ytterbium, achernar, canopus\n\nLet me search the document for each shard.\n\norion:\n\"SHARD orion code=AK-3652 custodian=EMP-0504\"\n\u2192 AK-3652\n\nlyra:\n\"SHARD lyra code=CZ-1593 custodian=EMP-0474\"\n\u2192 CZ-1593\n\ncygnus:\n\"SHARD cygnus code=EG-8452 custodian=EMP-0138\"\n\u2192 EG-8452\n\nrigel:\n\"SHARD rigel code=JP-4425 custodian=EMP-0346\"\n\u2192 JP-4425\n\ncapella:\n\"SHARD capella code=LR-4477 custodian=EMP-0946\"\n\u2192 LR-4477\n\narcturus:\n\"SHARD arcturus code=AK-8761 custodian=EMP-0745\"\n\u2192 AK-8761\n\ncastor:\n\"SHARD castor code=CZ-8763 custodian=EMP-0690\"\n\u2192 CZ-8763\n\nelara:\n\"SHARD elara code=EG-1406 custodian=EMP-0147\"\n\u2192 EG-1406\n\ngemma:\n\"SHARD gemma code=JP-2090 custodian=EMP-0529\"\n\u2192 JP-2090\n\nizar:\n\"SHARD izar code=LR-1964 custodian=EMP-0673\"\n\u2192 LR-1964\n\nkochab:\n\"SHARD kochab code=AK-2480 custodian=EMP-0695\"\n\u2192 AK-2480\n\nmira:\n\"SHARD mira code=CZ-2539 custodian=EMP-0199\"\n\u2192 CZ-2539\n\nokab:\n\"SHARD okab code=EG-1514 custodian=EMP-0733\"\n\u2192 EG-1514\n\nquintet:\n\"SHARD quintet code=JP-6573 custodian=EMP-0895\"\n\u2192 JP-6573\n\nsaiph:\n\"SHARD saiph code=LR-5796 custodian=EMP-0470\"\n\u2192 LR-5796\n\nunukalhai:\n\"SHARD unukalhai code=AK-7507 custodian=EMP-0815\"\n\u2192 AK-7507\n\nwasat:\n\"SHARD wasat code=CZ-1670 custodian=EMP-0637\"\n\u2192 CZ-1670\n\nytterbium:\n\"SHARD ytterbium code=EG-3813 custodian=EMP-0394\"\n\u2192 EG-3813\n\nachernar:\n\"SHARD achernar code=JP-1967 custodian=EMP-0268\"\n\u2192 JP-1967\n\ncanopus:\n\"SHARD canopus code=LR-2245 custodian=EMP-0531\"\n\u2192 LR-2245\n\nLet me double-check each one by searching the text.\n\norion: \"SHARD orion code=AK-3652 custodian=EMP-0504\" \u2713\nlyra: \"SHARD lyra code=CZ-1593 custodian=EMP-0474\" \u2713\ncygnus: \"SHARD cygnus code=EG-8452 custodian=EMP-0138\" \u2713\nrigel: \"SHARD rigel code=JP-4425 custodian=EMP-0346\" \u2713\ncapella: \"SHARD capella code=LR-4477 custodian=EMP-0946\" \u2713\narcturus: \"SHARD arcturus code=AK-8761 custodian=EMP-0745\" \u2713\ncastor: \"SHARD castor code=CZ-8763 custodian=EMP-0690\" \u2713\nelara: \"SHARD elara code=EG-1406 custodian=EMP-0147\" \u2713\ngemma: \"SHARD gemma code=JP-2090 custodian=EMP-0529\" \u2713\nizar: \"SHARD izar code=LR-1964 custodian=EMP-0673\" \u2713\nkochab: \"SHARD kochab code=AK-2480 custodian=EMP-0695\" \u2713\nmira: \"SHARD mira code=CZ-2539 custodian=EMP-0199\" \u2713\nokab: \"SHARD okab code=EG-1514 custodian=EMP-0733\" \u2713\nquintet: \"SHARD quintet code=JP-6573 custodian=EMP-0895\" \u2713\nsaiph: \"SHARD saiph code=LR-5796 custodian=EMP-0470\" \u2713\nunukalhai: \"SHARD unukalhai code=AK-7507 custodian=EMP-0815\" \u2713\nwasat: \"SHARD wasat code=CZ-1670 custodian=EMP-0637\" \u2713\nytterbium: \"SHARD ytterbium code=EG-3813 custodian=EMP-0394\" \u2713\nachernar: \"SHARD achernar code=JP-1967 custodian=EMP-0268\" \u2713\ncanopus: \"SHARD canopus code=LR-2245 custodian=EMP-0531\" \u2713\n\nAll found.\n",
+              "score": 20,
+              "thinking_share": 0.8022792022792022,
+              "thinking_tokens": 1408,
+              "wall_s": 45.6,
+              "window_full": false,
+              "workflow": "W2"
+            }
+          ]
+        }
+      }
     }
   },
-  "context": 16384,
-  "created": "2026-11-01T02:14:58Z",
-  "deadline_reached": false,
+  "cells": [
+    {
+      "kv": "q4_0",
+      "model": "ornith-35b",
+      "workflows": [
+        "W2"
+      ]
+    }
+  ],
+  "complete": true,
+  "context": {
+    "ornith-35b": 32768
+  },
+  "created": "2026-11-02T04:54:41Z",
+  "cut_cells": [],
   "document": {
-    "chars": 26482,
+    "chars": 42837,
     "filler_chars": null,
-    "sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
+    "sha256": "4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908",
     "tokens_by_model": null
   },
   "fit": {
-    "common_ctx": null,
-    "document": null,
-    "geometry": null,
-    "geometry_warnings": null,
-    "unfit": null
-  },
-  "manifest": {
-    "budgets": {
-      "C": 6144,
-      "L": 2048,
-      "R": 2048,
-      "tool_turn": 512
+    "context_floor": 90112,
+    "declared_sampling": {
+      "gemma4-26b-a4b": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 64,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "ornith-35b": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "qwen36-35b": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "qwen38-27b": {
+        "general.sampling.min_p": 0.0,
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "qwen38-flash": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      }
     },
-    "context": 16384,
-    "context_ladder": [
+    "document": {},
+    "geometry_warnings": [],
+    "ladder": [
       102400,
       98304,
       90112,
@@ -71,16 +581,100 @@
       57344,
       49152
     ],
-    "document_sha256": "2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf",
-    "host": "RTX 3080 Laptop 16384 MiB / 64 GiB RAM",
-    "knobs": {
+    "unfit": []
+  },
+  "manifest": {
+    "bootstrap": {
+      "resamples": 1000,
+      "seed": 20261101
+    },
+    "compaction_variant": "forced",
+    "declared_sampling": {
+      "gemma4-26b-a4b": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 64,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "ornith-35b": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
       "qwen36-35b": {
-        "ncmoe": 26
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "qwen38-27b": {
+        "general.sampling.min_p": 0.0,
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
+      },
+      "qwen38-flash": {
+        "general.sampling.temp": 1.0,
+        "general.sampling.top_k": 20,
+        "general.sampling.top_p": 0.949999988079071
       }
     },
+    "document_sha256": "4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908",
+    "host": {
+      "captured_at_utc": "2026-11-01T19:09:24Z",
+      "cpu": "11th Gen Intel(R) Core(TM) i9-11950H @ 2.60GHz",
+      "cpu_cores": 16,
+      "cuda": "13.4",
+      "driver": "615.78.08",
+      "gpu": "NVIDIA GeForce RTX 3080 Laptop GPU 16384 MiB sm_86",
+      "os": "Arch Linux, kernel 7.2.11-arch1-1",
+      "ram_gib": 62.5
+    },
+    "host_runtime": {
+      "captured_at_utc": "2026-11-02T04:53:51Z",
+      "cpu": {
+        "logical_cores": 16,
+        "model": "11th Gen Intel(R) Core(TM) i9-11950H @ 2.60GHz",
+        "threads": 16
+      },
+      "cuda_toolkit": "13.4",
+      "gpu": {
+        "compute_capability": "8.6",
+        "driver": "615.78.08",
+        "memory_total_mib": 16384,
+        "memory_used_mib": 14,
+        "name": "NVIDIA GeForce RTX 3080 Laptop GPU",
+        "usable_budget_note": "the study leaves ~1 GiB for the display/driver; the fit probe records the peak actually reached per arm"
+      },
+      "home_free_gib": 207.3,
+      "kernel": "7.2.11-arch1-1",
+      "llama_cpp": {
+        "commit": "2a667032dc788c3a071d538e0b572e45a3f12731",
+        "flags": {
+          "CMAKE_BUILD_TYPE": "Release",
+          "CMAKE_CUDA_ARCHITECTURES": "86",
+          "GGML_CUDA": "ON",
+          "GGML_CUDA_FA": "ON",
+          "GGML_CUDA_FA_ALL_QUANTS": "OFF",
+          "GGML_CUDA_FA_QUANTS": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
+          "GGML_CUDA_NO_VMM": "OFF",
+          "GGML_NATIVE": "ON"
+        },
+        "tree_dirty": false,
+        "version": "built with GNU 16.2.1 for Linux x86_64"
+      },
+      "os": "Arch Linux",
+      "python": "3.14.8",
+      "ram_gib": 62.5
+    },
+    "instances": {
+      "W2": 1
+    },
+    "kld_baselines": {
+      "ornith-35b__f16": null,
+      "ornith-35b__q4_0": null
+    },
+    "kld_slice_tokens": 4000,
     "kv_arms": [
       "f16",
-      "q8_0",
       "q4_0"
     ],
     "llama_cpp": {
@@ -95,37 +689,61 @@
       "ggml_cuda_fa_quants": "q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16",
       "version": "0.7.0-dev (build 11698)"
     },
-    "models": {},
-    "reasoning_budget_tokens": {
-      "C": 3072,
-      "L": 256,
-      "R": 1024,
-      "tool_turn": 256
+    "max_output_tokens": 65536,
+    "models": {
+      "gemma4-26b-a4b": {
+        "bytes": 14618145824,
+        "path": "/home/kome/.local/share/llm-models/gemma-4-26B-A4B-it-GGUF/gemma-4-26B-A4B-it-Q4_0.gguf",
+        "sha256": "d208665ab1cd3a69f7a9a4bc59430e8448c8093d9b06334f566ac59d6d504a03"
+      },
+      "ornith-35b": {
+        "bytes": 21713463040,
+        "path": "/home/kome/.local/share/llm-models/Ornith-1.5-35B-A3B-GGUF/Ornith-1.5-35B-Q4_K_M.gguf",
+        "sha256": "42739874cc2ccfdb8523b23fbe52e29b2a7555c8176737ca9ca0b5d59859d41f"
+      },
+      "qwen36-35b": {
+        "bytes": 22853663008,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.6-35B-A3B/Qwen3.6-35B-A3B-UD-Q4_K_XL.gguf",
+        "sha256": "55983c5a75a1ab969824077b3bb3de4146e82a9234072b48ad4e8f92ad3fe9f1"
+      },
+      "qwen38-27b": {
+        "bytes": 10442827840,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.8-27B-GSQ-RCO/Qwen3.8-27B-GSQ-RCO-IQ3_XXS-MTP.gguf",
+        "sha256": "63f29a2189a6b4cc31f81e093d3856ad293a5583114439f41ae1ed7af4093262"
+      },
+      "qwen38-flash": {
+        "bytes": 47039860096,
+        "path": "/home/kome/.local/share/llm-models/Qwen3.8-Flash-Next-GSQ-RCO/Qwen3.8-Flash-Next-GSQ-RCO-IQ3_XXS-00001-of-00002.gguf",
+        "sha256": "219ea929900dfa9ef091f3aa473fdba6874b65fcb36526d7d851ac9e95856d15"
+      }
     },
-    "reps": 3,
-    "sampling_graded": {
-      "dry_multiplier": 0.0,
-      "min_p": 0.0,
-      "repeat_last_n": 64,
-      "repeat_penalty": 1.05,
-      "temperature": 0.0,
-      "top_k": 20,
-      "top_p": 0.95
+    "reasoning_budget": null,
+    "rungs": {
+      "ornith-35b": 32768
     },
-    "sampling_loop": {
-      "dry_multiplier": 0.0,
-      "min_p": 0.0,
-      "repeat_last_n": 0,
-      "repeat_penalty": 1.0,
-      "temperature": 0.7,
-      "top_k": 20,
-      "top_p": 0.95
+    "sampler_resolved": {
+      "ornith-35b__f16": {
+        "greedy": true,
+        "min_p": 0.05,
+        "raw": "sampler params: \n\trepeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000\n\tdry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64\n\ttop_k = 20, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000\n\tmirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900\n0.05.995.209 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.05.995.210 D que    start_loop: update slots\n0.05.995.211 D srv  update_slots: posting NEXT_RESPONSE\n0.05.995.213 D que          post: new task, id = 1, front = 0\n0.05.995.220 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 15938\n0.05.995.226 D res          send: sending result for task id = 0\n0.05.995.226 D res          send: task id = 0 pushed to result queue\n0.05.995.230 I slot   operator(): id  0 | task 0 | cached n_tokens = 0, memory_seq_rm [0, end)\n0.05.995.274 D srv          stop: all tasks already finished, no need to cancel\n0.05.995.305 D slot   operator(): id  0 | task 0 | main/do_checkpoint =",
+        "repeat_penalty": 1.0,
+        "temperature": 0.0,
+        "top_k": 20.0,
+        "top_p": 0.95
+      },
+      "ornith-35b__q4_0": {
+        "greedy": true,
+        "min_p": 0.05,
+        "raw": "sampler params: \n\trepeat_last_n = 64, repeat_penalty = 1.000, frequency_penalty = 0.000, presence_penalty = 0.000\n\tdry_multiplier = 0.000, dry_base = 1.750, dry_allowed_length = 2, dry_penalty_last_n = 64\n\ttop_k = 20, top_p = 0.950, min_p = 0.050, xtc_probability = 0.000, xtc_threshold = 0.100, typical_p = 1.000, top_n_sigma = -1.000, temp = 0.000\n\tmirostat = 0, mirostat_lr = 0.100, mirostat_ent = 5.000, adaptive_target = -1.000, adaptive_decay = 0.900\n0.03.993.779 I slot launch_slot_: id  0 | task 0 | processing task, is_child = 0\n0.03.993.780 D que    start_loop: update slots\n0.03.993.780 D srv  update_slots: posting NEXT_RESPONSE\n0.03.993.783 D que          post: new task, id = 1, front = 0\n0.03.993.789 I slot   operator(): id  0 | task 0 | new prompt, n_ctx_slot = 32768, n_keep = 0, task.n_tokens = 15938\n0.03.993.795 D res          send: sending result for task id = 0\n0.03.993.796 D res          send: task id = 0 pushed to result queue\n0.03.993.799 I slot   operator(): id  0 | task 0 | cached n_tokens = 0, memory_seq_rm [0, end)\n0.03.993.846 D srv          stop: all tasks already finished, no need to cancel\n0.03.993.875 D slot   operator(): id  0 | task 0 | main/do_checkpoint =",
+        "repeat_penalty": 1.0,
+        "temperature": 0.0,
+        "top_k": 20.0,
+        "top_p": 0.95
+      }
     },
-    "seeds": [
-      1001,
-      1002,
-      1003
-    ],
+    "sampling": {
+      "temperature": 0.0
+    },
     "server_common": [
       "-ngl",
       "999",
@@ -144,41 +762,109 @@
       "8",
       "--checkpoint-min-step",
       "8192",
-      "--reasoning",
-      "on",
-      "--reasoning-effort",
-      "medium",
-      "--reasoning-budget",
-      "8192",
-      "--reasoning-format",
-      "deepseek"
-    ]
+      "-v"
+    ],
+    "tranches": [
+      {
+        "decision": "whole result on the model with the only prior large effect",
+        "hours": 5.2,
+        "id": "T1",
+        "model": "gemma4-26b-a4b",
+        "workflows": [
+          "W1",
+          "W2",
+          "W3",
+          "W4",
+          "W5",
+          "W6"
+        ]
+      },
+      {
+        "decision": "clean second architecture, and the long workflows finish",
+        "hours": 5.0,
+        "id": "T2",
+        "model": "ornith-35b",
+        "workflows": [
+          "W1",
+          "W2",
+          "W3",
+          "W4",
+          "W5",
+          "W6"
+        ]
+      },
+      {
+        "decision": "counted probes and instrument on a third architecture",
+        "hours": 2.0,
+        "id": "T3",
+        "model": "qwen36-35b",
+        "workflows": [
+          "W1",
+          "W2",
+          "W3"
+        ]
+      },
+      {
+        "decision": "long-horizon workflows on the third model, only on slack",
+        "hours": 4.0,
+        "id": "T4",
+        "model": "qwen36-35b",
+        "workflows": [
+          "W4",
+          "W5",
+          "W6"
+        ]
+      }
+    ],
+    "w1_slices": {
+      "ornith-35b__f16": null,
+      "ornith-35b__q4_0": null
+    },
+    "workflows": {
+      "W1": {
+        "guard": null,
+        "instances": 3,
+        "name": "KLD and perplexity",
+        "tier": "instrument"
+      },
+      "W2": {
+        "guard": "1 request",
+        "instances": 12,
+        "name": "20-key retrieval",
+        "tier": "counted"
+      },
+      "W3": {
+        "guard": "2 requests",
+        "instances": 12,
+        "name": "Compaction",
+        "tier": "counted"
+      },
+      "W4": {
+        "guard": 120,
+        "instances": 6,
+        "name": "Long-horizon ledger",
+        "tier": "long"
+      },
+      "W5": {
+        "guard": 60,
+        "instances": 6,
+        "name": "Agentic search",
+        "tier": "long"
+      },
+      "W6": {
+        "guard": null,
+        "instances": 6,
+        "name": "Unbounded long-form",
+        "tier": "long"
+      }
+    }
   },
-  "samples": 16,
+  "samples": 2,
   "stamp": "smoke",
-  "tasks": {
-    "C": [
-      "cg_csvlite",
-      "cg_fixedpoint",
-      "cg_intervals",
-      "cg_semver",
-      "cg_statistics",
-      "repo_fix"
-    ],
-    "L": [
-      "gen_manual",
-      "copy_ledgers",
-      "enumerate_shards",
-      "tool_episode"
-    ],
-    "R": [
-      "niah_multi",
-      "niah_deep",
-      "vt_trace",
-      "agg_sum",
-      "count_proj",
-      "fwe_count"
-    ]
+  "timing": {
+    "arms_wall_s": 106,
+    "run_finished": "2026-11-02T04:54:41Z",
+    "run_started": "2026-11-02T04:53:51Z"
   },
-  "unrun_arms": []
+  "unrun_cells": []
 }

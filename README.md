@@ -1,100 +1,120 @@
-# kv-quant-test: does quantizing the KV cache hurt long-context work?
+# kv-quant-test: what a compressed KV cache costs at full context
 
-A language model working on a long document keeps its attention state in the KV cache, which stands
-for key/value cache: a stored copy of every earlier token's keys and values, so the model does not have
-to re-read the document for each new word. That cache can be compressed. This study asks what
-compression costs.
+A language model working on a long document keeps its attention state in the KV cache: a stored copy
+of every earlier token's keys and values, so it does not have to re-read the document for each new
+word. That cache can be compressed to save memory. This study measures what the compression costs
+when the model actually has to work at the edge of its context window.
 
-Five models are served by llama.cpp at one identical long context of about 96k tokens, and each is run
-three times with a different cache type: **f16** (uncompressed), **q8_0** (8-bit) and **q4_0** (4-bit).
-That gives 15 arms and 540 requests, reported once.
+The earlier study in `docs/RESULTS.md` answered short questions at a shrinking context with a
+generation cap, a reasoning budget and sampler settings imposed by the harness. It could not see the
+failure modes that matter at depth. This harness replaces it: one full-context rung per model, greedy
+decode, no reasoning budget, and six workflows whose success is graded from counts, hashes and
+structure rather than from prose. The design document is
+[docs/AGENTIC-BENCH-PLAN.md](docs/AGENTIC-BENCH-PLAN.md).
 
-Two things are measured per arm:
+## Design
 
-- **Does the work get worse?** Six retrieval and tracing tasks with answers graded by regex, plus six
-  code tasks graded by running hidden test suites under the SWE-bench contract: FAIL_TO_PASS tests,
-  partial credit, and an all-or-nothing "resolved" count. SWE-bench is the standard software-engineering
-  benchmark, and its contract means a task passes only when the failing tests it targets start passing.
-- **Does the model start looping?** Four probes whose output is measured for degenerate repetition
-  (repeated n-grams, repeated lines, repeated 200-character blocks, tail cycles, compression ratio).
-  One of the four is a multi-turn tool episode, which catches the same tool call being issued over and
-  over, a failure that never appears in a single response.
+The table fixes what changes between arms and what is held constant. Only the cache type differs
+inside a model; the context rung, the document and the decode settings are the same for both arms.
 
-Every task appends to one canonical ~96k-token document, so the expensive prefill is paid once per arm
-and the three cache types in an arm group see byte-identical input.
+| factor | levels |
+|---|---|
+| models | Gemma-4-26B-A4B, Ornith-1.5-35B-A3B, Qwen3.6-35B-A3B (the dense 27B and Flash-Next stay configured but are not in the trenched matrix) |
+| KV cache | **f16** (uncompressed) and **q4_0** (4-bit), symmetric, with flash attention on |
+| context | one rung per model: the largest ladder entry it loads with a ≥ 91k-token prompt, `102400` for all three here. All arms of a model run at that same rung. |
+| document | one canonical text, 92–95k tokens in the largest of the three tokenizers, shared byte-for-byte by every arm |
+| decode | greedy: `temperature: 0.0` and nothing else; one draw per instance, no seeds, no reps |
+| cap | none per request except a 64k response ceiling, recorded as `halted_by=ceiling` |
+
+In the model names, A3B and A4B mean the model activates roughly 3 or 4 billion parameters per token; the number before it is the total parameter count.
+
+Six workflows, each with a fixed instance count per arm:
+
+| id | workflow | instances | guard | what is graded |
+|---|---|---|---|---|
+| W1 | KLD and perplexity | 3 passes | — | mean KLD (Kullback–Leibler divergence) against the f16 logits, same-top agreement, deep-context PPL (perplexity) ratio |
+| W2 | 20-key retrieval | 12 | 1 request | codes correct out of 20, per key, in order; hit rate by planted depth |
+| W3 | compaction | 12 | 2 requests | how many of twenty brief facts survive, answers from the brief alone, loop detection over both responses |
+| W4 | long-horizon ledger | 6 | 120 tool calls | final ledger hash and five invariants |
+| W5 | agentic search | 6 | 60 tool calls | three multi-hop answer keys, search calls against a floor |
+| W6 | unbounded long-form | 6 | 64k ceiling | six sections present, six cross-references resolved, loop instrument |
+
+W1's KLD is the Kullback–Leibler divergence, a measure of how far the arm's next-token
+distribution has moved from the f16 arm's, and PPL is perplexity, the exponentiated average
+negative log-likelihood. The `guard` column is the hard stop for a workflow: one request for W2, two
+for W3, a tool-call count for W4 and W5, and only the response ceiling for W6.
+
+W2 and W3 are counts, not verdicts: a sample that loses one deep key scores 19, and the report shows
+which depth the miss sat at and whether it was `absent`, `mutated` or `misordered`. W1 is the fast
+instrument: it compares the quantized arm's next-token distribution with the f16 arm's own logits, so
+it produces a graded number with an error bar in minutes.
+
+The tranches are fixed in advance — T1 Gemma all six workflows, T2 Ornith all six, T3 Qwen3.6 the
+counted probes, T4 Qwen3.6 the long workflows — so a deadline cut lands on the least informative
+remaining cell and never on the deciding one. Cut cells are printed in the report, not hidden.
 
 ## Quickstart
 
-Three commands, none of which needs a GPU, a downloaded model or network access. The first checks the
-harness against fixtures, the second runs one model end to end on a small context, and the third turns
-the result into the written report and its HTML page.
+Needs Python 3.11+ (stdlib only), a built llama.cpp with `GGML_CUDA_FA_QUANTS` covering
+`f16-f16;q4_0-q4_0`, and the GGUF files (GGUF is the model-file format llama.cpp loads). No network
+after the models are downloaded. The commands below move from a fast no-GPU check to the overnight
+run; the fit step must come before either run because it resolves the rung each model can hold.
 
 ```bash
-python3 -m kvtest.selftest          # ~30 s -> "selftest OK"
-python3 -m kvtest.run --smoke       # ~10 min on one model at q4_0, -c 8192
-python3 -m kvtest.report results/smoke
+python3 -m kvtest.selftest                 # ~3 s, no GPU, no models: "selftest OK"
+python3 -m kvtest.fit --stamp STAMP        # resolves one rung per model and the 92–95k document
+python3 -m kvtest.run --stamp STAMP --pilot   # micro-pilot: Gemma f16, W1 + one W2 + one W3
+python3 -m kvtest.report results/STAMP     # regenerate the tables, HTML, CSV and figures
 ```
 
-The full study is `./scripts/run_all.sh`, and the individual steps are in
+The full night is `./scripts/run_all.sh`, which runs the preflight, the fit probe, the four tranches
+under a 24 h governor, and the report. Individual steps and the exact commands are in
 [docs/REPRODUCE.md](docs/REPRODUCE.md).
 
 ## Headline
 
-Highest score: `qwen38-flash` with a q4_0 cache, at 84.94 of 100 capability, 0 of 12 samples showing a
-structural loop, 12.3 tokens per second of decode. **Its lead is not established.** Every tier has six
-task clusters, and once the reps of a task are clustered and a correction is applied across the 42
-arm-by-tier comparisons, all 14 other arms, including its own f16 arm, are indistinguishable from it.
-
-Per model the top arm is q4_0 for Flash and the 35B, q8_0 for the dense 27B, and f16 for Gemma and
-Ornith, but none of those gaps is resolvable at this sample size. The ranking rule and the reasoning
-behind it are in `REPORT.md`, section Verdict.
-
-The table below is filled in from `results/<stamp>/REPORT.md` after a run. One row per arm: retrieval
-accuracy is points out of 30, code is hidden checks passed out of 780 with resolved tasks out of 6,
-structural loops counts samples showing real repetition, and agreement is the share of graded answers
-identical to the same model's f16 answer.
+Each row is one arm: mean W2 key score out of 20, mean W3 brief retention out of 20, mean KLD
+against that model's f16 logits, and loop and context-full halt counts.
+`mean (scored/attempted)` shows how many instances produced a score; `—` means none did, so the mean
+is absent rather than zero, and the W2/W3 columns are not comparable across models when halt counts
+differ.
 
 <!-- HEADLINE:START -->
-| model | KV | R accuracy | C checks | C resolved | structural loops | agreement with f16 |
+| model | KV | W2 mean /20 | W3 retention /20 | mean KLD | loop halts | context full |
 |---|---|---|---|---|---|---|
-| `qwen38-flash` | f16 | 23/30 (76.7%) | 702/780 (90.0%) | 4/6 | 0/12 |  |
-| `qwen38-flash` | q8_0 | 24/30 (80.0%) | 630/780 (80.8%) | 4/6 | 0/12 | 0.611 |
-| `qwen38-flash` | q4_0 | 24/30 (80.0%) | 701/780 (89.9%) | 3/6 | 0/12 | 0.667 |
-| `qwen38-27b` | f16 | 21/30 (70.0%) | 629/780 (80.6%) | 3/6 | 0/12 |  |
-| `qwen38-27b` | q8_0 | 23/30 (76.7%) | 702/780 (90.0%) | 4/6 | 0/12 | 0.722 |
-| `qwen38-27b` | q4_0 | 21/30 (70.0%) | 634/780 (81.3%) | 3/6 | 0/12 | 0.722 |
-| `qwen36-35b` | f16 | 18/30 (60.0%) | 765/780 (98.1%) | 4/6 | 0/12 |  |
-| `qwen36-35b` | q8_0 | 19/30 (63.3%) | 694/780 (89.0%) | 3/6 | 1/12 | 0.722 |
-| `qwen36-35b` | q4_0 | 20/30 (66.7%) | 763/780 (97.8%) | 3/6 | 0/12 | 0.556 |
-| `ornith-35b` | f16 | 19/30 (63.3%) | 548/780 (70.3%) | 4/6 | 0/12 |  |
-| `ornith-35b` | q8_0 | 16/30 (53.3%) | 570/780 (73.1%) | 2/6 | 1/12 | 0.5 |
-| `ornith-35b` | q4_0 | 18/30 (60.0%) | 475/780 (60.9%) | 3/6 | 0/12 | 0.706 |
-| `gemma4-26b-a4b` | f16 | 11/30 (36.7%) | 694/780 (89.0%) | 4/6 | 3/12 |  |
-| `gemma4-26b-a4b` | q8_0 | 7/30 (23.3%) | 701/780 (89.9%) | 2/6 | 2/12 | 0.2 |
-| `gemma4-26b-a4b` | q4_0 | 8/30 (26.7%) | 318/780 (40.8%) | 3/6 | 3/12 | 0.2 |
+| `gemma4-26b-a4b` | f16 | — (0/12) | — (0/12) | 0 | 31 | 0 |
+| `gemma4-26b-a4b` | q4_0 | — (0/12) | 20.00 (1/12) | 0.2052 | 31 | 0 |
+| `ornith-35b` | f16 | 20.00 | 20.00 | 0 | 1 | 6 |
+| `ornith-35b` | q4_0 | 20.00 | 20.00 | 0.0313 | 1 | 6 |
+| `qwen36-35b` | f16 | 20.00 | 20.00 | 0 | 0 | 0 |
+| `qwen36-35b` | q4_0 | 20.00 | 20.00 | 0.0095 | 0 | 0 |
 <!-- HEADLINE:END -->
 
 ## What is here
 
-The tree below lists what each directory holds, so you can tell the harness from the fixtures from the
-outputs. `models.lock.json` is the provenance record: it pins the model files by sha256 together with
-the llama.cpp commit, the build flags and the document hash, which is what makes two runs comparable.
+The tree lists the source modules and the generated directories so a reader can tell the harness from
+its outputs. `kvtest/` is the only code; everything under `results/` is produced by a run.
 
 ```
-kvtest/        the harness (config, server lifecycle, client, document, tasks, graders, loops,
-               fit probe, orchestrator, report, selftest)
-fixtures/      the user's own codegen + intervalkit fixtures, verbatim
+kvtest/        harness: config, server lifecycle, client (streaming + tool calls), document
+               builder, six workflow modules, tool runner with loop detection, KLD/PPL runner,
+               statistics, fit probe, orchestrator, report, selftest
 scripts/       preflight, build, download, run_all
-docs/          METHOD.md (design + threats), REPRODUCE.md, RESULTS.md (findings),
-               AGENTIC-BENCH-PLAN.md (design for the next study: agentic workflows at 100k)
-results/       <UTC-stamp>/{fit.json,samples.jsonl,arms/,logs/,REPORT.md,report.html}
+docs/          AGENTIC-BENCH-PLAN.md (design), METHOD.md (method + threats),
+               REPRODUCE.md (steps), RESULTS.md (the prior study, archived)
+results/       <UTC-stamp>/{fit.json,document.txt,samples.jsonl,arms/,logs/,REPORT.md,report.html}
 models.lock.json   pinned GGUF sha256 + llama.cpp commit + build flags + document hash
 ```
 
 ## Reading a result
 
-The experiment is the cache ladder within a model, not a comparison between models. Cross-model numbers
-are descriptive only: the same text tokenizes differently on five tokenizers, and only full-attention
-layers accumulate cache damage with depth, of which there are 16 on the dense 27B and 5 on
-Gemma-26B. `REPORT.md` prints raw counts next to every percentage and names the tasks no f16 arm could
-solve, and the appendix reports the share of answers that are byte-identical to the f16 answer.
+- The experiment is the f16 → q4_0 difference **inside one model at one rung**, never a race between
+  models. The same text tokenizes differently on each tokenizer, and only full-attention layers
+  accumulate cache damage with depth.
+- Perplexity is comparable only within a model's own arms.
+- Every table in `REPORT.md` shows the f16 arm. The decision rule is pre-registered: an arm is worse
+  only when the paired bootstrap interval over instances excludes 0 and the point estimate is worse.
+
+Greedy decode is not what a user would run in production, and it can be more or less loop-prone than
+a sampled decode. Every loop count in the report is therefore a statement about greedy decoding. That
+trade is what buys enough instances for a paired interval at all.

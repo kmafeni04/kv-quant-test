@@ -96,6 +96,104 @@ def chat(base, messages, max_tokens=1024, timeout=1800, tools=None, **sampling):
     }
 
 
+def chat_stream(base, messages, max_tokens=1024, timeout=1800, tools=None, loop_guard=None,
+                guard_every=256, **sampling):
+    """One streaming chat completion, so time-to-first-visible-token is measured.
+
+    llama.cpp emits one SSE delta per generated token, so reasoning delta count and content delta
+    count are the thinking/visible token counts. `loop_guard(reasoning, content, tokens)` is polled
+    every `guard_every` deltas; when it returns a dict the stream is aborted there, so a degenerate
+    response costs a few thousand tokens instead of the whole window.
+    """
+    payload = {"messages": messages, "max_tokens": max_tokens, "stream": True,
+               "stream_options": {"include_usage": True}, "cache_prompt": True}
+    payload.update({k: v for k, v in sampling.items() if v is not None})
+    if tools:
+        payload["tools"] = tools
+    t0 = time.time()
+    content, reasoning = [], []
+    calls, first_token, first_visible = {}, None, None
+    finish_reason, usage, timings, error = None, {}, {}, None
+    loop_halt, seen = None, 0
+    try:
+        body = json.dumps(payload).encode()
+        req = urllib.request.Request(f"{base}/v1/chat/completions", data=body,
+                                     headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            for raw in r:
+                line = raw.decode("utf-8", "replace").strip()
+                if not line.startswith("data: "):
+                    continue
+                chunk = line[6:]
+                if chunk == "[DONE]":
+                    break
+                try:
+                    d = json.loads(chunk)
+                except json.JSONDecodeError:
+                    continue
+                if d.get("timings"):
+                    timings = d["timings"]
+                if d.get("usage"):
+                    usage = d["usage"]
+                for ch in d.get("choices") or []:
+                    delta = ch.get("delta") or {}
+                    if delta.get("reasoning_content"):
+                        if first_token is None:
+                            first_token = time.time() - t0
+                        reasoning.append(delta["reasoning_content"])
+                    if delta.get("content"):
+                        if first_token is None:
+                            first_token = time.time() - t0
+                        if first_visible is None:
+                            first_visible = time.time() - t0
+                        content.append(delta["content"])
+                    for tc in delta.get("tool_calls") or []:
+                        idx = tc.get("index", len(calls))
+                        slot = calls.setdefault(idx, {"id": tc.get("id"), "type": "function",
+                                                     "function": {"name": "", "arguments": ""}})
+                        fn = tc.get("function") or {}
+                        slot["function"]["name"] += fn.get("name") or ""
+                        slot["function"]["arguments"] += fn.get("arguments") or ""
+                    if ch.get("finish_reason"):
+                        finish_reason = ch["finish_reason"]
+                if loop_guard is not None:
+                    seen = len(reasoning) + len(content)
+                    if seen and seen % guard_every == 0:
+                        hit = loop_guard("".join(reasoning), "".join(content), seen)
+                        if hit:
+                            loop_halt = dict(hit, token_pos=seen)
+                            break
+    except urllib.error.HTTPError as e:
+        error = f"HTTP {e.code}: {e.read().decode()[:400]}"
+    except Exception as e:                                         # noqa: BLE001
+        error = f"{type(e).__name__}: {e}"[:400]
+    tim = _timings({"timings": timings})
+    completion = usage.get("completion_tokens")
+    if completion is None and (reasoning or content):
+        completion = len(reasoning) + len(content)
+    return {
+        "error": error,
+        "content": "".join(content),
+        "reasoning_content": "".join(reasoning),
+        "tool_calls": [calls[i] for i in sorted(calls)],
+        "finish_reason": finish_reason,
+        "usage": {"prompt_tokens": usage.get("prompt_tokens"),
+                  "completion_tokens": completion,
+                  "total_tokens": usage.get("total_tokens")},
+        "timings": tim,
+        "prefill_tps": round(tim.get("prompt_per_second") or 0, 1),
+        "decode_tps": round(tim.get("predicted_per_second") or 0, 1),
+        "thinking_tokens": len(reasoning),
+        "visible_tokens": len(content),
+        "thinking_share": (len(reasoning) / (len(reasoning) + len(content))
+                           if (reasoning or content) else None),
+        "first_token_s": round(first_token, 3) if first_token is not None else None,
+        "first_visible_s": round(first_visible, 3) if first_visible is not None else None,
+        "loop_halt": loop_halt,
+        "wall_s": round(time.time() - t0, 2),
+    }
+
+
 def props(base):
     return _req(f"{base}/props", timeout=30)
 

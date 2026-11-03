@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="520" height="196" viewBox="0 0 520 196" role="img" aria-label="W1 mean KLD by arm">
+<rect width="520" height="196" fill="var(--svg-bg, #ffffff)"/>
+<text x="12" y="18" font-size="11" fill="var(--fg, #111827)">W1 mean KLD against the f16 baseline (log scale)</text>
+<text x="12" y="44" font-size="9" fill="var(--fg, #374151)">gemma4-26b-a4b__f16</text>
+<rect x="140" y="34" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="44" font-size="9" fill="var(--fg, #374151)">-0.000000</text>
+<text x="12" y="66" font-size="9" fill="var(--fg, #374151)">ornith-35b__f16</text>
+<rect x="140" y="56" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="66" font-size="9" fill="var(--fg, #374151)">0.000000</text>
+<text x="12" y="88" font-size="9" fill="var(--fg, #374151)">qwen36-35b__f16</text>
+<rect x="140" y="78" width="0.0" height="13" fill="var(--c-f16, #2d6a4f)"/>
+<text x="144.0" y="88" font-size="9" fill="var(--fg, #374151)">-0.000000</text>
+<text x="12" y="110" font-size="9" fill="var(--fg, #374151)">qwen36-35b__q4_0</text>
+<rect x="140" y="100" width="280.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="424.0" y="110" font-size="9" fill="var(--fg, #374151)">0.009507</text>
+<text x="12" y="132" font-size="9" fill="var(--fg, #374151)">ornith-35b__q4_0</text>
+<rect x="140" y="122" width="311.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="455.0" y="132" font-size="9" fill="var(--fg, #374151)">0.031255</text>
+<text x="12" y="154" font-size="9" fill="var(--fg, #374151)">gemma4-26b-a4b__q4_0</text>
+<rect x="140" y="144" width="360.0" height="13" fill="var(--c-q4_0, #c2410c)"/>
+<text x="504.0" y="154" font-size="9" fill="var(--fg, #374151)">0.205153</text>
+</svg>

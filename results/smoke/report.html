@@ -1,108 +1,100 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
-<title>KV quant × long context — smoke</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Full-context KV quantization: agentic workflows, zero–20 key scores</title>
 <style>
-:root{--bg:#0f1216;--fg:#e8ecf1;--dim:#9aa4b2;--card:#171c22;--line:#28313b}
-*{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--fg);font:14px/1.5 ui-sans-serif,system-ui,sans-serif}
-header{padding:20px 28px 8px} h1{font-size:20px;margin:0 0 6px}
-h2{font-size:16px;margin:22px 0 8px} .dim{color:var(--dim)}
-nav{display:flex;gap:8px;padding:8px 28px 0}
-nav button{background:var(--card);color:var(--fg);border:1px solid var(--line);padding:7px 14px;
-border-radius:7px;cursor:pointer} nav button.on{background:#2b6cb0;border-color:#2b6cb0}
-section{padding:12px 28px 40px} .grid{display:flex;gap:22px;flex-wrap:wrap}
-.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px;
-margin:10px 0;max-width:900px} table{border-collapse:collapse;font-size:13px}
-th,td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:right}
-th:first-child,td:first-child{text-align:left} mark{background:#7a4d00;color:#fff;padding:0 2px}
-code{background:#0b0e12;padding:1px 5px;border-radius:4px;font-size:12px}
-details summary{cursor:pointer;color:var(--dim)} pre{white-space:pre-wrap;word-break:break-word}
-footer{padding:20px 28px 60px;color:var(--dim);font-size:12px}
-</style></head><body>
-<header>
-<h1>KV-cache quantization × long context: 1 model at q4_0</h1>
-
-</header>
-<details class="card" style="max-width:none">
-<summary><b>How to read this page</b></summary>
-<div class="dim" style="margin-top:6px">
-Each <b>grid</b> is one measurement: rows are models, columns are the three KV cache types.
-A cell's number is that arm's result. Colour always means the same thing:
-<span style="color:#3fa05a">green = best</span>, <span style="color:#c9563d">red = worst</span>.
-On the retrieval and code grids <b>best means highest</b>; on the two <b>loop</b> grids <b>best means
-lowest</b>, and those grids are scaled to the observed range so small differences are visible. Each
-grid prints its own scale. Hover any cell for the exact value.
-</div>
-<div class="dim" style="margin-top:6px">
-The loop numbers come in two flavours, and they differ: <b>any verdict</b> includes a compression
-heuristic that fires on formulaic prose such as a manual generated from twelve fixed rules, while
-<b>structural repetition</b> counts only samples with a repeated line, repeated n-gram, repeated
-200-character block or a repeating tail cycle — i.e. the thing that actually looks like a loop. Read
-the structural grid as the finding and the "any verdict" grid as an upper bound.
-</div>
-<div class="dim" style="margin-top:6px">
-What the tabs hold: <b>Matrix</b> — the verdict, three grids of level-and-change, decode speed, and
-how often two arms gave the identical answer. <b>Tasks</b> — one dot plot per task: three dots per
-model, one per KV type, on a 0–100 axis, so overlapping dots mean "the KV type changed nothing here".
-<b>Loops</b> — structural repetition per arm as bars, then a card for every sample the detector
-flagged, with the repeated text highlighted.
-</div>
-<div class="dim" style="margin-top:6px">
-Three facts that make the numbers honest: differences of a few points are noise; a single code task
-can swing by tens of points on one design decision, so check the per-task dot plots before reading a
-score delta as damage; and a score that falls because an arm hit the generation ceiling is truncated
-output, not wrong output. The prose summary, with the caveats for this run written out, is
-<code>docs/RESULTS.md</code>.
-</div></details>
-<nav><button id="b-matrix" class="on" onclick="tab('matrix')">Matrix</button>
-<button id="b-tasks" onclick="tab('tasks')">Tasks</button>
-<button id="b-loops" onclick="tab('loops')">Loops</button></nav>
-<section id="t-matrix"><div class="card" style="max-width:none"><h2 style="margin-top:0">What we found</h2><div class="dim" style="margin-top:6px">Best combination on this run: qwen36-35b with a q4_0 cache — 81.2 out of 100, 0/4 structural-loop samples, 45.6 tokens/second, 9541 MiB of graphics memory with 26 layers of the model kept in system RAM.</div><details><summary>How sure are we, and how the ranking works</summary><div class="dim">No other arm is comparable on this result, so the ranking is descriptive only. Capability = the average of the retrieval score and the code score; ties go to the arm with fewer repeating samples, then to the faster one; every paired test clusters the three reps of a task and corrects across all 42 comparisons, so nothing here can separate on a handful of correlated samples.</div></details><table style="margin-top:8px"><tr><th>model</th><th>best KV</th><th>capability</th><th>structural loops</th><th>decode t/s</th></tr><tr><td>qwen36-35b</td><td><b>q4_0</b></td><td>81.22</td><td>0/4</td><td>45.6</td></tr></table></div><div class="grid"><div class="card"><div>R accuracy</div><div class="dim">level in % of 30 points · change in points · n = 18 paired samples per arm, smallest attainable p = 0.0000076 · rows: best first</div><svg width="486" height="108" role="img"><title>grid: R accuracy</title><text x="204.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">f16</text><text x="312.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q8_0</text><text x="420.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q4_0</text><text x="4" y="70" fill="#e8ecf1" font-size="12">qwen36-35b</text><rect x="152" y="42" width="104" height="52" rx="4" fill="#2f3740"><title>qwen36-35b f16: —</title></rect><text x="204.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="204.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">reference</text><rect x="260" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q8_0: —</title></rect><text x="312.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="312.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text><rect x="368" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q4_0: 70.0</title></rect><text x="420.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">70.0</text><text x="420.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text></svg></div><div class="card"><div>C checks</div><div class="dim">level in % of 780 hidden checks · change in checks · n = 6 paired tasks per arm, smallest attainable p = 0.031 · rows: best first</div><svg width="486" height="108" role="img"><title>grid: C checks</title><text x="204.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">f16</text><text x="312.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q8_0</text><text x="420.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q4_0</text><text x="4" y="70" fill="#e8ecf1" font-size="12">qwen36-35b</text><rect x="152" y="42" width="104" height="52" rx="4" fill="#2f3740"><title>qwen36-35b f16: —</title></rect><text x="204.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="204.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">reference</text><rect x="260" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q8_0: —</title></rect><text x="312.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="312.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text><rect x="368" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q4_0: 92.4</title></rect><text x="420.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">92.4</text><text x="420.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text></svg></div><div class="card"><div>structural repetition</div><div class="dim">level in % of 4 samples · change in samples · n = 4 paired samples per arm, smallest attainable p = 0.1250 · rows: best first</div><svg width="486" height="108" role="img"><title>grid: structural repetition</title><text x="204.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">f16</text><text x="312.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q8_0</text><text x="420.0" y="18" fill="#9aa4b2" font-size="12" text-anchor="middle">q4_0</text><text x="4" y="70" fill="#e8ecf1" font-size="12">qwen36-35b</text><rect x="152" y="42" width="104" height="52" rx="4" fill="#2f3740"><title>qwen36-35b f16: —</title></rect><text x="204.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="204.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">reference</text><rect x="260" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q8_0: —</title></rect><text x="312.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">—</text><text x="312.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text><rect x="368" y="42" width="104" height="52" rx="4" fill="#2a3138"><title>qwen36-35b q4_0: 0.0</title></rect><text x="420.0" y="61" fill="#e8ecf1" font-size="13" text-anchor="middle">0.0</text><text x="420.0" y="75" fill="#e8ecf1" font-size="10" text-anchor="middle">—</text></svg></div></div><div class="dim" style="margin-top:6px">colour scale, always the same way: <span style="background:rgb(62,170,90);color:#0b0e12;padding:0 6px">green = best</span> <span style="background:rgb(205,160,62);color:#0b0e12;padding:0 6px">amber = middle</span> <span style="background:rgb(200,74,58);color:#0b0e12;padding:0 6px">red = worst</span> · "best" = high on the first two grids, low on the loop grid · grey = not distinguishable from f16 (task-clustered pairs, Holm) · "—" = arm not run</div>
-<details><summary>All the numbers: speed, agreement, per-task tables</summary>
-<h2>Speed at 11k tokens of context</h2><div class="card"><div>decode throughput at 11k tokens of context</div><div class="dim">median over every request in the arm · higher is better</div><svg width="770" height="114" role="img"><title>decode throughput at 11k tokens of context</title><line x1="185" y1="40" x2="185" y2="90" fill="none" stroke="#2b333c"/><text x="185" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">0</text><line x1="265" y1="40" x2="265" y2="90" fill="none" stroke="#2b333c"/><text x="265" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">10</text><line x1="345" y1="40" x2="345" y2="90" fill="none" stroke="#2b333c"/><text x="345" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">20</text><line x1="425" y1="40" x2="425" y2="90" fill="none" stroke="#2b333c"/><text x="425" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">30</text><line x1="505" y1="40" x2="505" y2="90" fill="none" stroke="#2b333c"/><text x="505" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">40</text><line x1="585" y1="40" x2="585" y2="90" fill="none" stroke="#2b333c"/><text x="585" y="104" fill="#9aa4b2" font-size="11" text-anchor="middle">50</text><text x="4" y="67" fill="#e8ecf1" font-size="12">qwen36-35b q4_0</text><rect x="185" y="52" width="364.8" height="20" rx="2" fill="rgb(87,168,85)"><title>qwen36-35b q4_0: 46 tokens/s · prefill 643 t/s</title></rect><text x="556" y="67" fill="#e8ecf1" font-size="11">46 tokens/s · prefill 643 t/s</text><text x="385.0" y="113" fill="#9aa4b2" font-size="11" text-anchor="middle">tokens/s</text></svg></div>
-<h2>Agreement with f16 (identical graded answers)</h2><table><tr><th>model</th><th>KV</th><th>agreement with f16</th><th>n</th></tr></table><h2>Cross-model agreement (same R task + seed, same KV)</h2>
-</details></section>
-<section id="t-tasks" hidden><div class="card" style="max-width:none"><b>R tier</b> <span class="dim">— share of that task&#x27;s points earned · 0–100 axis</span><div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px"><div><div class="dim">agg_sum</div><svg width="300" height="70" role="img"><title>R: agg_sum</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="150.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 agg_sum: 0/2 (0%)</title></circle></svg></div><div><div class="dim">count_proj</div><svg width="300" height="70" role="img"><title>R: count_proj</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 count_proj: 1/1 (100%)</title></circle></svg></div><div><div class="dim">fwe_count</div><svg width="300" height="70" role="img"><title>R: fwe_count</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="150.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 fwe_count: 0/1 (0%)</title></circle></svg></div><div><div class="dim">niah_deep</div><svg width="300" height="70" role="img"><title>R: niah_deep</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 niah_deep: 1/1 (100%)</title></circle></svg></div><div><div class="dim">niah_multi</div><svg width="300" height="70" role="img"><title>R: niah_multi</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 niah_multi: 3/3 (100%)</title></circle></svg></div><div><div class="dim">vt_trace</div><svg width="300" height="70" role="img"><title>R: vt_trace</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 vt_trace: 2/2 (100%)</title></circle></svg></div></div><div class="dim" style="margin-top:6px"><span style="color:#8fb0d6">● f16</span> <span style="color:#e0b24a">● q8_0</span> <span style="color:#d86a4a">● q4_0</span> · dots for one model that overlap mean the KV type changed nothing</div></div><div class="card" style="max-width:none"><b>C tier</b> <span class="dim">— share of that task&#x27;s hidden checks passed · 0–100 axis</span><div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px"><div><div class="dim">cg_csvlite</div><svg width="300" height="70" role="img"><title>C: cg_csvlite</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 cg_csvlite: 29/29 (100%)</title></circle></svg></div><div><div class="dim">cg_fixedpoint</div><svg width="300" height="70" role="img"><title>C: cg_fixedpoint</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="218.4" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 cg_fixedpoint: 44/45 (98%)</title></circle></svg></div><div><div class="dim">cg_intervals</div><svg width="300" height="70" role="img"><title>C: cg_intervals</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="218.3" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 cg_intervals: 158/162 (98%)</title></circle></svg></div><div><div class="dim">cg_semver</div><svg width="300" height="70" role="img"><title>C: cg_semver</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 cg_semver: 261/261 (100%)</title></circle></svg></div><div><div class="dim">cg_statistics</div><svg width="300" height="70" role="img"><title>C: cg_statistics</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 cg_statistics: 229/229 (100%)</title></circle></svg></div><div><div class="dim">repo_fix</div><svg width="300" height="70" role="img"><title>C: repo_fix</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="150.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 repo_fix: 0/54 (0%)</title></circle></svg></div></div><div class="dim" style="margin-top:6px"><span style="color:#8fb0d6">● f16</span> <span style="color:#e0b24a">● q8_0</span> <span style="color:#d86a4a">● q4_0</span> · dots for one model that overlap mean the KV type changed nothing</div></div><div class="card" style="max-width:none"><b>L tier</b> <span class="dim">— share of samples that did NOT loop (higher = cleaner) · 0–100 axis</span><div style="display:flex;flex-wrap:wrap;gap:14px;margin-top:8px"><div><div class="dim">copy_ledgers</div><svg width="300" height="70" role="img"><title>L: copy_ledgers</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 copy_ledgers: 1/1 clean (100%)</title></circle></svg></div><div><div class="dim">enumerate_shards</div><svg width="300" height="70" role="img"><title>L: enumerate_shards</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 enumerate_shards: 1/1 clean (100%)</title></circle></svg></div><div><div class="dim">gen_manual</div><svg width="300" height="70" role="img"><title>L: gen_manual</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 gen_manual: 1/1 clean (100%)</title></circle></svg></div><div><div class="dim">tool_episode</div><svg width="300" height="70" role="img"><title>L: tool_episode</title><line x1="150" y1="20" x2="150" y2="50" stroke="#2b333c"/><text x="150" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">0</text><line x1="185" y1="20" x2="185" y2="50" stroke="#2b333c"/><text x="185" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">50</text><line x1="220" y1="20" x2="220" y2="50" stroke="#2b333c"/><text x="220" y="62" fill="#9aa4b2" font-size="10" text-anchor="middle">100</text><text x="2" y="30" fill="#c8d2dc" font-size="10">qwen36-35b</text><circle cx="220.0" cy="26" r="4.5" fill="#d86a4a" fill-opacity="0.95"><title>qwen36-35b q4_0 tool_episode: 1/1 clean (100%)</title></circle></svg></div></div><div class="dim" style="margin-top:6px"><span style="color:#8fb0d6">● f16</span> <span style="color:#e0b24a">● q8_0</span> <span style="color:#d86a4a">● q4_0</span> · dots for one model that overlap mean the KV type changed nothing</div></div></section>
-<section id="t-loops" hidden><p class="dim">No sample in this run contained repeated lines, phrases, blocks or a repeating tail, and no tool call repeated.</p></section>
-<footer><details><summary>Hardware, manifest and reproduce commands</summary><details><summary>Provenance</summary><div class="dim">context -c 16384 · llama.cpp 2a667032dc78 · document 2b85355d504953ef · 16 samples · wall clock 13 m 12 s</div></details><b>Hardware</b> NVIDIA GeForce RTX 3080 Laptop GPU 16384 MiB sm_86 · CPU (16 cores) · 62.5 GiB RAM · llama.cpp 2a667032d<br><b>Manifest</b><pre>{
- &quot;llama_cpp&quot;: {
-  &quot;build_type&quot;: &quot;Release&quot;,
-  &quot;commit&quot;: &quot;2a667032dc788c3a071d538e0b572e45a3f12731&quot;,
-  &quot;cuda&quot;: &quot;13.4 (V13.4.92)&quot;,
-  &quot;cuda_arch&quot;: &quot;86&quot;,
-  &quot;driver&quot;: &quot;615.78.08&quot;,
-  &quot;ggml_cuda&quot;: true,
-  &quot;ggml_cuda_fa&quot;: true,
-  &quot;ggml_cuda_fa_all_quants&quot;: false,
-  &quot;ggml_cuda_fa_quants&quot;: &quot;q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16&quot;,
-  &quot;version&quot;: &quot;0.7.0-dev (build 11698)&quot;
- },
- &quot;context&quot;: 16384,
- &quot;seeds&quot;: [
-  1001,
-  1002,
-  1003
- ],
- &quot;budgets&quot;: {
-  &quot;C&quot;: 6144,
-  &quot;L&quot;: 2048,
-  &quot;R&quot;: 2048,
-  &quot;tool_turn&quot;: 512
- },
- &quot;reps&quot;: 3,
- &quot;document_sha256&quot;: &quot;2b85355d504953efce91981d6646923940dd50394cea2d616d34627d3f272daf&quot;,
- &quot;tokens_by_model&quot;: null,
- &quot;models&quot;: {}
-}</pre><b>Reproduce</b><pre>python3 -m kvtest.selftest
-python3 -m kvtest.fit --stamp STAMP
-python3 -m kvtest.run --stamp STAMP --resume --deadline-hours 22
-python3 -m kvtest.report results/STAMP</pre></details></footer>
-<script>
-function tab(name) {
-  for (const t of ['matrix','tasks','loops']) {
-    document.getElementById('t-'+t).hidden = (t !== name);
-    document.getElementById('b-'+t).className = (t === name) ? 'on' : '';
-  }
+:root {
+  color-scheme: dark;
+  --bg: #0b0f14; --fg: #e5e7eb; --muted: #9ca3af; --border: #2a3542;
+  --head: #111821; --lead: #cbd5e1; --grid: #2a3542; --svg-bg: #0b0f14;
+  --c-f16: #4ade80; --c-q4_0: #fb923c; --c-q8_0: #60a5fa;
 }
-</script>
+body { font: 15px/1.55 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        color: var(--fg); margin: 0 auto; max-width: 1120px; padding: 28px;
+        background: var(--bg); }
+h1 { font-size: 26px; line-height: 1.25; margin: 0 0 6px; }
+h2 { font-size: 19px; margin: 34px 0 10px; border-bottom: 1px solid var(--border);
+      padding-bottom: 4px; }
+p.lead { font-size: 16px; color: var(--lead); }
+table { border-collapse: collapse; width: 100%; margin: 10px 0 16px; font-size: 13px; }
+th, td { border: 1px solid var(--border); padding: 5px 7px; text-align: right; }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: var(--head); font-weight: 600; }
+code { font: 12px ui-monospace, SFMono-Regular, Menlo, monospace;
+        background: var(--head); padding: 1px 4px; border-radius: 3px; }
+ul { margin: 8px 0 16px 20px; padding: 0; }
+.note { color: var(--muted); font-size: 13px; }
+figure { margin: 14px 0; }
+figcaption { color: var(--muted); font-size: 12px; }
+</style></head><body>
+<h1>Full-context KV quantization: agentic workflows, zero–20 key scores</h1>
+<p>Both Ornith arms answered the one 20-key instance on this short control document and scored 20/20, so the probe is answerable and the per-key grader works. One instance per arm cannot show whether f16 or q4_0 is better, and the probe saturated at its twenty-key ceiling. This run skipped the distribution instrument (W1) and the compaction (W3), ledger (W4), search (W5) and long-form (W6) workflows. It therefore says nothing about how compression affects deep retrieval or the other five workflows.</p>
+<p>The run answered one question before the full matrix started. Can the harness put a 20-key retrieval task in front of a model at 32k, grade the answer per key, and record a clean halt or a loop? Two arms of Ornith-1.5-35B-A3B ran the task once each: one with an uncompressed 16-bit key/value cache (f16), one with a 4-bit cache (q4_0). A key/value cache, the KV cache, is the stored attention state for every token the model has already read. Compressing it is the treatment this study measures. A single instance on a short control document cannot tell the two cache types apart.</p>
+<h2>Premise, power and disclosure</h2>
+<p>The list below states the sample sizes and rules that apply to every table on the page; read it
+before comparing arms.</p>
+<ul><li>Instances per arm: W2 n=1; smallest attainable p=1.0000.</li><li>One greedy draw per instance: <code>temperature: 0.0</code>, no other sampling key, no seeds, no reps. Greedy is not a production setting; every loop count is about greedy decoding.</li><li>No reasoning budget, no retry path. The only cap is the 64k response ceiling, recorded as <code>ceiling</code>.</li><li>Pairwise rule: paired difference against the same model's f16 arm, cluster bootstrap over instances (1,000 resamples, seeded); worse only when the interval excludes 0 and the point estimate is worse.</li></ul>
+<h2>W1 — KLD and perplexity</h2>
+<p class="note">No arm ran W1 in this stamp.</p>
+<h2>W2 — 20-key retrieval</h2>
+<p class="note">Each instance asks for twenty codes in order. A point is awarded per position that holds the correct code; a missing, wrong or near-miss value scores zero there. Instances halted by the detector, the window or the ceiling are counted in <code>halts</code> and left out of the mean.</p>
+<table class=""><thead><tr><th>arm</th><th>mean /20</th><th>sd</th><th>min</th><th>max</th><th>scored</th><th>halts</th><th>diff vs f16</th><th>interval</th><th>decision</th></tr></thead><tbody><tr><td><code>ornith-35b__f16</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>1/1</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>20.00</td><td>0.00</td><td>20</td><td>20</td><td>1/1</td><td>0</td><td>0.00</td><td>[0.00, 0.00]</td><td>tie (interval includes 0)</td></tr></tbody></table>
+<h2>Hit rate by planted depth</h2>
+<p class="note">Every scored arm hit all keys in all five depth bands; arms with no scored instance have empty cells instead.</p>
+<figure><svg xmlns="http://www.w3.org/2000/svg" width="520" height="240" viewBox="0 0 520 240" role="img" aria-label="W2 hit rate by depth">
+<rect width="520" height="240" fill="var(--svg-bg, #ffffff)"/>
+<line x1="44" y1="196.0" x2="476" y2="196.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="199.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">0%</text>
+<line x1="44" y1="158.0" x2="476" y2="158.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="161.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">25%</text>
+<line x1="44" y1="120.0" x2="476" y2="120.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="123.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">50%</text>
+<line x1="44" y1="82.0" x2="476" y2="82.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="85.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">75%</text>
+<line x1="44" y1="44.0" x2="476" y2="44.0" stroke="var(--grid, #e5e7eb)"/>
+<text x="38" y="47.0" text-anchor="end" font-size="9" fill="var(--muted, #6b7280)">100%</text>
+<text x="44.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">0–20%</text>
+<text x="152.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">20–40%</text>
+<text x="260.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">40–60%</text>
+<text x="368.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">60–80%</text>
+<text x="476.0" y="210" text-anchor="middle" font-size="9" fill="var(--muted, #6b7280)">80–100%</text>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-f16, #2d6a4f)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-f16, #2d6a4f)"/>
+<polyline points="44.0,44.0 152.0,44.0 260.0,44.0 368.0,44.0 476.0,44.0" fill="none" stroke="var(--c-q4_0, #c2410c)" stroke-width="2"/>
+<circle cx="44.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="152.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="260.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="368.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<circle cx="476.0" cy="44.0" r="2.5" fill="var(--c-q4_0, #c2410c)"/>
+<text x="44" y="18" font-size="11" fill="var(--fg, #111827)">W2 hit rate by planted depth (5 bands, 0–100% of document)</text>
+</svg><figcaption>Hit rate by planted depth; deeper positions are the ones a lossy cache drops first.</figcaption></figure>
+<h2>W3 — compaction</h2>
+<p class="note">No arm ran W3 in this stamp.</p>
+<h2>W4, W5, W6 — long-horizon workflows</h2>
+<p class="note">No arm ran W4, W5 or W6 in this stamp.</p>
+<h2>Behaviour, halts and cost</h2>
+<p class="note">The table counts each instance by how it ended and gives the 95% Wilson interval
+beside each halt count. Thinking share is the fraction of generated tokens that arrived on the
+reasoning stream rather than as visible text.</p>
+<table class=""><thead><tr><th>arm</th><th>completed</th><th>loop [95%]</th><th>context full [95%]</th><th>ceiling [95%]</th><th>error</th><th>thinking share</th><th>out tokens</th><th>mean wall</th></tr></thead><tbody><tr><td><code>ornith-35b__f16</code></td><td>1</td><td>0 [0.0%, 79.3%]</td><td>0 [0.0%, 79.3%]</td><td>0 [0.0%, 79.3%]</td><td>0</td><td>83.6%</td><td>2122</td><td>49 s</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>1</td><td>0 [0.0%, 79.3%]</td><td>0 [0.0%, 79.3%]</td><td>0 [0.0%, 79.3%]</td><td>0</td><td>80.2%</td><td>1758</td><td>46 s</td></tr></tbody></table>
+<h2>Cost</h2>
+<p class="note">Wall time is split by workflow below. The intervals in the table above are wide with
+this many instances, so the rates describe behaviour and never rank arms.</p>
+<table class=""><thead><tr><th>arm</th><th>W1</th><th>W2</th><th>W3</th><th>W4</th><th>W5</th><th>W6</th></tr></thead><tbody><tr><td><code>ornith-35b__f16</code></td><td>—</td><td>49 s</td><td>—</td><td>—</td><td>—</td><td>—</td></tr><tr><td><code>ornith-35b__q4_0</code></td><td>—</td><td>46 s</td><td>—</td><td>—</td><td>—</td><td>—</td></tr></tbody></table>
+<h2>Decision rule</h2>
+<p>An arm is worse if the lower bound of its paired interval excludes 0 and its point estimate is
+worse than that model's f16 arm; ties otherwise. Behaviour counts are reported with intervals and
+are never the basis of a ranking on their own.</p>
+<h2>Provenance</h2>
+<p class="note">The record below names the build, sampler configuration and hashes. Sampling sent
+only <code>temperature: 0.0</code>; the resolved block confirms greedy decoding on every arm.</p>
+<p class="note">llama.cpp <code>2a667032dc78</code> ·
+0.7.0-dev (build 11698) · flags <code>q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16
+</code> · sampling <code>{&quot;temperature&quot;: 0.0}</code> ·
+rungs <code>{&quot;ornith-35b&quot;: 32768}</code> ·
+document <code>4f9468d0ba794767849ed5d41f0a077c08a00f0b8cdf753de26f9de7eafe9908</code>.</p>
 </body></html>

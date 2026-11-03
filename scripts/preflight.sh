@@ -56,6 +56,9 @@ if [[ -x "$B/build/bin/llama-server" ]]; then
 else
   say "llama-server" "missing (run scripts/build_llama.sh)"; fail=1
 fi
+for bin in llama-tokenize llama-perplexity; do
+  if [[ -x "$B/build/bin/$bin" ]]; then say "$bin" "present"; else say "$bin" "missing"; fail=1; fi
+done
 
 # python deps: stdlib only, by design
 python3 - <<'PY'

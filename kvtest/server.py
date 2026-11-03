@@ -52,6 +52,27 @@ def gpu_mib():
         return -1
 
 
+def _tail_until(path, needle, window=4 << 20):
+    """Last occurrence of `needle` and the following 2 KiB, scanning the file backwards."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, 2)
+            end = f.tell()
+            carry = b""
+            while end > 0:
+                start = max(0, end - window)
+                f.seek(start)
+                chunk = f.read(end - start) + carry
+                idx = chunk.rfind(needle.encode())
+                if idx >= 0:
+                    return chunk[idx:idx + 2048].decode("utf-8", "replace")
+                carry = chunk[:200]
+                end = start
+    except OSError:
+        return None
+    return None
+
+
 class VramSampler:
     """Peak GPU memory (MiB) while the server is up, sampled every second."""
 
@@ -143,6 +164,24 @@ class Server:
                 return f.read().decode("utf-8", "replace")
         except OSError:
             return ""
+
+    def sampler_resolved(self):
+        """Parse the last resolved sampler block from the `-v` trace, per arm.
+
+        The verbose log is tens of MB per arm, so scan backwards in chunks instead of reading a
+        fixed tail that may start after the last sampler line.
+        """
+        import re
+        block = _tail_until(self.log_path, "sampler params:", window=4 << 20)
+        if not block:
+            return {"error": "no sampler params line in server log", "greedy": None}
+        out = {"raw": block.strip()[:1200]}
+        for key in ("repeat_penalty", "top_k", "top_p", "min_p", "temp"):
+            m = re.search(rf"{key} = ([-+]?\d+(?:\.\d+)?)", block)
+            if m:
+                out["temperature" if key == "temp" else key] = float(m.group(1))
+        out["greedy"] = out.get("temperature") == 0.0
+        return out
 
     def oom_reason(self):
         """Classify the server log, so the fit probe can tell OOM from a slow load."""

@@ -1,13 +1,16 @@
 # KV-cache quantization at long context: 5 models × 3 cache types
 
-One context for every arm: **-c 102400** · 15 arms · 540 samples · llama.cpp `2a667032d`. Seeds,
-budgets and the document hash are in the appendix.
+Compressing the key/value cache changed one arm by a large margin, made decoding slower everywhere, and left every other difference below what the test could resolve. Gemma at q4_0 was the one large change: its code score dropped to 41 of 100, against 89 at f16, and the cause was truncation at the token cap rather than wrong code, because three of six tasks hit the ceiling and `repo_fix` wrote 20,459 tokens with no file block. The quantized cache also decoded 17–28% slower than f16 on every model, so it bought memory rather than speed. No other difference survived clustering the three repetitions of each task and correcting across 42 arm-by-tier comparisons; every adjusted p was 1.00, and the earlier claim of three separable arms was pseudo-replication, counting the three repetitions of one task as independent observations. The loop probes saw about 1,000 visible tokens each, which was too short to settle whether compression increases looping.
 
-Total test wall clock (fit probe + matrix + harness validation, model downloads excluded): **15 h 27 m**
-(14 h 12 m of it the matrix).
+Every arm ran at a context of 102,400 tokens. The matrix holds 15 arms and 540 samples, all on
+llama.cpp commit `2a667032d`; seeds, budgets and the document hash are in the appendix.
+
+Total test wall clock, excluding model downloads and including the fit probe, the matrix and harness
+validation, was 15 h 27 m, of which the matrix took 14 h 12 m.
 
 KV here means the key/value cache: the stored attention state for every token the model has already
-read, which is what a long-context run keeps in memory.
+read, which is what a long-context run keeps in memory. R and C below are the study's retrieval tier
+and its code tier; capability is the mean of their percentages. Decode speed is in tokens per second.
 
 ## Verdict
 
@@ -28,8 +31,9 @@ The next arms are `qwen38-flash` f16 (83.33) and `qwen38-27b` q8_0 (83.33). The 
 
 Ranking rule: capability = mean(retrieval %, code %); ties to the arm with fewer repeating samples,
 then the faster one. Every paired test clusters the three reps of a task into one observation and then
-applies a Holm correction across all 42 arm x tier comparisons, so nothing here can separate on a
-handful of correlated samples.
+applies a Holm correction across all 42 arm-by-tier comparisons, so nothing here can separate on a
+handful of correlated samples. Holm is a multiple-comparison adjustment that makes a whole family of
+tests harder to pass at once.
 
 ### Every arm, one line each
 
@@ -59,16 +63,19 @@ and code, and the last two columns are the loop count and the decode speed that 
 Four limits matter for reading the result, and the first is the one that constrains every claim in this
 report.
 
-- **No arm is statistically separable.** Each tier has 6 task clusters (4 for the loop probes), so the
-  smallest attainable p is 0.031; correcting across the 42 arm x tier comparisons puts every adjusted p
-  at 1.00. The test can exclude a large, consistent difference and nothing smaller. "No difference"
-  here means "not resolvable at this sample size", not "equal".
-- **Gemma's exception is a length/format failure, not wrong code.** At q4_0 it hit the 6,144-token cap
-  on 3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its
-  retrieval failures are content-side repetition loops, not truncated thinking.
-- **Two tasks carry most of the code score.** `semver` is 261 of 780 checks and moves on a single
-  decision; `intervals` and `statistics` are saturated in 14 of 15 arms. `count_proj` is degenerate,
-  because every project has the same count, so guessing 3 scores.
-- **The loop probes only see the first ~2,000 tokens**, so a loop that starts later is invisible;
-  `enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain literal `\n` text, so
-  newline handling was not actually tested.
+No arm is statistically separable. Each tier has 6 task clusters (4 for the loop probes), so the
+smallest attainable p is 0.031; correcting across the 42 arm-by-tier comparisons puts every adjusted p
+at 1.00. The test can exclude a large, consistent difference and nothing smaller. "No difference" here
+means "not resolvable at this sample size", not "equal".
+
+Gemma's exception is a length and format failure, not wrong code. At q4_0 it hit the 6,144-token cap on
+3 of 6 coding tasks; on `repo_fix` it wrote 20,459 tokens with no `### FILE:` block at all. Its
+retrieval failures are content-side repetition loops, not truncated thinking.
+
+Two tasks carry most of the code score. `semver` is 261 of 780 checks and moves on a single decision;
+`intervals` and `statistics` are saturated in 14 of 15 arms. `count_proj` is degenerate, because every
+project has the same count, so guessing 3 scores.
+
+The loop probes only see the first ~2,000 tokens, so a loop that starts later is invisible;
+`enumerate_shards` hit that cap in most arms. `csvlite`'s fixtures contain literal `\n` text, so
+newline handling was not actually tested.

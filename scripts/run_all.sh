@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
-# Full pipeline: preflight -> models -> selftest -> fit -> matrix -> report, with a trap that
+# Full pipeline: preflight -> models -> selftest -> fit -> tranches -> report, with a trap that
 # restarts whatever was holding the GPU when the script started.
 #
-#   ./scripts/run_all.sh                 # full study
-#   ./scripts/run_all.sh --smoke         # 10-minute end-to-end proof on one model
-#   DEADLINE_HOURS=22 ./scripts/run_all.sh
+#   ./scripts/run_all.sh                 # full study, 24 h hard governor
+#   ./scripts/run_all.sh --pilot         # micro-pilot: Gemma f16, W1 + one W2 + one W3
+#   DEADLINE_HOURS=12 ./scripts/run_all.sh
 set -uo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 STAMP="${STAMP:-$(date -u +%Y-%m-%dT%H:%M)}"
-DEADLINE_HOURS="${DEADLINE_HOURS:-22}"
+DEADLINE_HOURS="${DEADLINE_HOURS:-24}"
 MODE="${1:-}"
 
 STRATA_CMD_FILE="$ROOT/results/$STAMP/strata-cmd.txt"
@@ -35,17 +35,19 @@ restore_gpu_holder() {
 }
 trap restore_gpu_holder EXIT
 
-if [[ "$MODE" == "--smoke" ]]; then
-  python3 -m kvtest.selftest || exit 1
-  python3 -m kvtest.run --smoke --resume || exit 1
-  python3 -m kvtest.report results/smoke || exit 1   # no --update-readme: a smoke run is one arm
-  echo "smoke OK: results/smoke/report.html"
+python3 -m kvtest.selftest || exit 1
+
+if [[ "$MODE" == "--pilot" ]]; then
+  bash scripts/preflight.sh "$STAMP" || exit 1
+  python3 -m kvtest.fit --stamp "$STAMP" --models gemma4-26b-a4b || exit 1
+  python3 -m kvtest.run --stamp "$STAMP" --pilot --resume || exit 1
+  python3 -m kvtest.report "results/$STAMP" || exit 1
+  echo "pilot OK: results/$STAMP/report.html"
   exit 0
 fi
 
 bash scripts/preflight.sh "$STAMP" || exit 1
 bash scripts/download_models.sh || exit 1
-python3 -m kvtest.selftest || exit 1
 
 # stop whatever holds the GPU (captured by preflight), waiting for the memory to come back
 HOLDER=$(python3 - "$ROOT/results/$STAMP/gpu-holders.json" <<'PY'
@@ -77,7 +79,7 @@ if [[ -n "${HOLDER:-}" ]]; then
 fi
 nvidia-smi --query-gpu=memory.used --format=csv,noheader | tee "$ROOT/results/$STAMP/vram-free-mib.txt"
 
-python3 -m kvtest.fit --stamp "$STAMP" --ladder 102400 || exit 1
+python3 -m kvtest.fit --stamp "$STAMP" || exit 1
 python3 -m kvtest.run --stamp "$STAMP" --resume --deadline-hours "$DEADLINE_HOURS" \
   > "$ROOT/results/$STAMP/run.out" 2>&1
 python3 -m kvtest.report "results/$STAMP" --update-readme

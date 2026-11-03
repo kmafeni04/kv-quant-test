@@ -1,18 +1,14 @@
-"""Fit probe: resolve the ONE shared context, per-model offload knobs, and the document size.
+"""Fit probe: resolve each model's one full-context rung, its offload knobs, and the document.
 
-Three passes, because the document length depends on the context and the context depends on what
-fits:
+D2 replaces the shared ladder with one rung per model: the largest ladder entry that loads with a
+>= 91k-token prompt. Every arm of that model runs at that rung; a model that cannot reach the floor
+is reported as unfit rather than quietly compared at a shallower depth.
 
-1. `probe_model` walks the context ladder top-down with a cheap probe (a tiny completion, then a
-   ~16k-token prefill at depth) and bumps the model's offload knob on an allocation failure.
-   The f16 arm is the only one probed: it is the most expensive KV cache and q8_0/q4_0 are strictly
-   smaller, and every arm is health-checked again when the run starts it.
-2. `common_ctx = min(highest passing rung per model)`, and the document is calibrated so the
-   LARGEST of the five tokenizations fits inside `common_ctx - GEN_HEADROOM`.
-3. `depth_verify` prefills the real document at `common_ctx` on every model, which is what proves
-   the depth works and produces the prefill/decode rates the deadline estimate uses.
-
-The knobs that worked are frozen per model so all three KV arms of a model are identical.
+Passes:
+1. walk the ladder top-down per model with a cheap ~32k probe, bumping the offload knob on an
+   allocation failure;
+2. calibrate the shared document so its LARGEST active tokenization is 92-95k tokens;
+3. prefill the real document at each model's own rung, which proves the depth and measures rates.
 """
 import json
 import os
@@ -27,7 +23,7 @@ def log(msg):
 
 def doc_tokens(text, models=None):
     out = {}
-    for key in (models or list(config.MODELS)):
+    for key in (models or config.STUDY_MODELS):
         path = config.MODELS[key]["path"]
         if not os.path.exists(path):
             out[key] = {"error": "missing model file"}
@@ -40,15 +36,12 @@ def doc_tokens(text, models=None):
     return out
 
 
-def calibrate_document(target, models=None, max_iter=5, start=None):
-    """Find the filler length whose LARGEST tokenization is <= target.
-
-    The text is canonical: identical for every model. Only its length is chosen here, so the
-    comparison across arms and models is one text, not five variants.
-    """
+def calibrate_document(models, lo=config.DOC_TARGET_MIN, hi=config.DOC_TARGET_MAX,
+                       target=config.DOC_TARGET_TOKENS, max_iter=6, start=None):
+    """Find the filler length whose largest tokenization lands in [lo, hi]."""
     filler = start or config.DOC_FILLER_TARGET
-    hist = []
     text, facts = longctx.build_document(filler_chars=filler)
+    hist = []
     for _ in range(max_iter):
         counts = doc_tokens(text, models)
         nums = [v for v in counts.values() if isinstance(v, int)]
@@ -58,31 +51,33 @@ def calibrate_document(target, models=None, max_iter=5, start=None):
         mx = max(nums)
         hist.append({"filler_chars": filler, "chars": len(text), "max_tokens": mx,
                      "min_tokens": min(nums), "counts": counts})
-        if mx <= target:
+        if lo <= mx <= hi:
             return filler, text, facts, hist
-        filler = max(2000, int(filler * target / mx * 0.97))
+        goal = target if mx > hi else (lo + hi) / 2
+        filler = max(2000, int(filler * goal / mx * (0.997 if mx > hi else 1.01)))
         text, facts = longctx.build_document(filler_chars=filler)
     return filler, text, facts, hist
 
 
 def tiny_probe(base, timeout=600):
     return client.chat(base, [{"role": "user", "content": "Reply with one short sentence."}],
-                       max_tokens=64, temperature=0.0, timeout=timeout)
+                       max_tokens=64, timeout=timeout, **config.SAMPLING)
 
 
 def depth_probe(base, doc, max_tokens=32, timeout=7200, prompt_suffix=None):
-    """Prefill the document, then generate a few tokens at that depth."""
     suffix = prompt_suffix if prompt_suffix is not None else "\n\nReply with the single word: ACK."
     return client.chat(base, [{"role": "user", "content": doc + suffix}],
-                       max_tokens=max_tokens, temperature=0.0, timeout=timeout)
+                       max_tokens=max_tokens, timeout=timeout, **config.SAMPLING)
 
 
 def probe_model(key, ladder, probe_doc, port=config.PORT, history=None):
-    """Try rungs top-down; within a rung, bump the offload knob until it fits or is exhausted."""
+    """First rung (largest) that loads and prefills the probe; bump the knob within a rung."""
     m = config.MODELS[key]
     knob_name = "ncmoe" if "ncmoe" in m["knobs"] else "ncffn"
     attempts = []
     for rung in ladder:
+        if rung < config.CONTEXT_FLOOR:
+            break
         knob = dict(m["knobs"])
         while True:
             t0 = time.time()
@@ -92,52 +87,47 @@ def probe_model(key, ladder, probe_doc, port=config.PORT, history=None):
             ok = s.start()
             entry = {"model": key, "ctx": rung, "knobs": dict(knob), "load_s": s.start_s}
             if not ok:
-                reason = s.oom_reason() or "did not become healthy"
-                entry.update(ok=False, reason=reason, log_tail=s.log_tail(1500))
+                entry.update(ok=False, reason=s.oom_reason() or "did not become healthy",
+                             log_tail=s.log_tail(1200))
                 attempts.append(entry)
                 s.stop()
-                log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                    f"FAILED to start ({reason})")
+                log(f"[fit] {key:16} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
+                    f"FAILED to start")
             else:
                 r = tiny_probe(s.base)
-                entry["tiny_ok"] = not r.get("error")
-                entry["tiny_error"] = r.get("error")
                 if r.get("error"):
+                    entry.update(ok=False, reason=f"tiny probe: {r['error'][:160]}")
                     attempts.append(entry)
                     s.stop()
-                    log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                        f"up but request failed: {r['error'][:140]}")
+                    log(f"[fit] {key:16} ctx={rung:6} up but request failed")
                 else:
                     d = depth_probe(s.base, probe_doc, max_tokens=16)
                     entry["probe_tokens"] = (d.get("usage") or {}).get("prompt_tokens")
                     if d.get("error"):
-                        entry.update(ok=False, reason=f"depth probe failed: {d['error'][:160]}")
+                        entry.update(ok=False, reason=f"depth probe: {d['error'][:160]}")
                         attempts.append(entry)
                         s.stop()
-                        log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                            f"{entry['probe_tokens']}-token prefill failed")
+                        log(f"[fit] {key:16} ctx={rung:6} {entry['probe_tokens']}-token "
+                            "prefill failed")
                     else:
                         entry.update(ok=True, probe_prefill_tps=d.get("prefill_tps"),
                                      probe_decode_tps=d.get("decode_tps"),
-                                     wall_s=round(time.time() - t0, 1), vram_peak_mib=s.vram.peak)
+                                     wall_s=round(time.time() - t0, 1),
+                                     vram_peak_mib=s.vram.peak)
                         attempts.append(entry)
                         s.stop()
-                        log(f"[fit] {key:14} ctx={rung:6} {knob_name}={knob.get(knob_name, 0):3} "
-                            f"OK   probe prefill {entry['probe_prefill_tps']} t/s  "
-                            f"vram {entry['vram_peak_mib']} MiB")
+                        log(f"[fit] {key:16} ctx={rung:6} OK  prefill "
+                            f"{entry['probe_prefill_tps']} t/s  vram {entry['vram_peak_mib']} MiB")
                         return entry, attempts
             bump = m["knob_bump"](knob.get(knob_name, 0))
             if bump <= m["knob_max"]:
                 knob = {**knob, knob_name: bump}
                 continue
             break
-        log(f"[fit] {key:14} ctx={rung:6} {knob_name} exhausted at {m['knob_max']}; "
-            f"dropping a rung")
     return None, attempts
 
 
 def depth_verify(key, ctx, knobs, doc, port=config.PORT, log_dir=None, retries=3):
-    """Prefill the real document at the shared context; bump the knob if allocation fails."""
     m = config.MODELS[key]
     knob_name = "ncmoe" if "ncmoe" in m["knobs"] else "ncffn"
     knob = dict(knobs)
@@ -154,17 +144,14 @@ def depth_verify(key, ctx, knobs, doc, port=config.PORT, log_dir=None, retries=3
                      "prompt_tokens": (big.get("usage") or {}).get("prompt_tokens"),
                      "prefill_tps": big.get("prefill_tps"), "decode_tps": big.get("decode_tps"),
                      "ttft_s": round((big.get("timings") or {}).get("prompt_ms", 0) / 1000.0, 1),
-                     "vram_peak_mib": s.vram.peak,
-                     "error": big.get("error"), "log_tail": None if not big.get("error")
-                     else s.log_tail(1200)}
+                     "vram_peak_mib": s.vram.peak, "error": big.get("error")}
             attempts.append(entry)
             s.stop()
             if entry["ok"]:
-                log(f"[fit] {key:14} depth {entry['prompt_tokens']} tok  "
-                    f"prefill {entry['prefill_tps']} t/s  decode {entry['decode_tps']} t/s  "
-                    f"vram {entry['vram_peak_mib']} MiB")
+                log(f"[fit] {key:16} depth {entry['prompt_tokens']} tok  prefill "
+                    f"{entry['prefill_tps']} t/s  decode {entry['decode_tps']} t/s")
                 return entry, attempts
-            log(f"[fit] {key:14} depth prefill FAILED: {(entry['error'] or '')[:120]}")
+            log(f"[fit] {key:16} depth prefill FAILED: {(entry['error'] or '')[:120]}")
         bump = m["knob_bump"](knob.get(knob_name, 0))
         if bump > m["knob_max"]:
             break
@@ -172,64 +159,54 @@ def depth_verify(key, ctx, knobs, doc, port=config.PORT, log_dir=None, retries=3
     return None, attempts
 
 
-def verify_geometry_all():
-    planned = {"qwen36-35b": 20480, "qwen38-27b": 65536, "qwen38-flash": 24576,
-               "gemma4-26b-a4b": 20480, "ornith-35b": 20480}
-    out, warnings = {}, []
-    for key, m in config.MODELS.items():
-        if not os.path.exists(m["path"]):
-            out[key] = {"error": "missing model file"}
+def geometry_and_sampling(models):
+    geo, sampling, warnings = {}, {}, []
+    for key in models:
+        path = config.MODELS[key]["path"]
+        if not os.path.exists(path):
+            geo[key] = {"error": "missing model file"}
             continue
-        g, warn = ggufmeta.verify_geometry(key, m["path"], planned.get(key))
-        out[key] = g
+        g, warn = ggufmeta.verify_geometry(key, path, None)
+        geo[key] = g
+        sampling[key] = ggufmeta.declared_sampling(path)
         if warn:
             warnings.append(warn)
-            log(f"[fit] WARN {warn}")
-        log(f"[fit] geometry {key:14} arch={g['arch']:10} layers={g['n_layers']} "
+        log(f"[fit] geometry {key:16} arch={g['arch']:10} layers={g['n_layers']} "
             f"full_attn={g['full_attn_layers']} kv_heads={g['n_kv_heads']} "
-            f"B/token f16/q8_0/q4_0 = {g['kv_bytes_per_token']['f16']}/"
-            f"{g['kv_bytes_per_token']['q8_0']}/{g['kv_bytes_per_token']['q4_0']}")
-    return out, warnings
+            f"B/token f16/q4_0={g['kv_bytes_per_token']['f16']}/"
+            f"{g['kv_bytes_per_token']['q4_0']}")
+        log(f"[fit] declared sampling {key:16} {sampling[key]}")
+    return geo, sampling, warnings
 
 
-def run(stamp, ladder=None, models=None, out_dir=None, resume=False):
+def run(stamp=None, models=None, out_dir=None, resume=False):
     stamp = stamp or time.strftime("%Y-%m-%dT%H:%M")
     out_dir = out_dir or os.path.join(config.ROOT, "results", stamp)
     logs = os.path.join(out_dir, "logs")
     os.makedirs(logs, exist_ok=True)
-    ladder = ladder or config.CONTEXT_LADDER
-    models = models or [k for k, _ in sorted(config.MODELS.items(),
-                                             key=lambda kv: kv[1]["priority"])]
-
+    models = models or config.STUDY_MODELS
     t0 = time.time()
     fit = {"stamp": stamp, "created": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-           "ladder": ladder, "models": {}, "unfit": [], "attempts": [],
-           "free_vram_mib_at_start": srv.gpu_mib()}
-    log(f"[fit] free VRAM {fit['free_vram_mib_at_start']} MiB")
-
-    fit["geometry"], warns = verify_geometry_all()
-    fit["geometry_warnings"] = warns
+           "ladder": config.CONTEXT_LADDER, "context_floor": config.CONTEXT_FLOOR,
+           "models": {}, "unfit": [], "attempts": []}
+    log(f"[fit] free VRAM {srv.gpu_mib()} MiB")
+    fit["geometry"], fit["declared_sampling"], fit["geometry_warnings"] = \
+        geometry_and_sampling(list(config.MODELS))
 
     prev = {}
     prev_path = os.path.join(out_dir, "fit.json")
     if resume and os.path.exists(prev_path):
         prev = json.load(open(prev_path))
-        # keep every model probed so far in the file, so partial runs accumulate
-        for k, v in (prev.get("models") or {}).items():
-            fit["models"][k] = v
+        fit["models"] = dict(prev.get("models") or {})
         fit["attempts"] = list(prev.get("attempts") or [])
-        log(f"[fit] resuming: {len(prev.get('models') or {})} models already probed")
+        fit["unfit"] = list(prev.get("unfit") or [])
 
-    # ---- pass 1: context + knobs, with a small probe document (cheap at every rung)
-    # calibrate against every tokenizer that is actually on disk, not just the requested subset
-    present = [k for k in config.MODELS if os.path.exists(config.MODELS[k]["path"])]
-    probe_target = min(32000, min(ladder) - config.GEN_HEADROOM - 512)
-    pf, probe_doc, _, probe_hist = calibrate_document(probe_target, models=present,
-                                                     start=120000)
+    present = [k for k in config.STUDY_MODELS if os.path.exists(config.MODELS[k]["path"])]
+    pf, probe_doc, _, probe_hist = calibrate_document(present, lo=28000, hi=36000,
+                                                      target=32000, start=120000)
     fit["probe_document"] = {"filler_chars": pf, "tokens": probe_hist[-1]["counts"]
                              if probe_hist else {}}
-    log(f"[fit] probe document {len(probe_doc)} chars "
-        f"~{probe_hist[-1].get('max_tokens') if probe_hist else '?'} tokens")
+    log(f"[fit] probe document {len(probe_doc)} chars")
 
     for key in models:
         if not os.path.exists(config.MODELS[key]["path"]):
@@ -239,67 +216,63 @@ def run(stamp, ladder=None, models=None, out_dir=None, resume=False):
         old = (prev.get("models") or {}).get(key)
         if old and old.get("ok"):
             fit["models"][key] = old
-            log(f"[fit] {key}: reusing ctx={old['ctx']} knobs={old['knobs']} from previous probe")
+            log(f"[fit] {key}: reusing rung={old['ctx']} knobs={old['knobs']}")
             continue
-        best, attempts = probe_model(key, ladder, probe_doc, history=logs)
+        best, attempts = probe_model(key, config.CONTEXT_LADDER, probe_doc, history=logs)
         fit["attempts"].extend(attempts)
         if best is None:
             fit["unfit"].append(key)
-            log(f"[fit] {key}: UNFIT at every rung down to {ladder[-1]}, excluded")
+            log(f"[fit] {key}: UNFIT at every rung down to {config.CONTEXT_FLOOR}, excluded")
             continue
         fit["models"][key] = best
 
-    fit["common_ctx"] = min((fit["models"][k]["ctx"] for k in fit["models"]), default=None)
-    log(f"[fit] common_ctx = {fit['common_ctx']}")
-    if fit["common_ctx"] is None:
+    if not fit["models"]:
         fit["wall_s"] = round(time.time() - t0, 1)
-        with open(prev_path, "w") as f:
-            json.dump(fit, f, indent=2, sort_keys=True)
-            f.write("\n")
+        _write(prev_path, fit)
         return fit
 
-    # ---- pass 2: calibrate the REAL document against the resolved context
-    target = min(config.DOC_TARGET_TOKENS, fit["common_ctx"] - config.GEN_HEADROOM - 512)
-    filler, doc, facts, hist = calibrate_document(target, models=present)
+    filler, doc, facts, hist = calibrate_document(present)
     fit["document"] = {"filler_chars": filler, "chars": len(doc), "sha256": longctx.sha256(doc),
                        "tokens_by_model": hist[-1]["counts"] if hist else {},
-                       "calibration": hist, "target_tokens": target,
-                       "fwe_count": facts["fwe_count"]}
+                       "calibration": hist,
+                       "target_range": [config.DOC_TARGET_MIN, config.DOC_TARGET_MAX]}
     log(f"[fit] document {len(doc)} chars sha256={fit['document']['sha256'][:16]} "
         f"tokens={fit['document']['tokens_by_model']}")
     with open(os.path.join(out_dir, "document.txt"), "w") as f:
         f.write(doc)
     _record_document_hash(fit["document"])
 
-    # ---- pass 3: prove the real depth on every model and measure speed there
     for key in [k for k in fit["models"] if k in models]:
         entry = fit["models"][key]
-        res, attempts = depth_verify(key, fit["common_ctx"], entry["knobs"], doc,
-                                    log_dir=logs)
+        res, attempts = depth_verify(key, entry["ctx"], entry["knobs"], doc, log_dir=logs)
         entry["depth_attempts"] = attempts
         entry["reverified"] = bool(res)
         if res:
             entry["knobs"] = res["knobs"]
             entry.update(prompt_tokens=res["prompt_tokens"], prefill_tps=res["prefill_tps"],
                          decode_tps=res["decode_tps"], ttft_s=res["ttft_s"],
-                         vram_peak_mib=res["vram_peak_mib"], ctx=fit["common_ctx"])
+                         vram_peak_mib=res["vram_peak_mib"])
         else:
             fit.setdefault("reverify_failed", []).append(key)
-            log(f"[fit] {key}: could not prefill the document at {fit['common_ctx']}")
+            log(f"[fit] {key}: could not prefill the document at {entry['ctx']}")
 
     fit["wall_s"] = round(time.time() - t0, 1)
-    with open(prev_path, "w") as f:
-        json.dump(fit, f, indent=2, sort_keys=True)
-        f.write("\n")
+    _write(prev_path, fit)
     log(f"[fit] wrote {out_dir}/fit.json in {fit['wall_s']}s")
     return fit
 
 
+def _write(path, obj):
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        json.dump(obj, f, indent=2, sort_keys=True)
+        f.write("\n")
+    os.replace(tmp, path)
+
+
 def _record_document_hash(doc):
     path = os.path.join(config.ROOT, "models.lock.json")
-    lock = {}
-    if os.path.exists(path):
-        lock = json.load(open(path))
+    lock = json.load(open(path)) if os.path.exists(path) else {}
     lock["document"] = {"sha256": doc["sha256"], "chars": doc["chars"],
                         "filler_chars": doc["filler_chars"],
                         "tokens_by_model": doc["tokens_by_model"]}
@@ -310,18 +283,15 @@ def _record_document_hash(doc):
 
 def main(argv=None):
     import argparse
-    ap = argparse.ArgumentParser(description="resolve the shared context and per-model offload")
+    ap = argparse.ArgumentParser(description="resolve each model's full-context rung")
     ap.add_argument("--stamp", default=None)
-    ap.add_argument("--ladder", type=int, default=config.CONTEXT_LADDER[0],
-                    help="top of the context ladder")
     ap.add_argument("--models", default=None, help="comma-separated model keys")
-    ap.add_argument("--resume", action="store_true",
-                    help="reuse models already probed in results/<stamp>/fit.json")
+    ap.add_argument("--resume", action="store_true")
     a = ap.parse_args(argv)
-    ladder = [c for c in config.CONTEXT_LADDER if c <= a.ladder]
     models = a.models.split(",") if a.models else None
-    fit = run(a.stamp, ladder=ladder, models=models, resume=a.resume)
-    print(json.dumps({k: fit.get(k) for k in ("common_ctx", "unfit", "wall_s")}, indent=2))
+    fit = run(a.stamp, models=models, resume=a.resume)
+    print(json.dumps({"rung": {k: v.get("ctx") for k, v in fit["models"].items()},
+                      "unfit": fit["unfit"], "wall_s": fit.get("wall_s")}, indent=2))
 
 
 if __name__ == "__main__":

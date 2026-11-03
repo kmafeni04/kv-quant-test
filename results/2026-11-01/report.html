@@ -23,6 +23,9 @@ footer{padding:20px 28px 60px;color:var(--dim);font-size:12px}
 <h1>KV-cache quantization × long context: 5 models at f16 / q8_0 / q4_0</h1>
 
 </header>
+<div class="card" style="max-width:none">
+<p>Compressing the key/value cache changed one arm by a large margin, made decoding slower everywhere, and left every other difference below what the test could resolve. Gemma at q4_0 was the one large change: its code score dropped to 41 of 100, against 89 at f16, and the cause was truncation at the token cap rather than wrong code, because three of six tasks hit the ceiling and <code>repo_fix</code> wrote 20,459 tokens with no file block. The quantized cache also decoded 17–28% slower than f16 on every model, so it bought memory rather than speed. No other difference survived clustering the three repetitions of each task and correcting across 42 arm-by-tier comparisons; every adjusted p was 1.00, and the earlier claim of three separable arms was pseudo-replication, counting the three repetitions of one task as independent observations. The loop probes saw about 1,000 visible tokens each, which was too short to settle whether compression increases looping.</p>
+</div>
 <details class="card" style="max-width:none">
 <summary><b>How to read this page</b></summary>
 <div class="dim" style="margin-top:6px">

@@ -1,0 +1,2 @@
+arm,model,kv,ctx,w2_mean,w2_sd,w2_diff,w2_lo,w2_hi,w2_decision,w3_mean,w3_phase_b,kld_mean,kld_unc,same_top,log_ppl_ratio_own,deep_ppl,deep_ppl_ratio,w4_hash_ok,w4_invariants_ok,w5_keys_total,w5_of_total,w6_sections,w6_refs,loop_halts,context_full,ceiling,out_tokens,wall_s
+gemma4-26b-a4b__f16,gemma4-26b-a4b,f16,102400,,,,,,no paired instances,,,-0.0,0.0,1.0,0.0,177.1639,1.0,0,0,0,0,0,0,2,0,0,18157,231.6

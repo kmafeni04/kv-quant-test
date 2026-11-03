@@ -2,157 +2,218 @@
 
 ## Question
 
-At one identical long context, on five models served by llama.cpp, does quantizing the KV cache (the
-key/value cache that holds every earlier token's attention state) from f16 to q8_0 to q4_0 degrade two
-things: (a) hard, automatically verifiable task performance, and (b) the model's tendency to loop, by
-which I mean repeating the same words, commands or tool calls without doing work?
-
-## Hypotheses
-
-- **H1 (capability):** q8_0 is indistinguishable from f16; q4_0 loses some points on the retrieval
-  and code tiers. Prior art at 32k on the dense 27B read flat on capability and separated only in KLD
-  (KL divergence, a distributional distance from the f16 model: 0, then 0.00066, then 0.0032 mean KLD,
-  with same-top agreement falling 100, 99.1, 97.4 %). This study pushes the same ladder to ~96k tokens,
-  where every full-attention layer has seen three times as many positions.
-- **H2 (degeneration):** q4_0 increases the loop rate. This is the metric the earlier study did not
-  have: KV quantization perturbs the attention distribution a little, and a small perturbation near
-  a repetition attractor can flip a sample into a loop without changing its answer.
-- **H3 (structure):** any capability effect scales with the number of *global* attention layers
-  (qwen38-27b: 16, Flash-Next: 12, the 35B MoEs: 10, Gemma 26B: 5), because only those layers hold
-  KV that grows with depth. A flat q4_0 result on a model with few global layers is partly
-  structural, not evidence that KV quantization is harmless in general.
+At one full-context rung per model, does quantizing the KV cache (the stored key/value attention
+state for every token already read) from f16 to q4_0 degrade (a) the information a model can retrieve
+from deep in a 92–95k-token document, (b) its ability to summarise that document for a later worker,
+(c) whether long tool-loop work keeps its ledger state correct, where a lossy cache could drop a
+mutation or apply it twice, and (d) its tendency to degenerate?
 
 ## Design
 
-The experiment crosses five models with three cache types and three task tiers. Only the cache type is
-the variable under test; the context length, the document, the task text, the seeds and the sampling
-are held fixed, and the table below records how each factor is set.
+Only the cache type changes inside a model. Context rung, document, task text, guards and decode
+settings are held fixed per model. The document is one canonical text; every arm of every model sees
+the same bytes. The table below names the six factors that define an arm; the only one that changes
+inside a model is the cache type.
 
 | factor | levels |
 |---|---|
-| model | 5 (2 dense-hybrid, 3 MoE; see `kvtest/config.py`) |
-| KV cache | f16/f16, q8_0/q8_0, q4_0/q4_0 (symmetric, `-fa on`) |
-| context | one value for every arm, resolved by the fit probe from `102400 … 49152` |
-| tier R | 6 retrieval/tracing tasks × 3 reps, temp 0.7 |
-| tier C | 6 code tasks × 1 greedy pass, temp 0 |
-| tier L | 4 loop probes × 3 reps, temp 0.7, repetition suppression OFF |
+| model | 3 in the matrix (Gemma-4-26B-A4B, Ornith-1.5-35B-A3B, Qwen3.6-35B-A3B); the dense 27B and Flash-Next remain configured for later cheap probes |
+| KV cache | f16/f16 and q4_0/q4_0, symmetric, `-fa on` |
+| context | the largest ladder rung (`102400, 98304, …, 49152`) that loads with a ≥ 91k-token prompt, resolved per model; all arms of a model share it |
+| document | 92–95k tokens in the largest of the three tokenizers |
+| decode | greedy, `temperature: 0.0` only, one draw per instance |
+| response cap | 64k, runaway guard only; recorded as `halted_by=ceiling` |
 
-**Why one document.** All twelve graded tasks append to a single canonical ~96k-token document, so
-llama-server reuses the KV prefix for every subsequent request (`timings.cache_n` is recorded on
-every sample and `cache_hit_rate` is reported). That makes 3 reps of 6 tasks affordable: the
-expensive prefill is paid once per arm, not once per task.
+The study uses one rung rather than a ladder because damage from a lossy cache scales with the number
+of tokens in the cache. A ladder lets an arm that fails at 100k be credited with the 49k rung where it
+succeeds, and makes the per-arm rung an uncontrolled variable inside every comparison. Each model
+therefore runs at its own maximum affordable depth, and the report states that depth rather than
+averaging over it.
 
-**Why these tasks.** Everything is graded by regex or by running hidden checks. No judge model, no
-human reading. Tier R answers are short strings or integers; tier C is the SWE-bench contract, meaning
-the standard software-engineering benchmark's arrangement of hidden tests, partial credit and an
-all-or-nothing "resolved" count; tier L is the degenerate output measurement itself.
+Decode is greedy because sampling noise is the one cost the study can remove rather than pay for. A
+stochastic decode needs several draws per instance to separate signal from noise; greedy is one draw
+and the whole sample. The disclosed trade is that greedy is not a production setting and may be more
+or less loop-prone, so every loop statement is scoped to greedy decode.
 
-**Why symmetric KV and flash attention.** A quantized V cache refuses to load without flash attention,
-and the pinned build compiled NVIDIA CUDA flash-attention kernels for exactly
-`q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`. Asymmetric K/V is not a production setting here.
+No reasoning budget is applied, because `--reasoning-budget` forces an end-of-thinking tag when it
+fires. That is a harness-side loop breaker: a model that would rattle for 30k tokens is cut at 8,192
+and answers from a coerced state, and the loop never reaches the transcript. The budget, the 4x
+`budget_raised` retry and their plumbing are deleted.
 
-**Why no speculative decoding.** Speculative decoding verifies candidate tokens against the target
-model and cannot change the output distribution, so it is irrelevant to the question. It also costs
-VRAM (graphics memory) that the f16 arm needs, and the MTP drafters, meaning the model's own
-multi-token-prediction heads used as the draft model, would be extra downloads.
+The response record carries the information the budget used to hide:
 
-**Per-request thinking cap.** Reasoning is on at `--reasoning-effort medium` for every tier, and the
-server is started with `--reasoning-budget 8192`. On top of that, each request carries
-`reasoning_budget_tokens`: 1024 for tier R, 3072 for tier C, 256 for tiers L and the tool turns.
-Reason: measured on this build, an uncapped medium-effort template spends the entire generation
-budget inside the thinking block — the code tier produced 21,298 characters of reasoning and **zero
-characters of code** at a 6,144-token cap (the earlier 32k study hit the same wall at 32,489
-completion tokens and 0 lines). The sampler forces the end-of-thinking tag at the cap, after which
-the model answers: with a 3,072 cap the same request emitted 71 lines of code and scored 29/29 on
-`csvlite`. The cap is identical for all 15 arms and all three KV types, so it cannot bias the KV
-comparison; it only guarantees that every tier can emit its answer.
+- `thinking_tokens` and `thinking_share`, from streamed reasoning deltas over all generated deltas;
+- time-to-first-visible-token on streaming single-response workflows (tool-loop requests are
+  non-streaming and record per-step prompt tokens and wall time instead);
+- the loop detector on `reasoning_content` and `content` separately, with the firing stream and
+  token position;
+- `halted_by=context_full` as a legitimate outcome with zero visible tokens.
 
-**Why repetition suppression is off in tier L.** A repeat penalty is exactly the thing that masks
-looping. Tier L runs `repeat_penalty 1.0`, `dry_multiplier 0`; tiers R and C run the production
-`repeat_penalty 1.05`. Both are per-request fields of the same server, so one server per arm serves
-all tiers.
+The sampling audit is a server-side check rather than a promise. No sampler flags are passed to the
+server and no sampler fields other than `temperature: 0.0` are sent. llama.cpp applies the model
+file's `general.sampling.*` defaults for anything unset, so the server runs with `-v` and the resolved
+`sampler params:` block is captured per arm as `sampler_resolved`; the report prints the resolved
+temperature and whether greedy was in force.
 
-**Tier budgets were measured, not assumed.** R = 2,048 tokens, C = 6,144, L = 2,048, tool turn =
-512. L was raised from the designed 1,536 after the 40-shard listing ran out of room at exactly
-1,536 tokens (88 lines emitted, 39/40 shards present, `finish_reason=length`); a truncation artefact
-must not read as "did no work". The same budget is used in every arm.
+## Workflows
 
-**Why the code tier is not repeated.** At temperature 0, on a fixed build with a fixed `-ub` and a
-fixed seed, generation is bit-reproducible, so repeating it would only burn hours. `--code-reps 3
---code-temp 0.7` exists for pass@k over a stochastic decode. This is a deliberate choice, recorded
-here so it is auditable.
+The six workflows in the table are the whole study. `instances` is the count per arm, `guard` is the
+hard stop that ends a run whether or not it finished, and `primary grading` is the measure the
+workflow reports first.
 
-**Loop instrument.** Per sample, on `reasoning_content` and `content` separately: longest run of a
-repeated 1/2/4/8-gram, longest run of identical lines, largest repeated 200-char block, tail cycle
-period, zlib compression ratio, 4-gram diversity. Thresholds are constants at the top of
-`kvtest/loops.py`; the raw numbers are always reported next to the verdict so a reader can apply
-their own. The tool tier additionally flags an identical consecutive call, three identical calls,
-or four turns without a successful read.
+| id | instances | guard | primary grading |
+|---|---|---|---|
+| W1 | 3 passes per arm | — | mean KLD vs the f16 logits, same-top, deep-context PPL ratio |
+| W2 | 12 | 1 request | 20 keys correct in asked order, with `absent`/`mutated`/`misordered` per miss |
+| W3 | 12 | 2 requests | brief retention out of 20; phase-B keys; degeneration |
+| W4 | 6 | 120 tool calls | final ledger hash; five invariants |
+| W5 | 6 | 60 tool calls | three multi-hop answer keys; search calls vs a floor of 9 |
+| W6 | 6 | 64k ceiling | six sections present, six cross-references resolved |
 
-**Grading calibration.** Hard tasks can be too hard: if no f16 arm scores above zero on a code
-task, that task is labelled `too_hard_for_matrix` and excluded from the KV-delta reading while
-staying in the raw data. The f16 column is always shown, so a q4_0 drop is never read as damage when
-the task is simply beyond every arm.
+The first workflow is the distribution instrument. It runs `llama-perplexity` from the pinned build.
+Pass 1 writes the f16 baseline logits over a fixed slice (`-c 4000 --chunks 1`; the tool scores the
+last half of the window, so about 2,000 tokens per chunk). Pass 2 runs every arm against that file
+with `--kl-divergence`, printing mean KLD (Kullback–Leibler divergence), the PPL (perplexity) ratio,
+the mean change in correct-token probability, the root-mean-square (RMS) change and same-top
+agreement, each with propagated uncertainty. Pass 3 runs perplexity at depth with no KLD file.
 
-**Statistics on the figures.** Every cell of the three Matrix figures prints the level and the
-change against that model's own f16 arm, and the change is coloured only if an exact two-sided paired
-sign-flip test rejects at α = 0.05 (all 2ⁿ sign patterns enumerated over integer differences — no
-sampling, no normal approximation, so the same `samples.jsonl` always yields the same p). Each figure
-states its n and the smallest p attainable at that n (R: 2/2¹⁸, C: 2/2⁶, L: 2/2¹²), and the
-leader comparison in the verdict tests each tier separately with a Bonferroni factor of 3 rather than
-pooling R points, C checks and L flags — pooling incommensurable units would let the 261-check
-samples outweigh the 0/1 flags. Where a stored
-`timing.json` is absent, the per-arm times come from the arm checkpoints.
+The tool requires at least `2 × n_ctx` tokens in the file and accumulates host logits for the scored
+half-window, `ctx/2 × vocab × 4` bytes. Slices are therefore built to `2 × ctx + 2048` tokens; the
+extra tokens are a guard, identical across arms, and the scored window is the first `ctx`.
 
-**Agreement matrix.** Beyond pass/fail: for graded R samples, the share of answers where q4_0 gives
-exactly the f16 answer for the same task and seed. This is the output-level analogue of the KL
-instrument that resolved the 32k study, and it still has signal when nothing fails outright.
+On this host the plan's `-c 102400` aborts with `std::bad_alloc` before scoring, because Gemma's
+262,144-token vocabulary needs 50 GiB of host logits against 62 GiB of RAM. The default depth pass
+therefore runs at 65,536 tokens (32 GiB, measured 82.9 s and PPL 177.16 on the pilot document, f16).
+Each arm records `deep_ctx`, `--deep-ppl-ctx` raises it on a host with more RAM, and the report prints
+the depth actually scored.
 
-## Fixtures
+Baseline files are keyed by document sha256 and kept in `.cache/kv-quant-test` at the repository root,
+out of the results tree; their sha256, byte count and slice sha256 are in the manifest.
 
-The five codegen modules and the intervalkit repository came from the user's own
-`~/.local/share/llm-models/bench/fixtures` (the earlier 32k harness) and are used **verbatim** so
-the numbers remain comparable; they are not third-party SWE-bench data. Real SWE-bench instances
-were considered and rejected: a SWE-bench-Verified image per instance is 1–2 GB and cannot be
-graded offline inside the time budget, whereas the codegen/intervalkit tiers supply the same
-contract (hidden tests, FAIL_TO_PASS, partial credit) at zero provisioning cost.
+The pinned tool's own `Mean PPL(base)` reconstruction is not used as evidence. An identical-model
+check (f16 against its own logits) returned mean KLD `-0.000000 ± 0.000000`, same-top `100.000%`,
+mean Δp `0.000%` and `Mean PPL(Q)` `801.133` — equal to that run's standalone PPL — while its
+`Mean PPL(base)` printed `635.655`. The distributions were identical, so the reported base PPL is
+inconsistent with the tool's own preceding run. The report therefore computes the ln PPL ratio from
+each arm's own scored PPL against the f16 arm's PPL on the identical slice, and keeps the tool's KLD,
+Δp and same-top outputs.
+
+**W2.** Twenty shard codes, every second one of the forty planted, so the depths run from 2% to 98% of
+the document. Each shard has a near-miss decoy: a code differing in one or two digits, or a codeless
+shard with a similar name. The answer line is parsed for code-shaped tokens in order, from `content`
+then from `reasoning_content`. Each position is `hit`, `absent` (no value), `misordered` (the expected
+code appears at another position) or `mutated` (any other wrong value, including the near-miss). Wrong,
+missing and duplicated positions all score zero, so the score is monotone in what was lost.
+
+**W3.** Phase A sends the full document and asks for a handover brief of at most 1,500 words carrying
+twenty identifiers, the ledger rows a named tenant's mutations touch, and five invariants. Phase B
+discards the document and the phase-A transcript, sends the brief verbatim, and asks five questions
+answerable from it alone (three deep shard codes, one deep ledger amount, one tag). Retention is the
+primary endpoint; phase B is the consequence channel; degeneration over both responses is behavioural.
+The optional model-driven variant gives the model a `compact` tool with the same word cap and a wall
+at 90% of the window, so an agent that never compacts is halted as `context_full`.
+
+**W4.** The operation log is a file on disk: the shared document followed by 400 mutation records.
+Twenty records per tenant are the target set; 280 records belong to non-study tenants. The prompt names
+one tenant. The model reads the log through `read_ops(start, count)`, so the window fills as it reads,
+and it applies the twenty records through `apply_append`, `apply_retract` and `apply_transfer` with
+arguments copied from the record.
+
+The harness keeps the authoritative ledger. Grading is the final state hash against the expected hash,
+plus five invariants: the active total is conserved, retracted rows stay VOID, the row set matches the
+log, every mutation is applied once in order, and no row changes tenant. Every applied mutation
+increments the row's `rev`, so re-applying any mutation changes the hash.
+
+**W5.** Sixty clusters in fifteen four-hop chains. `search(term)` returns the top-3 snippets by exact
+and word overlap. Three questions each start at a chain head, follow `next` twice, and submit the
+value through `submit_answer`. The answer is graded from tool state; calls are counted against a floor
+of 9 (three searches per question) and a ceiling of 60.
+
+**W6.** Six sections with given titles and a given cross-reference mapping, 120–220 words each, no
+generation limit but the 64k ceiling. Grading parses section headings and `See Section <k>` lines;
+the loop instrument runs over the whole output.
+
+## Loop instrument
+
+Per response, the detector runs on `reasoning_content` and `content` separately:
+
+| metric | threshold |
+|---|---|
+| repeated identical line | 5 in a row |
+| repeated single word | 8 in a row |
+| repeated 4- or 8-word run | 6 in a row |
+| repeated 200-character block | 3 occurrences |
+| tail cycle | period 8 or more |
+| compressed size / raw size | 0.42 or more, with 4-gram diversity 0.60 or less |
+| monotone template run | 40 identical line templates |
+| long low-diversity trace | 4,000 characters at 4-gram diversity 0.25 or less |
+
+Thresholds are module constants in `kvtest/loops.py`; the raw numbers and firing span are recorded next
+to every verdict. For tool loops, each step is scored for an identical consecutive call, an identical
+call three times, oscillation between two calls (A, then B, then A again), and a six-step no-progress
+window (unchanged state hash). A no-progress window excludes reads that advance the window, so a model
+that reads new parts of the log is making progress.
+
+## Statistics
+
+The unit of analysis is a workflow instance, not a request, a token or a repetition. Because decode is
+greedy, one draw per instance is the whole sample. The instance count per workflow is fixed by the
+table above, so the smallest attainable two-sided p is 2/2¹² = 0.0005 for W2 and W3 and 0.031 for
+W4–W6.
+
+W2 and W3 are counts rather than verdicts. The report gives the mean out of 20 with its standard
+deviation, the distribution across instances, and the paired difference against that model's f16 arm
+with a percentile cluster bootstrap over instances (1,000 resamples, seeded). A one-key shift is
+visible in the mean and in the per-depth curve even when no instance is dramatically wrong. Depth is
+reported as a curve, not a total: W2 hit rate by planted-depth band with Wilson intervals.
+
+Behaviour rates carry intervals but never ranking weight. Loop halts, context-full halts, ceiling
+hits, thinking share, tokens and wall clock per instance are secondary and never the basis of a
+ranking on their own.
+
+The decision rule is pre-registered: an arm is worse if the lower bound of the paired interval
+excludes 0 and the point estimate is worse; ties otherwise. Comparisons are only within a model, never
+across models.
+
+## Harness changes from the prior study
+
+Nine changes separate this harness from the one that produced `results/2026-11-01/`; each removes a
+way the old harness could decide a result before the model did.
+
+1. Multi-turn tool runner with a step budget, transcript recorder (tool, args, ok, state hash before
+   and after, token position) and per-step loop detection.
+2. Compaction engine: forced two-phase pair, brief re-inserted verbatim, document removed, compaction
+   events recorded; the optional model-driven `compact` tool with the 90% wall.
+3. KLD/PPL runner that drives the pinned `llama-perplexity` with the arm's `-ctk`/`-ctv` and offload
+   knobs, writes the f16 baseline once per model, and parses its metrics into the arm record.
+4. Greedy sampling everywhere; no seeds or reps; `sampler_resolved` per arm; reasoning-budget machinery
+   deleted; the 64k ceiling is the only cap.
+5. 20-key task builder with per-key `absent`/`mutated`/`misordered` grading and the depth matrix.
+6. State graders: ledger hash plus invariants, brief retention, search counts, long-form structure.
+7. `extract_*` hardening: `ANSWER:` parsed from reasoning as well as content, and a wrapped or
+   newline-separated answer block accepted for the 20-key line.
+8. Manifest: one rung per model, model-file sha256, declared `general.sampling.*`, resolved sampler per
+   arm, KLD baseline and slice hashes/offsets, hardware at matrix start.
+9. Retired: codegen tier, repo tier, tier budgets, `REASONING_BUDGET_TOKENS`, `BUDGET_RETRY_MULT`,
+   `SAMPLING_LOOP`, per-tier seed lists, the old codegen/intervalkit fixtures.
 
 ## Threats to validity
 
-1. **Text-identical is not token-identical.** One document text, five tokenizers: realized prompt
-   lengths differ (reported per arm). `-c` is identical everywhere; the within-model KV ladder is
-   the experiment, cross-model comparison is descriptive.
-2. **Only full-attention layers accumulate KV damage over depth.** qwen38-27b quantizes 16 layers,
-   Flash-Next 12, the 35B MoEs 10, Gemma-26B 5 global (its other 25 layers are capped at a 1024
-   token window). A "q4_0 is fine" result on the 27B is expected and partly structural.
-3. **Greedy ≠ stochastic.** Tier C is one greedy pass, no error bar. Tiers R and L have 3 samples
-   per task. Any delta smaller than one task's worth of points is noise, and the report says so.
-4. **Hard-task pass rates are confounded with absolute difficulty.** Handled by the
-   `too_hard_for_matrix` calibration and by always showing the f16 column.
-5. **Tier L is more permissive than production** (`repeat_penalty 1.0` vs 1.05), so measured loop
-   rates are an upper bound for production settings. Both values are printed in the report.
-6. **Duplicated prefill within an arm does not leak between requests** — each request's KV is
-   rewound to the common document prefix — except in `tool_episode`, whose transcript is
-   deliberately sequential.
-7. **The intervalkit fixture's third visible test** needs `coverage_report` to surface a degenerate
-   point gap, which the hidden check suite does not score. `repo_fix` records both the hidden
-   checks and the visible test; `resolved` requires both, so a model that patches only `abuts` is
-   scored on the hidden suite and marked unresolved.
-8. **Measured, after the fact, and kept in the report.** (a) `semver` behaved exactly as the prior
-   32k study predicted: one prerelease-ordering decision moves the module between 24 and 261 of 261
-   checks, so a C-tier delta of tens of points can be one bit. (b) A C-tier arm that hits the
-   generation ceiling produces *truncated* code, not wrong code — Gemma-4-26B-A4B at q4_0 truncated
-   on three tasks — so `out_tokens`, `finish_reason` and emitted line count are reported per sample
-   and every re-run at a larger budget is marked `budget_raised`. (c) The zlib-ratio loop threshold
-   fires on templated prose: 25 of 45 `gen_manual` samples cross 0.42 with no line/ngram/cycle
-   signal, uniformly across arms. The report therefore prints two counts: `union (L)` (any verdict)
-   and `hard repetition` (repeated line, n-gram, 200-char block or tail cycle only). Example measured
-   in this run: qwen36-35b's f16 "loops" are two `gen_manual` samples at zip 0.424/0.420 with
-   `line_run=1`, i.e. formulaic prose on the wrong side of a threshold, while its one structural loop
-   is at q8_0.
-9. **The GPU was left free.** The Strata service that had been holding it was already stopped by the
-   operator before this study began, so nothing was restarted at the end; the final state is
-   13 MiB used on the GPU and no `llama-server` process.
-10. **Downloaded weights are pinned by sha256**; the three pre-existing GGUFs were already on this
-   host and their upstream provenance was not re-verified, but their digests are recorded and
-   checked on every run.
+1. **Realized prompts differ across tokenizers.** One text, three tokenizers: prompt lengths differ
+   (recorded per arm), though the f16-to-q4_0 comparison inside a model is unaffected.
+2. **Greedy decode is one draw.** There is no sampling error bar; the paired bootstrap over instances
+   accounts for instance-to-instance variance, and loop counts are scoped to greedy decoding.
+3. **W4 pays its own prefill.** Its window fills through tool reads of an on-disk log, so it cannot
+   reuse another workflow's cached prefix, though every W4 instance sees identical text across arms.
+4. **Deep PPL stops at 65,536 tokens.** The pinned tool needs `2 × ctx` tokens in the file and
+   allocates `ctx/2 × vocab × 4` bytes of host memory; at 102,400 that aborts on this 62 GiB machine,
+   and every W1 record names the depth it scored.
+5. **Phase B asks five questions at once.** A model that emits fewer than five `ANSWER:` lines loses
+   the missing keys; that is short-context formatting, reported as phase-B keys and not folded into
+   retention.
+6. **W2 can saturate.** If every arm including q4_0 scores 20/20, the probe measures format
+   compliance; the stop rule widens it to forty shards, and the report flags saturation.
+7. **The rung can differ per model.** Each model runs at its own largest affordable rung, so
+   cross-model rows are descriptive and never compared at unequal context.
+8. **Reasoning is unbounded.** A model that spends the whole window thinking is a recorded
+   `context_full` outcome with zero visible tokens; it is reported, never retried and never scored.

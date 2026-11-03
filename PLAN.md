@@ -1,11 +1,13 @@
+> Superseded by [docs/AGENTIC-BENCH-PLAN.md](docs/AGENTIC-BENCH-PLAN.md). This file records the design of the prior 15-arm study and is kept for provenance.
+
 # KV-cache quant × long-context: 5 models at f16 / q8_0 / q4_0 through llama.cpp
 
 Goal: at one identical long context, for each model, measure (a) whether hard, automatically
 verifiable tasks get worse as the KV cache, meaning the stored attention state for every token already
-read, is quantized from f16 to q8_0 to q4_0, and (b) whether the model starts **looping**, which here
-means repeating the same words, commands, tool calls or actions without doing work. Deliver a runnable
-harness, the results, and a single-file HTML report, and make the whole thing reproducible by a third
-party.
+read, is reduced from uncompressed 16-bit values (f16) through 8-bit (q8_0) and 4-bit (q4_0)
+compression, and (b) whether the model starts **looping**, which here means repeating the same words,
+commands, tool calls or actions without doing work. Deliver a runnable harness, the results, and a
+single-file HTML report, and make the whole thing reproducible by a third party.
 
 Everything below was verified on this machine unless marked **UNVERIFIED** (those are listed in
 §12 and are the points where a smaller model must not assume).
@@ -13,6 +15,9 @@ Everything below was verified on this machine unless marked **UNVERIFIED** (thos
 ---
 
 ## 0. Environment facts (verified, use verbatim in the manifest)
+
+The table records the build and machine the plan was written against. Every value in it belongs in the
+run manifest, because a rebuild or a different driver changes both memory use and numerics.
 
 | fact | value |
 |---|---|
@@ -40,49 +45,51 @@ and grader contract and deliberately *does not* modify it.
 
 ## 1. Resolved decisions (do not re-litigate; each has a reason)
 
-1. **Arms = 5 models × 3 symmetric KV types = 15.** f16/f16, q8_0/q8_0, q4_0/q4_0. Symmetric only
+1. The matrix has fifteen arms: five models crossed with three symmetric KV types, f16/f16,
+   q8_0/q8_0 and q4_0/q4_0. Symmetric only
    (asymmetric K/V is not a production setting here). `-fa on` is mandatory: quantized V cache
    refuses to load without flash attention (`src/llama-context.cpp` logs
    "quantized V cache requires flash_attn to be enabled").
-2. **Speculative decoding / MTP is OFF for every arm.** Speculative decoding verifies against the
+2. Speculative decoding and MTP (multi-token prediction) are off for every arm. Speculative decoding
+   verifies against the
    target model and cannot change the distribution, so it is irrelevant to the question, it costs
    VRAM that the f16 arm needs, and the Gemma/Ornith MTP drafters would be extra downloads.
    Do not pass `--spec-type`.
-3. **Gemma 4 31B is dropped** — consequence of your rule "dense models: pick the quant that fits
-   VRAM". Numbers: 10 global attention layers × 4 KV heads × 512 dim × K+V × 2 B = **80 KiB/token
+3. Gemma 4 31B is dropped because of the rule that dense models get the quant that fits VRAM.
+   Numbers: 10 global attention layers × 4 KV heads × 512 dim × K+V × 2 B = **80 KiB/token
    while the cache is at f16, which becomes 7.8 GiB at 100k tokens**, plus 838 MiB of sliding-window
    caches, plus 18.0 GB of Q4_0
    weights against a 15.3 GiB budget. No published quant of that model (smallest: unsloth Q3_K_S,
    13.2 GB) fits at 100k with an f16 KV cache. It comes back only if the common context drops to
    ~65k; record that in `docs/RESULTS.md` as a conscious exclusion.
-4. **Weights per model**: the dense 27B keeps IQ3_XXS, which is already on disk, and because the model
+4. The dense 27B keeps IQ3_XXS, which is already on disk, and because the model
    is dense its full weight set has to fit; the mixture-of-experts models may be larger, because their
    expert weights spill to RAM through `--n-cpu-moe`.
-5. **Common context = one number for every arm**, resolved empirically by the fit probe (§5) from
+5. The common context is one number for every arm, resolved empirically by the fit probe (§5) from
    the ladder `102400, 98304, 90112, 81920, 73728, 65536, 57344, 49152`. Target is 102,400; the
    binding constraint is the dense 27B at f16 (prior measurement: 81,920 max with *no* offload;
    the probe tries `-ncffn` to reach 102,400 first). Every arm uses the same `-c`. What "context"
    means in the report: the `-c` value (identical everywhere) plus the realized
    `usage.prompt_tokens` (differs per tokenizer; recorded, not equalized).
-6. **Reasoning on, `--reasoning-effort medium --reasoning-budget 8192`** for the graded tiers.
+6. Reasoning runs at `--reasoning-effort medium --reasoning-budget 8192` for the graded tiers.
    If a model's template ignores it, the arm logs `reasoning_unsupported` and runs thinking-off;
    reported as a caveat, never silently.
-7. **Repetition suppression is off inside the loop probes** (`repeat_penalty 1.0`, `dry_multiplier 0`)
+7. Repetition suppression is off inside the loop probes (`repeat_penalty 1.0`, `dry_multiplier 0`)
    because a repetition penalty is exactly the thing that masks looping. The graded tiers use the
    production value `1.05`. Both are per-request body fields — verified the server accepts
    `repeat_penalty`, `dry_multiplier`, `seed`, `top_k`, `min_p` per request — so one server per arm
    serves both.
-8. **Reps**: `--reps 3` on the sampled tiers (R and L, temp 0.7, seeds 1001/1002/1003);
-   `--code-reps 1` greedy on the code tier, because temperature 0 on a fixed build and fixed
-   `-ub` is bit-reproducible and repeating it would only burn hours. `--code-reps 3 --code-temp 0.7`
-   exists for anyone who wants pass@k. This is written up in `docs/METHOD.md` so the choice is
-   auditable, not hidden.
-9. **Budget**: expected 15–18 h for the full matrix, hard governor `--deadline-hours 22`, matrix
-   resumable per arm, Ornith last. Wall clock over 12 h is accepted.
-10. **Never touch `/home/kome/.local/share/llm-models/models.ini`.** It is the production preset
+8. The sampled tiers run three repetitions, `--reps 3` on R and L at temperature 0.7 with seeds
+   1001/1002/1003, while the code tier runs one greedy pass (`--code-reps 1`) because temperature 0
+   on a fixed build and fixed `-ub` is bit-reproducible and repeating it would only burn hours.
+   `--code-reps 3 --code-temp 0.7` exists for anyone who wants pass@k. This is written up in
+   `docs/METHOD.md` so the choice is auditable, not hidden.
+9. The budget is 15–18 h for the full matrix under a hard `--deadline-hours 22` governor; the matrix is
+   resumable per arm, Ornith last, and wall clock over 12 h is accepted.
+10. Never touch `/home/kome/.local/share/llm-models/models.ini`. It is the production preset
     (27B at 128k, q4_0 KV, MTP) and this experiment must not disturb it. All flags live in
     `kvtest/config.py`.
-11. **No network at run time.** Model downloads happen once, up front, with sha256 verification.
+11. No network is needed at run time. Model downloads happen once, up front, with sha256 verification.
     After that the harness runs offline: the report is an HTML file opened from `file://` with every
     asset inlined, so it needs no CDN, meaning no content-delivery network to fetch scripts or fonts.
 
@@ -540,10 +547,10 @@ Per arm, in this order (f16 first *within* each model because it is the referenc
    Wait for `/health`, log stdout+stderr to `results/<stamp>/logs/<model>__<kv>.log`, start the
    VRAM sampler.
 2. Warm the document into the slot with the first R task (this is the one 100k prefill).
-3. **R tier**: 6 tasks × `--reps` reps, temp 0.7, seeds 1001.. — `SAMPLING_LOOP`.
-4. **C tier**: 6 tasks × `--code-reps`, temp 0.0 — `SAMPLING_GRADED`.
-5. **L tier**: 4 probes × `--reps`, temp 0.7, repetition suppression off; `tool_episode` runs
-   its up-to-6 turns per rep.
+3. The R tier runs 6 tasks × `--reps` reps at temp 0.7 with seeds 1001 and up, using `SAMPLING_LOOP`.
+4. The C tier runs 6 tasks × `--code-reps` at temp 0.0, using `SAMPLING_GRADED`.
+5. The L tier runs 4 probes × `--reps` at temp 0.7 with repetition suppression off; `tool_episode`
+   runs its up-to-6 turns per rep.
 6. Write `arms/<model>__<kv>.json` atomically (`os.replace`) after **every request**, and append
    one line per request to `samples.jsonl` — a crash or a deadline cut loses nothing.
 7. `Server.stop()` (SIGTERM, wait, SIGKILL); check the port is free before the next arm.

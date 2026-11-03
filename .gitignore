@@ -7,3 +7,4 @@ results/*/run*.out
 results/*/run*-recovered.log
 __pycache__/
 *.pyc
+.cache/

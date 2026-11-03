@@ -59,6 +59,12 @@ def read(path):
         return ver, nt, kv, tens
 
 
+def declared_sampling(path):
+    """The model file's own general.sampling.* block, for the manifest."""
+    _, _, kv, _ = read(path)
+    return {k: v for k, v in kv.items() if k.startswith("general.sampling")}
+
+
 def geometry(path):
     """KV bytes/token for the three arms, derived from GGUF metadata.
 

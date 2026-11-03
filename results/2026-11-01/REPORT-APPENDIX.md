@@ -1,7 +1,10 @@
 # Appendix — every table, method and provenance
 
-## Appendix: full tables, method and provenance
-
+This appendix holds the long form of the run's tables: hardware, per-model offload, each tier's
+per-task breakdown, the paired tests, agreement matrices, speed, wall clock and threats to validity.
+It is the same data as the short report, kept unsorted so a reader can check any number. In the
+tables, f16, q8_0 and q4_0 are the three cache settings; R, C and L are the retrieval, code and loop
+tiers; and `p` is the paired test for the comparison named beside it.
 
 ## Hardware and build this ran on
 
@@ -19,8 +22,14 @@ the matrix.
 | llama.cpp | 2a667032dc78 (clean working tree) |
 | build flags | `CMAKE_BUILD_TYPE=Release`, `CMAKE_CUDA_ARCHITECTURES=86`, `GGML_CUDA=ON`, `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=OFF`, `GGML_CUDA_FA_QUANTS=q4_0-q4_0;q8_0-q8_0;f16-f16;bf16-bf16`, `GGML_CUDA_NO_VMM=OFF`, `GGML_NATIVE=ON` |
 
-Recorded: captured on the same machine, recorded in hardware.json. Per-arm GPU peak and the offload knobs are in the per-model offload table below; those are what the memory budget was spent on.
-The long form lives in `REPORT-APPENDIX.md` next to this file; it is the same data, unsorted for reading.
+Recorded: the values above were captured on the same machine and saved to `hardware.json`. Per-arm
+GPU peak and the offload knobs are in the per-model offload table below, which is where the memory
+budget actually went.
+
+The verdict table names the best cache type for each model, the runner-up, the loop count and the
+decode speed, and the reason column spells out the paired comparison. In that column, `R Δ` is the
+retrieval-point difference against f16 and `C Δ` is the code-check difference; `p` is the paired test
+for that tier.
 
 | model | best KV | capability | runner-up | structural loops | decode t/s | why |
 |---|---|---|---|---|---|---|
@@ -54,13 +63,17 @@ run nothing separates.
 | 14 | `gemma4-26b-a4b` **q8_0** | 56.60 | 2/12 | 33.8 | 1.0000 | no — tied |
 | 15 | `gemma4-26b-a4b` **q4_0** | 33.72 | 3/12 | 34.3 | 1.0000 | no — tied |
 
-The comparison is made **one tier at a time** (R, C, L tested separately, smallest p multiplied by 3 as a Bonferroni correction), because pooling raw R points, C checks and L flags into one sum would let the 261-check samples outweigh the 0/1 flags — a scale artefact, not evidence. The arms that are **not distinguishable from the winner** are: `qwen38-flash` f16 (83.33), `qwen38-27b` q8_0 (83.33), `qwen36-35b` q4_0 (82.24), `qwen38-flash` q8_0 (80.38), `qwen36-35b` f16 (79.04), `qwen36-35b` q8_0 (76.15), `qwen38-27b` q4_0 (75.64), `qwen38-27b` f16 (75.32), `ornith-35b` f16 (66.79), `ornith-35b` q8_0 (63.21), `gemma4-26b-a4b` f16 (62.82), `ornith-35b` q4_0 (60.45), `gemma4-26b-a4b` q8_0 (56.60), `gemma4-26b-a4b` q4_0 (33.72). The 0 that are separable are all *worse* than it: . On this run the lead is therefore not established.
+The comparison is made **one tier at a time** (R, C, L tested separately, smallest p multiplied by 3 as a Bonferroni correction), because pooling raw R points, C checks and L flags into one sum would let the 261-check samples outweigh the 0/1 flags — a scale artefact, not evidence. R is the retrieval tier, C the code tier and L the loop tier. The arms that are **not distinguishable from the winner** are: `qwen38-flash` f16 (83.33), `qwen38-27b` q8_0 (83.33), `qwen36-35b` q4_0 (82.24), `qwen38-flash` q8_0 (80.38), `qwen36-35b` f16 (79.04), `qwen36-35b` q8_0 (76.15), `qwen38-27b` q4_0 (75.64), `qwen38-27b` f16 (75.32), `ornith-35b` f16 (66.79), `ornith-35b` q8_0 (63.21), `gemma4-26b-a4b` f16 (62.82), `ornith-35b` q4_0 (60.45), `gemma4-26b-a4b` q8_0 (56.60), `gemma4-26b-a4b` q4_0 (33.72). No arm separated from the winner, so the lead is not established.
 
 Sensitivity, disclosed rather than hidden: normalising every sample to its own fraction (points ÷ possible, checks ÷ checks) before pooling separates eight arms instead of three. Every alternative pooling scheme that was tried separates only arms that are *worse* than the leader, never a better one, so no reading of this data supports 'quantized KV is an improvement'.
 
 ## Per-model offload (knobs are frozen across the three KV arms)
 
-Knobs are identical for a model's three arms; the VRAM peak and speeds below are the **f16 arm's**. Measured peaks differ between a model's arms by up to 3142 MiB, and the ordering is not the same on every model, so the verdict table's numbers are the arm that actually won, not this one (peaks include transient buffers and are not a clean cache-size measurement).
+Offload knobs decide how many model layers run in system RAM instead of on the GPU. They are identical
+for a model's three arms; the VRAM peak and speeds below are the **f16 arm's**. Measured peaks differ
+between a model's arms by up to 3142 MiB, and the ordering is not the same on every model, so the
+verdict table's numbers are the arm that actually won, not this one. The peaks include transient
+buffers and are not a clean cache-size measurement.
 
 | model | weights off the GPU | VRAM peak MiB (f16) | realized prompt tokens | prefill t/s (f16) | decode t/s (f16) |
 |---|---|---|---|---|---|

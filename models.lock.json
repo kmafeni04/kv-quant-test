@@ -1,14 +1,12 @@
 {
   "document": {
-    "chars": 305234,
-    "filler_chars": 278835,
-    "sha256": "944bb825ead422d76e2f3877f4a4e93ae1b5c188c63bcf6fefc21d39dcb23b20",
+    "chars": 313025,
+    "filler_chars": 281786,
+    "sha256": "11e504b3f33395bc55eae9a1b669a19cc18bf18c0fbf47792b2854aa08fa3cc2",
     "tokens_by_model": {
-      "gemma4-26b-a4b": 81765,
-      "ornith-35b": 91284,
-      "qwen36-35b": 91284,
-      "qwen38-27b": 91284,
-      "qwen38-flash": 91284
+      "gemma4-26b-a4b": 84113,
+      "ornith-35b": 94170,
+      "qwen36-35b": 94170
     }
   },
   "host": {

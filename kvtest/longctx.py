@@ -1,10 +1,16 @@
-"""The one long document every task appends to.
+"""The one long document every workflow shares, plus the on-disk operation log.
 
 A single canonical text is built once per run and reused verbatim by every arm: filler plus
 planted, uniquely identifiable records at fixed depths, each with a near-miss decoy so retrieval
 cannot succeed on fuzzy surface match. Text identity across arms is what makes the comparison
-valid, so the document is a pure function of (seed, filler_target_chars, repository files) and its
-sha256 is recorded in raw.json.
+valid, so the document is a pure function of (seed, filler_target_chars) and its sha256 is
+recorded in raw.json.
+
+Planted for the six workflows:
+  40 shards (20 of them are the W2 keys, every second one) with near-miss decoys,
+  120 ledger rows with tenants, 60 employee records, 12 rules, 5 invariants,
+  60 search clusters in 15 four-hop chains,
+  400 mutation log records, 20 per tenant for six tenants (W4 reads this log on disk).
 """
 import hashlib
 import random
@@ -40,7 +46,6 @@ def _vocab():
             w = r + s
             if w not in out:
                 out.append(w)
-    # deterministic top-up if suffixes collided
     i = 0
     while len(out) < 400:
         out.append(f"{ROOTS[i % len(ROOTS)]}{i}")
@@ -58,6 +63,8 @@ SHARD_NAMES = ["orion", "vega", "lyra", "draco", "cygnus", "altair", "rigel", "s
                "achernar", "betelgeuse", "canopus", "diphda"]
 CODE_PREFIX = ["AK", "BQ", "CZ", "DF", "EG", "HN", "JP", "KM", "LR", "NT"]
 PROJECTS = [f"PRJ-{i:02d}" for i in range(1, 21)]
+TENANTS = [f"TEN-{i:02d}" for i in range(1, 7)]
+
 RULES = [
     "Rule 1: Before any shard is moved, its custodian must sign the manifest.",
     "Rule 2: A ledger row tagged RED is never settled against an OPEN shard.",
@@ -72,6 +79,19 @@ RULES = [
     "Rule 11: A void ledger row cancels the shard it references, not the project.",
     "Rule 12: Every report ends with the count of rows it did not settle.",
 ]
+
+INVARIANTS = [
+    "Invariant I1: The active ledger total is conserved by every transfer.",
+    "Invariant I2: A retracted row keeps its record and changes status to VOID.",
+    "Invariant I3: An appended row must carry a row id that has never existed.",
+    "Invariant I4: Every mutation is applied exactly once and in log order.",
+    "Invariant I5: A mutation tagged for one tenant never touches another tenant's rows.",
+]
+
+W2_STRIDE = 2                 # every second shard of the forty planted
+SEARCH_CHAINS = 15            # 15 chains x 4 clusters = 60 search clusters
+OPS_PER_TENANT = 20
+OP_NOISE = 280
 
 
 def _sentence(rng, n):
@@ -90,46 +110,45 @@ def _filler(rng, n_chars):
     return text[:n_chars]
 
 
-def _code_section():
-    """The intervalkit package + failing test, dumped as ### FILE blocks (repo_fix input)."""
-    root = f"{config.FIXTURES}/repo/repofixture"
-    out = ["The following package is under maintenance and one of its behaviours is wrong.\n"]
-    for name in ("README.md",):
-        out.append(f"### FILE: {name}\n{open(f'{root}/{name}').read().strip()}\n")
-    for name in sorted(("core.py", "merge.py", "store.py", "report.py", "__init__.py")):
-        body = open(f"{root}/intervalkit/{name}").read()
-        out.append(f"### FILE: intervalkit/{name}\n```python\n{body}```\n")
-    test = open(f"{root}/test_visible.py").read()
-    out.append(f"### FILE: test_visible.py\n```python\n{test}```\n")
-    out.append("--- end of package listing ---\n")
-    return "\n".join(out)
-
-
-def build_document(seed=config.DOC_SEED, filler_chars=None, include_code=True):
-    """-> (text, facts). Deterministic in (seed, filler_chars, fixture files on disk)."""
-    rng = random.Random(seed)
-    filler_chars = config.DOC_FILLER_TARGET if filler_chars is None else filler_chars
-
-    # --- planted records, decided before they are placed so tasks can be built from facts
+def _build_shards(rng):
     shards = []
+    used = set()
     for i, name in enumerate(SHARD_NAMES):
         code = f"{CODE_PREFIX[i % 10]}-{1000 + rng.randrange(8000)}"
-        shards.append(dict(name=name, code=code, custodian=f"EMP-{rng.randrange(100, 999):04d}",
-                           frac=round(0.02 + i * (0.96 / (len(SHARD_NAMES) - 1)), 4)))
-    seen = {s["code"] for s in shards}
-    for s in shards:                       # ensure unique codes
-        while s["code"] in seen and list(seen).count(s["code"]) > 1:
-            s["code"] = f"{s['code'][:2]}-{1000 + rng.randrange(8000)}"
-            seen.add(s["code"])
+        while code in used:
+            code = f"{CODE_PREFIX[i % 10]}-{1000 + rng.randrange(8000)}"
+        used.add(code)
+        if i % W2_STRIDE == 0:                       # digit-altered near miss
+            n = int(code[3:])
+            decoy = f"{code[:2]}-{(n + 1 + rng.randrange(8)) % 10000:04d}"
+            while decoy in used or decoy == code:
+                decoy = f"{code[:2]}-{rng.randrange(1000, 9999):04d}"
+            used.add(decoy)
+            decoy_kind, decoy_name = "code", None
+        else:                                        # codeless shard with a similar name
+            decoy_kind, decoy_name = "name", f"{name}-minor"
+            decoy = None
+        shards.append(dict(
+            name=name, code=code, custodian=f"EMP-{rng.randrange(100, 999):04d}",
+            frac=round(0.02 + i * (0.96 / (len(SHARD_NAMES) - 1)), 4),
+            decoy_kind=decoy_kind, decoy=decoy, decoy_name=decoy_name,
+            w2_index=(i // W2_STRIDE) if i % W2_STRIDE == 0 else None))
+    return shards
 
+
+def _build_ledgers(rng):
     ledgers = []
     for i in range(120):
-        ledgers.append(dict(id=f"L-{i + 1:04d}",
-                            status=rng.choice(["OPEN", "CLOSED", "VOID", "OPEN", "CLOSED"]),
-                            tag=rng.choice(["RED", "BLUE", "GOLD", "RED"]),
-                            amount=rng.randrange(11, 9999),
-                            frac=round(0.01 + i * (0.98 / 119), 4)))
+        ledgers.append(dict(
+            id=f"L-{i + 1:04d}", tenant=TENANTS[i % len(TENANTS)],
+            status=rng.choice(["OPEN", "CLOSED", "VOID", "OPEN", "CLOSED"]),
+            tag=rng.choice(["RED", "BLUE", "GOLD", "RED"]),
+            amount=rng.randrange(11, 9999),
+            frac=round(0.01 + i * (0.98 / 119), 4)))
+    return ledgers
 
+
+def _build_records(rng):
     heads = [42, 118, 205, 291, 377, 463, 549, 635, 721, 807, 893, 979]
     records = []
     for c, head in enumerate(heads):
@@ -141,38 +160,138 @@ def build_document(seed=config.DOC_SEED, filler_chars=None, include_code=True):
                 badge=f"B-{1000 + c * 10 + k}",
                 project=PROJECTS[(c * 5 + k) % len(PROJECTS)],
                 frac=round(0.03 + (c * 5 + k) * (0.80 / 59), 4)))
+    return records
 
-    # --- blocks: (fraction of final text, rendered text)
+
+def _build_clusters(rng):
+    """15 chains of 4 clusters; a multi-hop question means searching three cluster ids."""
+    words = [w for w in VOCAB if len(w) > 5][:160]
+    clusters = []
+    for c in range(SEARCH_CHAINS):
+        chain = []
+        for k in range(4):
+            cid = f"KX-{c * 4 + k + 1:04d}"
+            chain.append(dict(
+                id=cid, term=f"{rng.choice(SHARD_NAMES)}-{rng.choice(words)}",
+                value=f"{rng.choice(words).upper()}-{rng.randrange(1000, 9999)}",
+                next=None,
+                frac=round(0.36 + (c * 4 + k) * (0.34 / 59), 4)))
+        for k in range(3):
+            chain[k]["next"] = chain[k + 1]["id"]
+        chain[3]["next"] = "NONE"
+        clusters.extend(chain)
+    return clusters
+
+
+def multihop_questions(facts):
+    """Three questions, each two `next` hops from its chain head: search floor is 3 calls."""
+    out = []
+    for c in range(3):
+        chain = facts["clusters"][c * 4:c * 4 + 4]
+        out.append(dict(
+            id=f"multihop_{c + 1}",
+            head=chain[0]["id"], hops=[chain[1]["id"], chain[2]["id"]],
+            expected=chain[2]["value"],
+            prompt=(f"Starting from search cluster {chain[0]['id']}, follow the `next` field twice. "
+                    f"Report the `value` of the cluster you land on. Search first; do not guess.")))
+    return out
+
+
+def _build_ops(rng, ledgers):
+    """400 mutation records: 20 per tenant for six tenants, plus 280 foreign-tenant noise."""
+    by_tenant = {t: [lg for lg in ledgers if lg["tenant"] == t] for t in TENANTS}
+    ops, used_ids = [], set()
+    for t_i, tenant in enumerate(TENANTS):
+        rows = by_tenant[tenant]
+        kinds = (["append"] * 7 + ["retract"] * 6 + ["transfer"] * 7)
+        rng.shuffle(kinds)
+        append_n = 0
+        for k, kind in enumerate(kinds):
+            op_id = f"OP-{len(ops) + 1:04d}"
+            src = rows[(k * 3) % len(rows)]
+            if kind == "append":
+                append_n += 1
+                row = f"L-{2000 + t_i * 100 + append_n:04d}"
+                while row in used_ids:
+                    append_n += 1
+                    row = f"L-{2000 + t_i * 100 + append_n:04d}"
+                used_ids.add(row)
+                tag = rng.choice(["RED", "BLUE", "GOLD"])
+                amount = rng.randrange(11, 999)
+                ops.append(dict(id=op_id, tenant=tenant, kind="append", row=row,
+                                tag=tag, amount=amount,
+                                line=f"OP {op_id} tenant={tenant} kind=append row={row} "
+                                     f"tag={tag} amount={amount}"))
+            elif kind == "retract":
+                ops.append(dict(id=op_id, tenant=tenant, kind="retract", row=src["id"],
+                                line=f"OP {op_id} tenant={tenant} kind=retract row={src['id']}"))
+            else:
+                dst = rows[(k * 3 + 1) % len(rows)]
+                amount = rng.randrange(5, 200)
+                ops.append(dict(id=op_id, tenant=tenant, kind="transfer", row=src["id"],
+                                to=dst["id"], amount=amount,
+                                line=f"OP {op_id} tenant={tenant} kind=transfer row={src['id']} "
+                                     f"to={dst['id']} amount={amount}"))
+    for i in range(OP_NOISE):
+        tenant = f"TEN-{90 + i % 8:02d}"          # not a study tenant: pure background noise
+        op_id = f"OP-{len(ops) + 1:04d}"
+        kind = ["append", "retract", "transfer"][i % 3]
+        row = f"L-{3000 + i:04d}" if kind == "append" else \
+            ledgers[i % len(ledgers)]["id"]
+        if kind == "transfer":
+            dst = ledgers[(i + 3) % len(ledgers)]["id"]
+            line = (f"OP {op_id} tenant={tenant} kind=transfer row={row} to={dst} "
+                    f"amount={rng.randrange(5, 200)} (foreign batch)")
+        elif kind == "append":
+            line = (f"OP {op_id} tenant={tenant} kind=append row={row} tag=BLUE "
+                    f"amount={rng.randrange(11, 999)} (foreign batch)")
+        else:
+            line = f"OP {op_id} tenant={tenant} kind=retract row={row} (foreign batch)"
+        ops.append(dict(id=op_id, tenant=tenant, kind=kind, row=row, line=line, foreign=True))
+    rng.shuffle(ops)
+    return ops
+
+
+def build_document(seed=config.DOC_SEED, filler_chars=None):
+    """-> (text, facts). Deterministic in (seed, filler_chars)."""
+    rng = random.Random(seed)
+    filler_chars = config.DOC_FILLER_TARGET if filler_chars is None else filler_chars
+
+    shards = _build_shards(rng)
+    ledgers = _build_ledgers(rng)
+    records = _build_records(rng)
+    clusters = _build_clusters(rng)
+    ops = _build_ops(random.Random(seed + 1), ledgers)
+
     blocks = []
-    decoy_words = 0
-    for i, s in enumerate(shards):
+    for s in shards:
         blocks.append((s["frac"], (
             f"SHARD {s['name']} code={s['code']} custodian={s['custodian']}\n"
-            f"  archive-note: revision {s['code'][:2]}-{int(s['code'][3:]) + 1} superseded; "
-            f"index tag ZQ-{7000 + rng.randrange(999)}")))
-        if i % 2 == 0:
-            blocks.append((s["frac"] + 0.002, "ZQ-7731 flagged for re-seal under Rule 10."))
-        if i % 3 == 0:
-            blocks.append((s["frac"] + 0.004, "ZQ-7732 cleared; ZQ-77310 quarantined; "
-                                              "ZQ-7731X retired."))
-        decoy_words += 3
+            f"  superseded-note: revision {s['decoy']} was retired and is not the live code"
+            if s["decoy_kind"] == "code" else
+            f"SHARD {s['name']} code={s['code']} custodian={s['custodian']}\n"
+            f"  superseded-note: shard {s['decoy_name']} carries no code and was retired")))
     for lg in ledgers:
         blocks.append((lg["frac"], (
-            f"LEDGER {lg['id']} status={lg['status']} tag={lg['tag']} amount={lg['amount']}")))
+            f"LEDGER {lg['id']} tenant={lg['tenant']} status={lg['status']} "
+            f"tag={lg['tag']} amount={lg['amount']}")))
         if lg["id"].endswith("7"):
             blocks.append((min(lg["frac"] + 0.003, 0.995),
-                           f"LEDGER {lg['id']}-B status={lg['status']} tag=BLUE amount=1 "
-                           f"(superseded copy of {lg['id']})"))
+                           f"LEDGER {lg['id']}-B tenant={lg['tenant']} status={lg['status']} "
+                           f"tag=BLUE amount=1 (superseded copy of {lg['id']})"))
     for r in records:
         blocks.append((r["frac"], (
             f"RECORD {r['emp']} name={r['name']} manager={r['manager']} "
             f"badge={r['badge']} project={r['project']}")))
     for i, rule in enumerate(RULES):
-        blocks.append((round(0.500 + i * (0.100 / max(len(RULES) - 1, 1)), 4), rule))
-    if include_code:
-        blocks.append((0.85, _code_section()))
+        blocks.append((round(0.500 + i * (0.060 / max(len(RULES) - 1, 1)), 4), rule))
+    for i, inv in enumerate(INVARIANTS):
+        blocks.append((round(0.565 + i * (0.020 / max(len(INVARIANTS) - 1, 1)), 4), inv))
+    for c in clusters:
+        blocks.append((c["frac"], (
+            f"CLUSTER {c['id']} term={c['term']} value={c['value']} next={c['next']} "
+            f"note={_sentence(rng, 12)}")))
 
-    # dedupe/shift collisions so ordering stays monotone
     blocks.sort(key=lambda b: b[0])
     total_chars = filler_chars + sum(len(b) + 6 for _, b in blocks)
     filler = _filler(rng, filler_chars)
@@ -188,34 +307,39 @@ def build_document(seed=config.DOC_SEED, filler_chars=None, include_code=True):
         out.append(block)
     out.append(filler[fi:])
 
-    body = "\n\n".join(out)
-    text = body + "\n\n--- END OF DOCUMENT ---\n"
-    # exact-token occurrences only: ZQ-77310 and ZQ-7731X are decoys, not hits
-    fwe = len(re.findall(r"(?<![A-Za-z0-9-])ZQ-7731(?![A-Za-z0-9])", text))
+    text = "\n\n".join(out) + "\n\n--- END OF DOCUMENT ---\n"
+    w2_keys = [s for s in shards if s["w2_index"] is not None]
+    w2_keys.sort(key=lambda s: s["w2_index"])
     facts = dict(shards=shards, ledgers=ledgers, records=records, rules=RULES,
-                 fwe_count=fwe,
-                 chains=[dict(head=f"EMP-{h:04d}", hops=[
-                     f"EMP-{h + k:04d}" for k in range(5)]) for h in heads],
+                 invariants=INVARIANTS, clusters=clusters, ops=ops,
+                 tenants=TENANTS, w2_keys=w2_keys,
+                 multihop=multihop_questions(dict(clusters=clusters)),
+                 chains=[dict(head=f"EMP-{h:04d}", hops=[f"EMP-{h + k:04d}" for k in range(5)])
+                         for h in (42, 118, 205, 291, 377, 463, 549, 635, 721, 807, 893, 979)],
                  chars=len(text))
     return text, facts
+
+
+def op_log(facts, doc):
+    """The W4 operation log on disk: the shared document followed by the mutation records."""
+    return doc + "\n\n--- BEGIN MUTATION LOG ---\n" + \
+        "\n".join(op["line"] for op in facts["ops"]) + "\n--- END MUTATION LOG ---\n"
+
+
+def shard_by_name(facts):
+    return {s["name"]: s for s in facts["shards"]}
 
 
 def sha256(text):
     return hashlib.sha256(text.encode()).hexdigest()
 
 
-def answers(facts):
-    """Every answerable quantity a graded task could ask for, computed from the facts."""
-    out = {}
-    reds = [lg for lg in facts["ledgers"] if lg["status"] == "OPEN" and lg["tag"] == "RED"]
-    out["agg_sum"] = (len(reds), sum(lg["amount"] for lg in reds))
-    out["count_proj"] = {}
-    for r in facts["records"]:
-        out["count_proj"][r["project"]] = out["count_proj"].get(r["project"], 0) + 1
-    out["fwe_count"] = facts["fwe_count"]
-    out["shard_by_name"] = {s["name"]: s for s in facts["shards"]}
-    out["by_emp"] = {r["emp"]: r for r in facts["records"]}
-    return out
+def by_depth(items, key="frac"):
+    return sorted(items, key=lambda d: d[key])
+
+
+def exact_occurrences(text, token):
+    return len(re.findall(rf"(?<![A-Za-z0-9-]){re.escape(token)}(?![A-Za-z0-9])", text))
 
 
 if __name__ == "__main__":
@@ -225,4 +349,4 @@ if __name__ == "__main__":
     text, facts = build_document(filler_chars=fc)
     print(len(text), sha256(text))
     print(json.dumps({k: (v if not isinstance(v, list) else len(v)) for k, v in facts.items()},
-                     indent=1)[:800])
+                     indent=1)[:900])
