@@ -15,7 +15,7 @@ import re
 import subprocess
 import time
 
-from . import config, longctx
+from . import config, longctx, server as srv
 
 NUM = r"[-+]?\d+(?:\.\d+)?(?:[eE][-+]?\d+)?"
 
@@ -58,6 +58,8 @@ def slice_meta(path):
 
 
 def _run(cmd, log_path, timeout=14400):
+    # A wedged loader can hold the device for minutes after its process was signalled.
+    srv.wait_vram_free(timeout=600)
     os.makedirs(os.path.dirname(log_path), exist_ok=True)
     t0 = time.time()
     with open(log_path, "wb") as f:

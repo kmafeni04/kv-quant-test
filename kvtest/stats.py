@@ -1,8 +1,8 @@
 """Statistics for counted probes: Wilson intervals, paired cluster bootstrap, decision rule.
 
-One draw per instance (greedy decode), so the instance is the cluster. W2 and W3 are counts out
-of 20, which is why the paired difference is a mean of per-instance key differences with a
-bootstrap interval rather than a test over samples.
+One draw per instance (greedy decode), so the instance is the cluster. W2 and W3 are counts of
+keys per instance (64 and 20), which is why the paired difference is a mean of key differences with
+a bootstrap interval rather than a test over samples.
 """
 import math
 import random

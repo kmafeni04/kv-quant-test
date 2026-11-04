@@ -22,7 +22,7 @@ ZIP_FLAG = 0.42
 # A monotone enumeration (`row 1`, `row 2`, ...) repeats no word, line or block, so it evades every
 # repetition test. It is still work-free output. Lines are normalized by replacing digit runs with
 # `#`; 40 consecutive lines of one digit-bearing template is flagged, which leaves a legitimate
-# twenty-item answer list untouched.
+# sixty-four-item answer list of codes, whose prefixes vary, untouched.
 TEMPLATE_RUN_FLAG = 40
 # The zlib ratio alone false-positives on structured prose: a clean 1,258-char tool-turn block at
 # distinct_4 0.968 compressed to 0.441, and a 2,216-char legitimate shard/invariant list compressed to

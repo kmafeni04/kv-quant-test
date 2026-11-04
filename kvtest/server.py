@@ -43,6 +43,34 @@ def port_free(port):
             return False
 
 
+def wait_vram_free(below=1024, timeout=240):
+    """Block until the GPU is released, or report that it never was.
+
+    A CUDA context outlives its process by a moment: `llama-perplexity` launched two seconds after a
+    server exits allocates weights into a still-occupied device and dies on a 300 MiB cudaMalloc.
+    """
+    t0 = time.time()
+    while time.time() - t0 < timeout:
+        used = gpu_mib()
+        if 0 <= used < below:
+            return True
+        time.sleep(2)
+    holders = _gpu_holders()
+    print(f"[server] WARNING: GPU still holds {gpu_mib()} MiB after {timeout}s"
+          + (f" (holder pids: {holders})" if holders else ""), flush=True)
+    return False
+
+
+def _gpu_holders():
+    """PIDs the driver reports as holding device memory, for the timeout message."""
+    try:
+        p = subprocess.run(["nvidia-smi", "--query-compute-apps=pid,used_memory",
+                            "--format=csv,noheader"], capture_output=True, text=True, timeout=10)
+        return ", ".join(line.strip() for line in p.stdout.strip().splitlines() if line.strip())
+    except Exception:                                              # noqa: BLE001
+        return ""
+
+
 def gpu_mib():
     try:
         p = subprocess.run(["nvidia-smi", "--query-gpu=memory.used", "--format=csv,noheader,nounits"],
@@ -115,14 +143,7 @@ class Server:
 
     def wait_vram_free(self, below=1024, timeout=240):
         """A previous arm's CUDA context can outlive its process for a moment; do not race it."""
-        t0 = time.time()
-        while time.time() - t0 < timeout:
-            used = gpu_mib()
-            if 0 <= used < below:
-                return True
-            time.sleep(2)
-        print(f"[server] WARNING: GPU still holds {gpu_mib()} MiB after {timeout}s", flush=True)
-        return False
+        return wait_vram_free(below=below, timeout=timeout)
 
     def start(self, timeout=900, attempts=2):
         os.makedirs(os.path.dirname(self.log_path), exist_ok=True)
@@ -151,8 +172,9 @@ class Server:
                   f"(gpu {gpu_mib()} MiB used): {reason}", flush=True)
             self.stop()
             if attempt + 1 < attempts:
-                # a transient hold on VRAM is the one thing a retry can fix
-                time.sleep(15)
+                # A wedged loader can hold tens of GiB long after its process was killed; the
+                # retry is only worth making once the driver has actually handed the memory back.
+                wait_vram_free(timeout=600)
         return False
 
     def log_tail(self, n=4000):

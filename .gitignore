@@ -3,8 +3,11 @@ results/*/scratch/
 results/*/document.txt
 results/*/arms/
 results/*/samples.jsonl
-results/*/run*.out
+results/*/*.out
 results/*/run*-recovered.log
+results/*/monitor.log
+results/*/gpu-holders.json
+results/*/free-vram-at-start-mib.txt
 __pycache__/
 *.pyc
 .cache/

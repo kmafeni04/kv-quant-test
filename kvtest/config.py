@@ -84,7 +84,7 @@ ANSWER_INSTRUCTION = (
 # Instances are per arm and set by information per hour (D1/D3 and the workflow table).
 WORKFLOWS = {
     "W1": dict(name="KLD and perplexity", instances=3, guard=None, tier="instrument"),
-    "W2": dict(name="20-key retrieval", instances=12, guard="1 request", tier="counted"),
+    "W2": dict(name="64-key retrieval", instances=12, guard="1 request", tier="counted"),
     "W3": dict(name="Compaction", instances=12, guard="2 requests", tier="counted"),
     "W4": dict(name="Long-horizon ledger", instances=6, guard=120, tier="long"),
     "W5": dict(name="Agentic search", instances=6, guard=60, tier="long"),

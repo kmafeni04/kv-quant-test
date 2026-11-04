@@ -33,7 +33,7 @@ Six workflows, each with a fixed instance count per arm:
 | id | workflow | instances | guard | what is graded |
 |---|---|---|---|---|
 | W1 | KLD and perplexity | 3 passes | — | mean KLD (Kullback–Leibler divergence) against the f16 logits, same-top agreement, deep-context PPL (perplexity) ratio |
-| W2 | 20-key retrieval | 12 | 1 request | codes correct out of 20, per key, in order; hit rate by planted depth |
+| W2 | 64-key retrieval | 12 | 1 request | codes correct out of 64, per key, in order; hit rate by planted depth |
 | W3 | compaction | 12 | 2 requests | how many of twenty brief facts survive, answers from the brief alone, loop detection over both responses |
 | W4 | long-horizon ledger | 6 | 120 tool calls | final ledger hash and five invariants |
 | W5 | agentic search | 6 | 60 tool calls | three multi-hop answer keys, search calls against a floor |
@@ -44,10 +44,11 @@ distribution has moved from the f16 arm's, and PPL is perplexity, the exponentia
 negative log-likelihood. The `guard` column is the hard stop for a workflow: one request for W2, two
 for W3, a tool-call count for W4 and W5, and only the response ceiling for W6.
 
-W2 and W3 are counts, not verdicts: a sample that loses one deep key scores 19, and the report shows
-which depth the miss sat at and whether it was `absent`, `mutated` or `misordered`. W1 is the fast
-instrument: it compares the quantized arm's next-token distribution with the f16 arm's own logits, so
-it produces a graded number with an error bar in minutes.
+W2 and W3 are counts, not verdicts: a retrieval sample that loses one deep key scores 63 of 64 and a
+brief that loses one identifier scores 19 of 20, and the report shows which depth the miss sat at and
+whether it was `absent`, `mutated` or `misordered`. W1 is the fast instrument: it compares the
+quantized arm's next-token distribution with the f16 arm's own logits, so it produces a graded number
+with an error bar in minutes.
 
 The tranches are fixed in advance — T1 Gemma all six workflows, T2 Ornith all six, T3 Qwen3.6 the
 counted probes, T4 Qwen3.6 the long workflows — so a deadline cut lands on the least informative
@@ -73,21 +74,21 @@ under a 24 h governor, and the report. Individual steps and the exact commands a
 
 ## Headline
 
-Each row is one arm: mean W2 key score out of 20, mean W3 brief retention out of 20, mean KLD
+Each row is one arm: mean W2 key score out of 64, mean W3 brief retention out of 20, mean KLD
 against that model's f16 logits, and loop and context-full halt counts.
 `mean (scored/attempted)` shows how many instances produced a score; `—` means none did, so the mean
 is absent rather than zero, and the W2/W3 columns are not comparable across models when halt counts
 differ.
 
 <!-- HEADLINE:START -->
-| model | KV | W2 mean /20 | W3 retention /20 | mean KLD | loop halts | context full |
+| model | KV | W2 mean /64 | W3 retention /20 | mean KLD | loop halts | context full |
 |---|---|---|---|---|---|---|
-| `gemma4-26b-a4b` | f16 | — (0/12) | — (0/12) | 0 | 31 | 0 |
-| `gemma4-26b-a4b` | q4_0 | — (0/12) | 20.00 (1/12) | 0.2052 | 31 | 0 |
-| `ornith-35b` | f16 | 20.00 | 20.00 | 0 | 1 | 6 |
-| `ornith-35b` | q4_0 | 20.00 | 20.00 | 0.0313 | 1 | 6 |
-| `qwen36-35b` | f16 | 20.00 | 20.00 | 0 | 0 | 0 |
-| `qwen36-35b` | q4_0 | 20.00 | 20.00 | 0.0095 | 0 | 0 |
+| `gemma4-26b-a4b` | f16 | — (0/12) | — (0/12) | 0 | 29 | 3 |
+| `gemma4-26b-a4b` | q4_0 | — (0/12) | — (0/12) | 0.1868 | 32 | 1 |
+| `ornith-35b` | f16 | 64.00 | 20.00 | 0 | 1 | 6 |
+| `ornith-35b` | q4_0 | 64.00 | 20.00 | 0.0276 | 1 | 7 |
+| `qwen36-35b` | f16 | 64.00 | 20.00 | 0 | 1 | 0 |
+| `qwen36-35b` | q4_0 | 64.00 | 20.00 | 0.0100 | 1 | 0 |
 <!-- HEADLINE:END -->
 
 ## What is here

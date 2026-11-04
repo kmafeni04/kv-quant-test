@@ -48,7 +48,7 @@ replaces, so a reader can see which limit of the earlier study it removes.
 
 | # | decision | replaces |
 |---|---|---|
-| D1 | 20-key retrieval, **scored 0–20** per sample | 3-key task with partial credit out of 3 |
+| D1 | 64-key retrieval, **scored 0–64** per sample | 3-key task with partial credit out of 3 |
 | D2 | One full-context rung per model, no ladder | Ladder 49k–100k |
 | D3 | Compaction workflow | — |
 | D4 | KLD and perplexity tier as the fast instrument | Terminal-Bench |
@@ -77,40 +77,48 @@ read.
   (perplexity) ratio, the RMS probability change, the Pearson correlation and same-top agreement, each with uncertainty. Its own README puts the logits file at
   11 GiB for a 240k-token corpus, which is why D4 uses a 4k-token slice.
 
-## D1 — W2: 20-key retrieval, scored out of 20
+## D1 — W2: 64-key retrieval, scored out of 64
 
 A lossy cache does one thing early: it drops or mutates specific values held at depth. The right
 instrument for that is a count, not a verdict, because the count says *how much* went missing and the
 verdict only says that something did.
 
-**The task.** Twenty shard codes, in the answer order asked. The twenty are every second shard of the
-forty planted, so their depths spread across the whole document: the shallowest sits near the opening
-and the deepest near the closing lines, which means each answer position tests a different distance
-into the cache. Each shard has a near-miss decoy, either a code differing in one or two digits or a
-codeless shard with a similar name, so surface matching does not score.
+**The task.** All sixty-four planted shard codes, in the answer order asked, so their depths spread
+across the whole document: the shallowest sits near the opening and the deepest near the closing lines,
+which means each answer position tests a different distance into the cache. Each shard has a near-miss
+decoy, a code differing in one or two digits, so surface matching does not score.
 
-**The score.** Each sample gets an integer out of 20: the number of positions holding the correct code.
+**The score.** Each sample gets an integer out of 64: the number of positions holding the correct code.
 Wrong, missing and duplicated all count as zero for that position, which makes the score monotone in
-what was lost and comparable across arms. A sample that loses one deep key scores 19; one that keeps
-only the shallow half scores 10.
+what was lost and comparable across arms. A sample that loses one deep key scores 63; one that keeps
+only the shallow half scores 32.
+
+**Why 64 and not 20.** The twenty-key version ran in `results/2026-11-02` and both cache types held
+all twenty keys on every scored arm, so the probe could not see a loss. Sixty-four keys give 768 key
+observations per twelve-instance arm, put every planted shard under test, and leave a distribution
+with room above the ceiling. The price is output length: the answer line grows from roughly 180 to 580
+characters, which is still one request and well inside the ceiling.
 
 **What is reported.**
 
 - per-arm mean and standard deviation of the score, and the paired difference in keys against that
   model's f16 arm, with a cluster bootstrap interval over instances;
 - the full per-key hit matrix, so a loss can be read as a curve rather than a total: hit rate by depth,
-  which turns "19 of 20" into "the miss was at 94% depth";
+  which turns "63 of 64" into "the miss was at 94% depth";
 - the failure-mode split per missed key: `absent`, `mutated` (near-miss decoy or digit-altered code) or
   `misordered`. `mutated` is the worse of the three, because a confidently wrong value is cache damage
   while an empty slot is at least honest.
 
 **Why not a gate.** A gate reports one bit per sample, and the earlier 3-key version reported one bit
-for the whole arm. Twenty counted keys give twenty distinctions per sample and a distribution to test,
-so an arm that loses one deep key in every instance shows up as a shifted mean with an interval, not as
-a tie. The cost is one request per sample, so the probe stays the cheapest in the study.
+for the whole arm. Sixty-four counted keys give sixty-four distinctions per sample and a distribution
+to test, so an arm that loses one deep key in every instance shows up as a shifted mean with an
+interval, not as a tie. The cost is one request per sample, so the probe stays the cheapest in the
+study.
 
-**Breadth.** If the score saturates at 20 for every arm including q4_0, the task widens to all forty
-shards before the other models run; a probe nobody loses a key on is measuring format compliance.
+**Breadth.** Twenty keys saturate, and did: `results/2026-11-02` was held in full by both cache types
+on every scored arm. All sixty-four planted shards are therefore asked for from the start. If every
+scored arm still holds all sixty-four, the report flags saturation as a finding and the probe is not
+widened again, because a longer answer line would test the answer format rather than the cache.
 
 ## D2 — One rung: the whole window, for every arm
 
@@ -153,7 +161,7 @@ different things:
 
 | channel | measure | what a failure means |
 |---|---|---|
-| Brief retention | count of 20 planted facts present in the brief, with `absent`/`mutated` split per fact | A full-cache read that lost a deep value. This is the cache-damage channel, and it is a count out of 20 for the same reason W2 is. |
+| Brief retention | count of 20 planted facts present in the brief, with `absent`/`mutated` split per fact | A full-cache read that lost a deep value. This is the cache-damage channel; the brief stays at 20 identifiers because a 1,500-word cap cannot carry 64, and W2 carries the wider count. |
 | Phase-B answers | keys correct given only the brief | If the fact is in the brief and the answer is still wrong, the failure is short-context reasoning, not cache depth. |
 | Degeneration | loop detector over both responses, and where it fires | Summarising is a long generation under maximum attention span, so a loop here is the long-horizon symptom the earlier study could not reach. |
 
@@ -280,7 +288,7 @@ Six workflows, all at the full rung. Success is graded from state or from counts
 | id | workflow | instances | guard | primary grading |
 |---|---|---|---|---|
 | W1 | **KLD and perplexity** (D4) | 3 passes/arm | — | mean KLD vs f16, same-top, deep-context PPL ratio |
-| W2 | **20-key retrieval** (D1) | 12 | 1 request | keys correct out of 20, in order |
+| W2 | **64-key retrieval** (D1) | 12 | 1 request | keys correct out of 64, in order |
 | W3 | **Compaction** (D3) | 12 | 2 requests | brief retention out of 20 facts |
 | W4 | **Long-horizon ledger** — 100k operation log on disk, read through tools so the window fills as it reads; 400 mutation records, 20 tenant-scoped mutations through `append`/`retract`/`transfer`, five invariants reported | 6 | 120 tool calls | final ledger hash + invariants; a re-applied mutation changes the hash |
 | W5 | **Agentic search** — 60 fact clusters, `search(term)` returns top-3 snippets, three multi-hop questions | 6 | 60 tool calls | answer keys correct, with a search floor and ceiling |
@@ -308,7 +316,8 @@ needed because decode is greedy: one draw per instance is the whole sample. The 
 workflow is in the workflow table, so the smallest attainable p is 2/2¹² = 0.0005 for W2 and W3, and
 0.031 for W4, W5 and W6.
 
-W2 and W3 are counts rather than verdicts. The report gives the mean score out of 20 with its standard
+W2 and W3 are counts rather than verdicts. The report gives the mean score out of 64 for W2 and out of
+20 for W3, each with its standard
 deviation, the distribution across instances, and the paired difference against that model's f16 arm
 with a cluster bootstrap over instances (1,000 resamples, seeded). A one-key shift is visible in the
 mean and in the per-depth curve even when no instance is dramatically wrong.
@@ -331,7 +340,7 @@ Nine changes separate this harness from the earlier one; METHOD.md carries the d
 2. Compaction engine: fixed-boundary rewrite, verbatim brief, and recorded token positions.
 3. KLD/PPL runner: f16 logits baseline once per model, arm metrics parsed into the arm record.
 4. Greedy sampling only: no seeds, no reps, and `sampler_resolved` captured per arm.
-5. 20-key builder: per-key grading, integer score out of 20, and a depth matrix.
+5. 64-key builder: per-key grading, integer score out of 64, and a depth matrix.
 6. State graders: ledger hash and invariants, brief retention, search counts, long-form structure.
 7. Extraction hardening: `ANSWER:` from reasoning, and wrapped or newline-separated answer lists.
 8. Manifest: rung, model hash, declared sampling, resolved sampler, baseline hashes, hardware.
@@ -355,7 +364,7 @@ the long workflows cost their generation.
 | workflow | instances | out tokens | Gemma | Ornith | Qwen3.6-35B |
 |---|---|---|---|---|---|
 | W1 KLD + PPL | 3 passes | ~4k + 80k scored | 5 m | 5 m | 6 m |
-| W2 20-key | 12 | ~300 | 10 m | 10 m | 11 m |
+| W2 64-key | 12 | ~600 | 10 m | 10 m | 11 m |
 | W3 compaction | 12 | ~6k | 36 m | 35 m | 42 m |
 | W4 ledger | 6 | ~18k | 45 m | 44 m | 54 m |
 | W5 search | 6 | ~8k | 22 m | 21 m | 27 m |
@@ -391,8 +400,9 @@ getting a number.
 
 - If f16 loses a key on any W2 instance, the task is mis-specified; fix the document or the prompt and
   do not proceed to the other arms.
-- If the W2 score saturates at 20 for every arm including q4_0, widen to all 40 shards before T2,
-  because a probe nobody loses a key on measures format compliance rather than cache damage.
+- If the W2 score saturates at 64 for every arm including q4_0, the probe is at its ceiling: the report
+  flags saturation as a finding and the task is not widened again, because a longer answer line would
+  measure the answer format rather than cache damage.
 - If `context_full` fires on more than half of an arm's runs, that is the finding; report it and do not
   move the rung down to make the arm finish.
 - If W3 retention is at ceiling for f16, the compaction wall is too shallow; deepen the facts before
@@ -405,14 +415,14 @@ getting a number.
 
 ## Sequencing
 
-1. No GPU: retire the old tiers, build the 20-key scorer and the compaction engine, wire the
+1. No GPU: retire the old tiers, build the 64-key scorer and the compaction engine, wire the
    KLD/perplexity runner, delete the budget and sampler plumbing, switch every request to greedy.
-2. Micro-pilot, ≤ 30 min, Gemma f16 only: one 92k prefill, one 20-key sample, one compaction pair, one
+2. Micro-pilot, ≤ 30 min, Gemma f16 only: one 92k prefill, one 64-key sample, one compaction pair, one
    KLD pass. Confirms the halt detector fires on a known loop, the score and the retention count
    discriminate, and calibrates prefill rate on this host. Not a scoring run.
 3. T1, then T2, then T3, then T4 as the governor allows. Each arm-set checkpoints per instance, so a
    cut night resumes instead of restarting.
-4. Report: one page (answer, W1 KLD and PPL by arm, W2 score out of 20 with the depth curve and the
+4. Report: one page (answer, W1 KLD and PPL by arm, W2 score out of 64 with the depth curve and the
    miss list, W3 retention, per-workflow results with intervals, halts with intervals, cost per
    instance, which cells ran) plus an appendix.
 

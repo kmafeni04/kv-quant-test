@@ -7,7 +7,8 @@ valid, so the document is a pure function of (seed, filler_target_chars) and its
 recorded in raw.json.
 
 Planted for the six workflows:
-  40 shards (20 of them are the W2 keys, every second one) with near-miss decoys,
+  64 shards, every one of them a W2 key, each with a digit-altered near-miss decoy,
+  20 of the 64 are the W3 brief identifiers, spanned across the document,
   120 ledger rows with tenants, 60 employee records, 12 rules, 5 invariants,
   60 search clusters in 15 four-hop chains,
   400 mutation log records, 20 per tenant for six tenants (W4 reads this log on disk).
@@ -60,7 +61,11 @@ SHARD_NAMES = ["orion", "vega", "lyra", "draco", "cygnus", "altair", "rigel", "s
                "fomalhaut", "gemma", "hadar", "izar", "jabbah", "kochab", "lucida", "mira",
                "nashira", "okab", "pollux", "quintet", "rasalgethi", "saiph", "tarazed",
                "unukalhai", "vindemiatrix", "wasat", "xerxes", "ytterbium", "zubenelgenubi",
-               "achernar", "betelgeuse", "canopus", "diphda"]
+               "achernar", "betelgeuse", "canopus", "diphda",
+               "alkaid", "alnilam", "alnitak", "alphard", "ankaa", "arneb", "ascella",
+               "atria", "avior", "bunda", "celaeno", "chort", "dziban", "edasich",
+               "electra", "enif", "errai", "gienah", "gomeisa", "heze", "keid",
+               "lesath", "maia", "megrez"]
 CODE_PREFIX = ["AK", "BQ", "CZ", "DF", "EG", "HN", "JP", "KM", "LR", "NT"]
 PROJECTS = [f"PRJ-{i:02d}" for i in range(1, 21)]
 TENANTS = [f"TEN-{i:02d}" for i in range(1, 7)]
@@ -88,7 +93,7 @@ INVARIANTS = [
     "Invariant I5: A mutation tagged for one tenant never touches another tenant's rows.",
 ]
 
-W2_STRIDE = 2                 # every second shard of the forty planted
+W3_KEYS = 20                  # brief identifiers, spread across the 64 planted shards
 SEARCH_CHAINS = 15            # 15 chains x 4 clusters = 60 search clusters
 OPS_PER_TENANT = 20
 OP_NOISE = 280
@@ -118,21 +123,19 @@ def _build_shards(rng):
         while code in used:
             code = f"{CODE_PREFIX[i % 10]}-{1000 + rng.randrange(8000)}"
         used.add(code)
-        if i % W2_STRIDE == 0:                       # digit-altered near miss
-            n = int(code[3:])
-            decoy = f"{code[:2]}-{(n + 1 + rng.randrange(8)) % 10000:04d}"
-            while decoy in used or decoy == code:
-                decoy = f"{code[:2]}-{rng.randrange(1000, 9999):04d}"
-            used.add(decoy)
-            decoy_kind, decoy_name = "code", None
-        else:                                        # codeless shard with a similar name
-            decoy_kind, decoy_name = "name", f"{name}-minor"
-            decoy = None
+        n = int(code[3:])                            # digit-altered near miss
+        decoy = f"{code[:2]}-{(n + 1 + rng.randrange(8)) % 10000:04d}"
+        while decoy in used or decoy == code:
+            decoy = f"{code[:2]}-{rng.randrange(1000, 9999):04d}"
+        used.add(decoy)
         shards.append(dict(
             name=name, code=code, custodian=f"EMP-{rng.randrange(100, 999):04d}",
             frac=round(0.02 + i * (0.96 / (len(SHARD_NAMES) - 1)), 4),
-            decoy_kind=decoy_kind, decoy=decoy, decoy_name=decoy_name,
-            w2_index=(i // W2_STRIDE) if i % W2_STRIDE == 0 else None))
+            decoy=decoy))
+    span = len(shards) - 1
+    brief = {round(k * span / (W3_KEYS - 1)) for k in range(W3_KEYS)}
+    for i, s in enumerate(shards):
+        s["w3_index"] = i if i in brief else None
     return shards
 
 
@@ -267,10 +270,7 @@ def build_document(seed=config.DOC_SEED, filler_chars=None):
     for s in shards:
         blocks.append((s["frac"], (
             f"SHARD {s['name']} code={s['code']} custodian={s['custodian']}\n"
-            f"  superseded-note: revision {s['decoy']} was retired and is not the live code"
-            if s["decoy_kind"] == "code" else
-            f"SHARD {s['name']} code={s['code']} custodian={s['custodian']}\n"
-            f"  superseded-note: shard {s['decoy_name']} carries no code and was retired")))
+            f"  superseded-note: revision {s['decoy']} was retired and is not the live code")))
     for lg in ledgers:
         blocks.append((lg["frac"], (
             f"LEDGER {lg['id']} tenant={lg['tenant']} status={lg['status']} "
@@ -308,11 +308,12 @@ def build_document(seed=config.DOC_SEED, filler_chars=None):
     out.append(filler[fi:])
 
     text = "\n\n".join(out) + "\n\n--- END OF DOCUMENT ---\n"
-    w2_keys = [s for s in shards if s["w2_index"] is not None]
-    w2_keys.sort(key=lambda s: s["w2_index"])
+    w2_keys = list(shards)
+    w3_keys = sorted((s for s in shards if s["w3_index"] is not None),
+                     key=lambda s: s["w3_index"])
     facts = dict(shards=shards, ledgers=ledgers, records=records, rules=RULES,
                  invariants=INVARIANTS, clusters=clusters, ops=ops,
-                 tenants=TENANTS, w2_keys=w2_keys,
+                 tenants=TENANTS, w2_keys=w2_keys, w3_keys=w3_keys,
                  multihop=multihop_questions(dict(clusters=clusters)),
                  chains=[dict(head=f"EMP-{h:04d}", hops=[f"EMP-{h + k:04d}" for k in range(5)])
                          for h in (42, 118, 205, 291, 377, 463, 549, 635, 721, 807, 893, 979)],

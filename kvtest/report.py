@@ -1,9 +1,9 @@
 """Artifacts: REPORT.md, report.html, matrix.csv, figures/ — all derived from raw.json.
 
 The report states the premise first (instances per workflow, comparisons, smallest attainable p,
-greedy decode), then reports each workflow's own measure: W1 distributional, W2 and W3 counts out
-of 20 with a per-depth curve, W4 state hashes and invariants, W5 answer keys and search calls, and
-W6 structure plus the loop instrument.
+greedy decode), then reports each workflow's own measure: W1 distributional, W2 and W3 key counts
+(64 and 20) with a per-depth curve, W4 state hashes and invariants, W5 answer keys and search calls,
+and W6 structure plus the loop instrument.
 """
 import argparse
 import html
@@ -15,7 +15,13 @@ import statistics
 
 from . import config
 
-TITLE = "Full-context KV quantization: agentic workflows, zero–20 key scores"
+TITLE = "Full-context KV quantization: agentic workflows, zero–{n} key scores"
+
+
+def _title(arms):
+    return TITLE.format(n=_w2_of(list(arms.values())))
+
+
 def _colour(kv):
     return {"f16": "var(--c-f16, #2d6a4f)", "q4_0": "var(--c-q4_0, #c2410c)",
             "q8_0": "var(--c-q8_0, #1d4ed8)"}.get(kv, "var(--fg, #111827)")
@@ -86,6 +92,15 @@ def _mean(xs):
 def _sd(xs):
     xs = [x for x in xs if x is not None]
     return statistics.stdev(xs) if len(xs) > 1 else (0.0 if xs else None)
+
+
+def _w2_of(rows):
+    """The W2 key count the probe asked for, so the denominators follow the data.
+
+    The 20 fallback reaches only a stamp that never ran W2; its title then carries that count and
+    no W2 table is printed.
+    """
+    return next((a["w2"].get("of") for a in rows if a["w2"].get("of")), 20)
 
 
 def _instances(arm, wf):
@@ -183,8 +198,9 @@ def aggregate(raw):
                     misses.append(dict(instance=i.get("instance"), name=k.get("name"),
                                        depth=k.get("depth"), status=k.get("status"),
                                        got=k.get("got"), expected=k.get("expected")))
+        of = next((g for g in ((i.get("grade") or {}).get("of") for i in inst) if g), 0)
         d["w2"] = dict(n=len(scores), attempted=len(inst), score_map=score_map,
-                       scores=scores, mean=_mean(scores), sd=_sd(scores),
+                       scores=scores, mean=_mean(scores), sd=_sd(scores), of=of,
                        halts=sum(1 for i in inst if i.get("halted_by") in
                                  ("loop", "context_full", "error", "ceiling")),
                        bands=[dict(band=f"{20 * b}-{20 * (b + 1)}%",
@@ -192,7 +208,7 @@ def aggregate(raw):
                                                           _wilson(bands[b]["hits"], bands[b]["n"]))))
                               for b in range(5)],
                        misses=misses,
-                       saturated=bool(scores) and all(s == 20 for s in scores))
+                       saturated=bool(scores) and all(s == of for s in scores))
         # W3
         inst = _instances(a, "W3")
         scored = _scored_w3(inst)
@@ -336,7 +352,8 @@ def _tldr(raw, arms):
     worst = max(q4, key=lambda a: a["w1"]["kld"]["mean_kld"])["model"]
     scored = [a for a in arms.values() if a["w2"]["n"]]
     saturated = sorted(f"{a['model']} {a['kv']}" for a in scored
-                       if a["w2"]["mean"] == 20 and a["w3"].get("mean") == 20)
+                       if a["w2"]["mean"] == a["w2"].get("of") and a["w3"].get("mean") == 20)
+    w2_of = _w2_of(scored)
     unscored = []
     for a in arms.values():
         if a["w2"]["attempted"] and not a["w2"]["n"]:
@@ -357,11 +374,11 @@ def _tldr(raw, arms):
              "every time. The deep-context perplexity change was " + (deep or "not measured") + "."]
     if saturated:
         lines.append("- **The counted probes hit their ceiling.** " + ", ".join(saturated) +
-                     " scored 20/20 on both the 20-key retrieval and the compaction brief, so those "
-                     "arms cannot separate f16 from q4_0.")
+                     f" scored {w2_of}/{w2_of} on the {w2_of}-key retrieval and 20/20 on the "
+                     "compaction brief, so those arms cannot separate f16 from q4_0.")
     if unscored:
         lines.append("- **Some models never produced an answer.** " + "; ".join(unscored) +
-                     " produced no scored 20-key instance. Halts are counted as their own outcome, "
+                     " produced no scored W2 instance. Halts are counted as their own outcome, "
                      "so this is not a lost key, but the probe has no score for those arms.")
     if w4_n:
         lines.append(f"- **The ledger workflow is a floor.** {w4_ok} of {w4_n} attempts reached the "
@@ -451,7 +468,7 @@ def _power(raw):
 def write_markdown(out_dir, raw, arms, path):
     man = raw.get("manifest") or {}
     doc = raw.get("document") or {}
-    lines = [f"# {TITLE}", ""] + _tldr(raw, arms) + [_headline(raw, arms), ""]
+    lines = [f"# {_title(arms)}", ""] + _tldr(raw, arms) + [_headline(raw, arms), ""]
 
     lines += ["## Premise, power and disclosure", ""]
     lines.append(f"- Instances per arm: " +
@@ -520,6 +537,20 @@ def write_markdown(out_dir, raw, arms, path):
             lines.append("")
             for a in deep_fail:
                 lines.append(f"- `{a['arm']}` deep PPL failed: {a['w1']['deep_error']}")
+        w1_failed = [a for a in w1_ran
+                     if (a["w1"].get("kld") or {}).get("mean_kld") is None]
+        if w1_failed:
+            lines.append("")
+            for a in w1_failed:
+                why = (a["w1"].get("error") or a["w1"].get("kld_error")
+                       or (a["w1"].get("baseline") or {}).get("error") or "no metrics parsed")
+                if a["kv"] == "f16":
+                    lines.append(f"- `{a['arm']}` has no KLD row: {why}. The cell is missing, not "
+                                 "zero, and that model's q4_0 row has no f16 reference for its PPL "
+                                 "ratio.")
+                else:
+                    lines.append(f"- `{a['arm']}` has no KLD row: {why}. The cell is missing, not "
+                                 "zero, so that arm has no PPL ratio against its model's f16 run.")
         lines += ["", "The ln PPL ratio is each arm's own scored PPL divided by that model's f16 arm's "
                   "PPL on the identical slice. On an identical-model check the pinned tool printed "
                   "`Mean PPL(Q)` equal to the baseline run's own PPL while its `Mean PPL(base)` "
@@ -533,11 +564,12 @@ def write_markdown(out_dir, raw, arms, path):
     # W2
     w2_rows = [a for a in sorted(arms.values(), key=lambda a: (a["model"], a["kv"]))
                if a["w2"]["attempted"]]
-    lines += ["## W2: 20-key retrieval", ""]
+    w2_of = _w2_of(w2_rows)
+    lines += [f"## W2: {w2_of}-key retrieval", ""]
     if not w2_rows:
         lines += ["No arm ran W2 in this stamp.", ""]
     else:
-        lines += ["| model | KV | mean /20 | sd | min | max | scored | halts | q4_0 − f16 | interval | decision |",
+        lines += [f"| model | KV | mean /{w2_of} | sd | min | max | scored | halts | q4_0 − f16 | interval | decision |",
                   "|---|---|---|---|---|---|---|---|---|---|---|"]
         for a in w2_rows:
             w = a["w2"]
@@ -595,9 +627,10 @@ def write_markdown(out_dir, raw, arms, path):
                       "the probe has no reference data for that model."]
         scored_arms = [a for a in arms.values() if a["w2"]["n"]]
         if scored_arms and all(a["w2"]["saturated"] for a in scored_arms):
-            lines += ["", "**SATURATED.** Every scored arm holds all twenty keys. Per the stop rules "
-                      "the probe widens to all forty shards before the second model runs; otherwise "
-                      "it is measuring format compliance rather than cache damage."]
+            lines += ["", f"**SATURATED.** Every scored arm holds all {w2_of} keys. Per the stop "
+                      "rules the probe is at its ceiling and the study does not widen it again: a "
+                      "longer answer line would test the answer format, not the cache. The saturation "
+                      "is reported as a finding."]
         lines.append("")
 
     # W3
@@ -791,7 +824,7 @@ def write_markdown(out_dir, raw, arms, path):
     baselines = man.get("kld_baselines") or {}
     if baselines:
         lines.append("- KLD baselines: " + ", ".join(
-            f"`{k}` `{(v or {}).get('sha256', '')[:12]}` ctx={(v or {}).get('ctx')}"
+            f"`{k}` `{((v or {}).get('sha256') or '')[:12]}` ctx={(v or {}).get('ctx')}"
             for k, v in baselines.items()) + " (stored outside the results tree).")
     lines.append(f"- document sha256 `{doc.get('sha256')}`; instances `{json.dumps(man.get('instances'))}`")
     lines.append("")
@@ -989,8 +1022,17 @@ def write_html(out_dir, raw, arms, path):
             w1_html += "<ul>" + "".join(
                 f"<li><code>{esc(a['arm'])}</code> deep PPL failed: "
                 f"{esc(str(a['w1']['deep_error']))}</li>" for a in deep_fail) + "</ul>"
-    w2_html = table(["arm", "mean /20", "sd", "min", "max", "scored", "halts", "diff vs f16",
-                     "interval", "decision"], w2_rows) if w2_rows else \
+        w1_failed = [a for a in w1_ran
+                     if (a["w1"].get("kld") or {}).get("mean_kld") is None]
+        if w1_failed:
+            w1_html += "<ul>" + "".join(
+                f"<li><code>{esc(a['arm'])}</code> has no KLD row: "
+                f"{esc(str(a['w1'].get('error') or (a['w1'].get('baseline') or {}).get('error')
+                          or a['w1'].get('kld_error') or 'no metrics parsed'))}. "
+                f"The cell is missing, not zero.</li>" for a in w1_failed) + "</ul>"
+    w2_of = _w2_of(list(arms.values()))
+    w2_html = table(["arm", f"mean /{w2_of}", "sd", "min", "max", "scored", "halts",
+                     "diff vs f16", "interval", "decision"], w2_rows) if w2_rows else \
         "<p class=\"note\">No arm ran W2 in this stamp.</p>"
     w3_html = table(["arm", "retention /20", "sd", "scored", "halts", "mutated", "absent",
                      "phase-B keys /5", "within cap", "decision"], w3_rows) if w3_rows else \
@@ -1026,7 +1068,8 @@ def write_html(out_dir, raw, arms, path):
     else:
         w1_section = w1_html
     if w2_rows:
-        w2_section = (f'<p class="note">Each instance asks for twenty codes in order. A point is '
+        w2_section = (f'<p class="note">Each instance asks for all {w2_of} codes in order. '
+                      f'A point is '
                       f'awarded per position that holds the correct code; a missing, wrong or '
                       f'near-miss value scores zero there. Instances halted by the detector, the '
                       f'window or the ceiling are counted in <code>halts</code> and left out of the '
@@ -1034,6 +1077,12 @@ def write_html(out_dir, raw, arms, path):
                       f'{depth_w2_html}\n<figure>{depth_svg}<figcaption>Hit rate by planted depth; '
                       f'deeper positions are the ones a lossy cache drops first.</figcaption>'
                       f'</figure>')
+        w2_scored = [a for a in arms.values() if a["w2"]["n"]]
+        if w2_scored and all(a["w2"]["saturated"] for a in w2_scored):
+            w2_section += (f'<p class="note"><strong>SATURATED.</strong> Every scored arm holds all '
+                           f'{w2_of} keys, so the probe is at its ceiling and the study does not '
+                           f'widen it again: a longer answer line would test the answer format, '
+                           f'not the cache. The saturation is reported as a finding.</p>')
     else:
         w2_section = w2_html
     if w3_rows:
@@ -1056,7 +1105,7 @@ def write_html(out_dir, raw, arms, path):
     doc = f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>{esc(TITLE)}</title>
+<title>{esc(_title(arms))}</title>
 <style>
 :root {{
   color-scheme: dark;
@@ -1082,21 +1131,21 @@ ul {{ margin: 8px 0 16px 20px; padding: 0; }}
 figure {{ margin: 14px 0; }}
 figcaption {{ color: var(--muted); font-size: 12px; }}
 </style></head><body>
-<h1>{esc(TITLE)}</h1>
+<h1>{esc(_title(arms))}</h1>
 <p class="lead">{lead}</p>
 {tldr_html}
 <p>This page compares an uncompressed 16-bit key/value cache (f16) with a 4-bit cache (q4_0) inside
 three models, at one full-context rung each. KV is the key/value cache, the stored attention state
 for every token the model has already read. KLD is Kullback–Leibler divergence and PPL is
-perplexity. The workflow labels W1–W6 mean the distribution instrument, the 20-key retrieval probe,
-compaction, the ledger, agentic search and long-form writing, in that order.</p>
+perplexity. The workflow labels W1–W6 mean the distribution instrument, the {w2_of}-key
+retrieval probe, compaction, the ledger, agentic search and long-form writing, in that order.</p>
 <h2>Premise, power and disclosure</h2>
 <p>The list below states the sample sizes and rules that apply to every table on the page; read it
 before comparing arms.</p>
 {premise}
 <h2>W1 — KLD and perplexity</h2>
 {w1_section}
-<h2>W2 — 20-key retrieval</h2>
+<h2>W2 — {w2_of}-key retrieval</h2>
 {w2_section}
 <h2>W3 — compaction</h2>
 {w3_section}
@@ -1161,7 +1210,8 @@ def write_csv(out_dir, arms, path):
 
 def write_readme_headline(arms, readme_path):
     ranked = sorted(arms.values(), key=lambda a: (a["model"], a["kv"]))
-    lines = ["| model | KV | W2 mean /20 | W3 retention /20 | mean KLD | loop halts | context full |",
+    lines = [f"| model | KV | W2 mean /{_w2_of(list(arms.values()))} | W3 retention /20 | mean KLD "
+             "| loop halts | context full |",
              "|---|---|---|---|---|---|---|"]
     def scored(a, key):
         w = a[key]

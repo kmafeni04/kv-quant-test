@@ -527,7 +527,7 @@ def main(argv=None):
     ap.add_argument("--smoke", action="store_true",
                     help="tiny document, one instance, no W1; for the harness self-test")
     ap.add_argument("--pilot", action="store_true",
-                    help="micro-pilot: one model, f16, one 20-key sample, one compaction pair")
+                    help="micro-pilot: one model, f16, one 64-key sample, one compaction pair")
     a = ap.parse_args(argv)
 
     stamp = a.stamp or time.strftime("%Y-%m-%dT%H:%M")

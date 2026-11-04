@@ -1,12 +1,12 @@
 {
   "document": {
-    "chars": 313025,
-    "filler_chars": 281786,
-    "sha256": "11e504b3f33395bc55eae9a1b669a19cc18bf18c0fbf47792b2854aa08fa3cc2",
+    "chars": 312347,
+    "filler_chars": 278183,
+    "sha256": "ef61e342dc7f52453b53def29de60b0955c7840fab58212c8d034fd61f751e8c",
     "tokens_by_model": {
-      "gemma4-26b-a4b": 84113,
-      "ornith-35b": 94170,
-      "qwen36-35b": 94170
+      "gemma4-26b-a4b": 84279,
+      "ornith-35b": 94222,
+      "qwen36-35b": 94222
     }
   },
   "host": {

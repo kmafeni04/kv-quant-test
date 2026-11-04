@@ -64,7 +64,7 @@ workflow reports first.
 | id | instances | guard | primary grading |
 |---|---|---|---|
 | W1 | 3 passes per arm | — | mean KLD vs the f16 logits, same-top, deep-context PPL ratio |
-| W2 | 12 | 1 request | 20 keys correct in asked order, with `absent`/`mutated`/`misordered` per miss |
+| W2 | 12 | 1 request | 64 keys correct in asked order, with `absent`/`mutated`/`misordered` per miss |
 | W3 | 12 | 2 requests | brief retention out of 20; phase-B keys; degeneration |
 | W4 | 6 | 120 tool calls | final ledger hash; five invariants |
 | W5 | 6 | 60 tool calls | three multi-hop answer keys; search calls vs a floor of 9 |
@@ -98,12 +98,19 @@ inconsistent with the tool's own preceding run. The report therefore computes th
 each arm's own scored PPL against the f16 arm's PPL on the identical slice, and keeps the tool's KLD,
 Δp and same-top outputs.
 
-**W2.** Twenty shard codes, every second one of the forty planted, so the depths run from 2% to 98% of
-the document. Each shard has a near-miss decoy: a code differing in one or two digits, or a codeless
-shard with a similar name. The answer line is parsed for code-shaped tokens in order, from `content`
-then from `reasoning_content`. Each position is `hit`, `absent` (no value), `misordered` (the expected
-code appears at another position) or `mutated` (any other wrong value, including the near-miss). Wrong,
-missing and duplicated positions all score zero, so the score is monotone in what was lost.
+**W2.** All sixty-four planted shard codes, in the order the prompt names them, so the depths run
+from 2% to 98% of the document and each answer position tests a different distance into the cache.
+Each shard has a near-miss decoy: a code differing in one or two digits. The answer line is parsed for
+code-shaped tokens in order, from `content` then from `reasoning_content`. Each position is `hit`,
+`absent` (no value), `misordered` (the expected code appears at another position) or `mutated` (any
+other wrong value, including the near-miss). Wrong, missing and duplicated positions all score zero,
+so the score is monotone in what was lost.
+
+The count is 64, not the 20 this probe asked for in `results/2026-11-02`. There, both cache types held
+all twenty keys on every scored arm, and a probe nobody loses a key on answers no question about the
+cache. Sixty-four keys give 768 key observations per twelve-instance arm and put every planted shard
+under test. The 20 identifiers the W3 brief must carry are a separate set (`facts["w3_keys"]`),
+spread across the same document, so the brief stays at a size a 1,500-word cap can hold.
 
 **W3.** Phase A sends the full document and asks for a handover brief of at most 1,500 words carrying
 twenty identifiers, the ledger rows a named tenant's mutations touch, and five invariants. Phase B
@@ -161,7 +168,8 @@ greedy, one draw per instance is the whole sample. The instance count per workfl
 table above, so the smallest attainable two-sided p is 2/2¹² = 0.0005 for W2 and W3 and 0.031 for
 W4–W6.
 
-W2 and W3 are counts rather than verdicts. The report gives the mean out of 20 with its standard
+W2 and W3 are counts rather than verdicts. The report gives the mean out of 64 for W2 and out of 20 for
+W3, each with its standard
 deviation, the distribution across instances, and the paired difference against that model's f16 arm
 with a percentile cluster bootstrap over instances (1,000 resamples, seeded). A one-key shift is
 visible in the mean and in the per-depth curve even when no instance is dramatically wrong. Depth is
@@ -188,10 +196,10 @@ way the old harness could decide a result before the model did.
    knobs, writes the f16 baseline once per model, and parses its metrics into the arm record.
 4. Greedy sampling everywhere; no seeds or reps; `sampler_resolved` per arm; reasoning-budget machinery
    deleted; the 64k ceiling is the only cap.
-5. 20-key task builder with per-key `absent`/`mutated`/`misordered` grading and the depth matrix.
+5. 64-key task builder with per-key `absent`/`mutated`/`misordered` grading and the depth matrix.
 6. State graders: ledger hash plus invariants, brief retention, search counts, long-form structure.
 7. `extract_*` hardening: `ANSWER:` parsed from reasoning as well as content, and a wrapped or
-   newline-separated answer block accepted for the 20-key line.
+   newline-separated answer block accepted for the 64-key line.
 8. Manifest: one rung per model, model-file sha256, declared `general.sampling.*`, resolved sampler per
    arm, KLD baseline and slice hashes/offsets, hardware at matrix start.
 9. Retired: codegen tier, repo tier, tier budgets, `REASONING_BUDGET_TOKENS`, `BUDGET_RETRY_MULT`,
@@ -211,8 +219,10 @@ way the old harness could decide a result before the model did.
 5. **Phase B asks five questions at once.** A model that emits fewer than five `ANSWER:` lines loses
    the missing keys; that is short-context formatting, reported as phase-B keys and not folded into
    retention.
-6. **W2 can saturate.** If every arm including q4_0 scores 20/20, the probe measures format
-   compliance; the stop rule widens it to forty shards, and the report flags saturation.
+6. **W2 is at its ceiling.** The 20-key version was held in full by every scored arm in
+   `results/2026-11-02`, so it measured format compliance. W2 now asks for all 64 planted shards; if
+   every scored arm still holds all 64, the report flags saturation as a finding and the probe is not
+   widened again, because a longer answer line would test the answer format rather than the cache.
 7. **The rung can differ per model.** Each model runs at its own largest affordable rung, so
    cross-model rows are descriptive and never compared at unequal context.
 8. **Reasoning is unbounded.** A model that spends the whole window thinking is a recorded

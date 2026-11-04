@@ -94,7 +94,7 @@ def _canned(req):
             last = m.get("content") or ""
     if "operator's manual" in last:
         return CANNED.get("w6") or "ACK", ""
-    if re.search(r"twenty shards", last):
+    if re.search(r"\d+ shards", last):
         return CANNED.get("w2") or "ACK", ""
     if "handover brief" in last:
         return CANNED.get("brief") or "ACK", ""
@@ -159,10 +159,14 @@ def test_client():
 def test_document():
     doc, facts = longctx.build_document(filler_chars=6000)
     codes = [s["code"] for s in facts["shards"]]
-    check("document: 40 shards with unique live codes", len(codes) == 40 and len(set(codes)) == 40)
-    check("document: 20 W2 keys, every second shard",
-          len(facts["w2_keys"]) == 20
-          and [s["name"] for s in facts["w2_keys"]] == [s["name"] for s in facts["shards"][::2]])
+    check("document: 64 shards with unique live codes", len(codes) == 64 and len(set(codes)) == 64)
+    check("document: every shard is a W2 key, in document order",
+          len(facts["w2_keys"]) == 64
+          and [s["name"] for s in facts["w2_keys"]] == [s["name"] for s in facts["shards"]])
+    check("document: 20 W3 brief identifiers, spread across the document",
+          len(facts["w3_keys"]) == 20
+          and facts["w3_keys"][0] is facts["shards"][0]
+          and facts["w3_keys"][-1] is facts["shards"][-1])
     decoys = [s["decoy"] for s in facts["shards"] if s["decoy"]]
     check("document: code decoys differ from every live code",
           decoys and not (set(decoys) & set(codes)))
@@ -188,31 +192,32 @@ def test_w2_grader():
     codes = [s["code"] for s in keys]
     good = ", ".join(codes)
     grade = tasks.grade_w2(facts, "listing...\nANSWER: " + good)
-    check("W2: 20 correct codes score 20", grade["score"] == 20 and grade["source"] == "content")
+    n = len(keys)
+    check(f"W2: {n} correct codes score {n}", grade["score"] == n and grade["source"] == "content")
     near = list(codes)
     near[0] = keys[0]["decoy"] or "ZZ-0000"
     grade = tasks.grade_w2(facts, "ANSWER: " + ", ".join(near))
     check("W2: near-miss decoy is `mutated`", grade["keys"][0]["status"] == "mutated")
-    check("W2: one mutated key scores 19", grade["score"] == 19)
+    check("W2: one mutated key costs one key", grade["score"] == n - 1)
     swap = list(codes)
     swap[1], swap[2] = swap[2], swap[1]
     grade = tasks.grade_w2(facts, "ANSWER: " + ", ".join(swap))
     check("W2: displaced codes are `misordered`",
           grade["keys"][1]["status"] == "misordered"
           and grade["keys"][2]["status"] == "misordered")
-    short = ", ".join(codes[:19])
+    short = ", ".join(codes[:-1])
     grade = tasks.grade_w2(facts, "ANSWER: " + short)
     check("W2: missing position is `absent` and costs one key",
-          grade["keys"][19]["status"] == "absent" and grade["score"] == 19)
+          grade["keys"][-1]["status"] == "absent" and grade["score"] == n - 1)
     grade = tasks.grade_w2(facts, "", "ANSWER: " + good)
     check("W2: ANSWER is parsed from reasoning when content has none",
-          grade["score"] == 20 and grade["source"] == "reasoning")
+          grade["score"] == n and grade["source"] == "reasoning")
     grade = tasks.grade_w2(facts, "no answer here")
     check("W2: no ANSWER line scores 0 and marks every key absent",
           grade["score"] == 0 and all(k["status"] == "absent" for k in grade["keys"]))
     newline = "\n".join(codes)
     check("W2: newline-separated values accepted",
-          tasks.grade_w2(facts, "ANSWER: " + newline)["score"] == 20)
+          tasks.grade_w2(facts, "ANSWER: " + newline)["score"] == n)
 
 
 def test_w6_grader():
@@ -257,8 +262,8 @@ def test_loop_scan():
     m = loops.metrics(enum)
     check("loop: monotone enumeration fires as a template run",
           loops.verdict(m)[0] and "template_run" in loops.verdict(m)[1])
-    codes = "\n".join(f"AK-{1000 + i}" for i in range(20))
-    check("loop: a legitimate twenty-item answer list is not flagged",
+    codes = "\n".join(f"AK-{1000 + i}" for i in range(64))
+    check("loop: a legitimate sixty-four-item answer list is not flagged",
           not loops.verdict(loops.metrics(codes))[0])
     sentences = ["Custody requires a signature before any move.",
                  "Settlement follows the order of record.",
@@ -274,11 +279,11 @@ def test_loop_scan():
 
 def test_compaction_grader():
     _, facts = longctx.build_document(filler_chars=4000)
-    brief_ok = "\n".join(f"SHARD {s['name']} code={s['code']}" for s in facts["w2_keys"])
+    brief_ok = "\n".join(f"SHARD {s['name']} code={s['code']}" for s in facts["w3_keys"])
     g = compaction.grade_brief(brief_ok, facts)
     check("W3: retention counts 20 identifiers", g["retention"] == 20 and g["absent"] == 0)
-    decoy = facts["w2_keys"][0]["decoy"]
-    mutated_brief = f"SHARD {facts['w2_keys'][0]['name']} code={decoy}"
+    decoy = facts["w3_keys"][0]["decoy"]
+    mutated_brief = f"SHARD {facts['w3_keys'][0]['name']} code={decoy}"
     g = compaction.grade_brief(mutated_brief, facts)
     check("W3: wrong code for a name is `mutated`",
           g["keys"][0]["status"] == "mutated" and g["mutated"] == 1)
@@ -304,7 +309,7 @@ def test_compaction_grader():
     check("W3: forced pair records retention and phase-B keys",
           rec["primary"] == 20 and rec["phase_b_grade"]["keys_correct"] == 5)
     check("W3: phase B sees the brief and not the document",
-          "THE-DOCUMENT" not in seen[1] and facts["w2_keys"][0]["code"] in seen[1])
+          "THE-DOCUMENT" not in seen[1] and facts["w3_keys"][0]["code"] in seen[1])
 
 
 def test_ledger_workflow():
@@ -437,7 +442,9 @@ def test_runner_end_to_end(tmp, mock_base):
         check("runner: arm finished with a sampler record",
               arm["finished"] and arm["sampler_resolved"]["greedy"])
         w2 = arm["workflows"]["W2"]["instances"]
-        check("runner: W2 scored 20/20 twice", [i["score"] for i in w2] == [20, 20])
+        n_keys = len(facts["w2_keys"])
+        check("runner: W2 scored every key twice",
+              [i["score"] for i in w2] == [n_keys, n_keys])
         check("runner: W6 sections and refs graded",
               arm["workflows"]["W6"]["instances"][0]["grade"]["ok"])
         # resume must not repeat finished instances
@@ -449,7 +456,7 @@ def test_runner_end_to_end(tmp, mock_base):
         check("runner: resume is idempotent", raw2["samples"] == 3, str(raw2["samples"]))
         md = report.build(out)
         check("report: W2 and W6 sections written",
-              "W2: 20-key retrieval" in md and "W6" in md)
+              f"W2: {len(facts['w2_keys'])}-key retrieval" in md and "W6" in md)
         check("report: HTML is a single self-contained page",
               os.path.exists(os.path.join(out, "report.html"))
               and "<svg" in open(os.path.join(out, "report.html")).read())
@@ -534,6 +541,16 @@ def test_report_all_workflows(tmp):
     check("report: a failed W1 pass shows its recorded error, not 'never ran'",
           "recorded no KLD metrics" in md_fail
           and "llama-perplexity missing" in md_fail)
+
+    raw_mixed = json.loads(json.dumps(raw))
+    raw_mixed["arms"]["m__q4_0"]["workflows"]["W1"] = {"error": "llama-perplexity missing",
+                                                       "kld": {}}
+    md_mixed = report.write_markdown(out, raw_mixed, report.aggregate(raw_mixed),
+                                     os.path.join(out, "REPORT-mixed.md"))
+    check("report: a mixed W1 stamp lists only the failed arm",
+          "m__q4_0` has no KLD row" in md_mixed
+          and "m__f16` has no KLD row" not in md_mixed
+          and "no f16 reference" not in md_mixed)
 
 
 # ---------------------------------------------------------------- main

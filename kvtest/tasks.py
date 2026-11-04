@@ -1,8 +1,8 @@
-"""Single-response workflows: W2 (20-key retrieval) and W6 (unbounded long-form).
+"""Single-response workflows: W2 (64-key retrieval) and W6 (unbounded long-form).
 
-W2 is a count out of 20, not a verdict: every position holds either the correct code or one of
-`absent` / `mutated` / `misordered`, so a loss of one deep key reads as 19 and a lost deep half
-reads as 10. W6 grades structure from the output text; the loop instrument runs over the whole
+W2 is a count out of 64, not a verdict: every position holds either the correct code or one of
+`absent` / `mutated` / `misordered`, so a loss of one deep key reads as 63 and a lost deep half
+reads as 32. W6 grades structure from the output text; the loop instrument runs over the whole
 output separately.
 """
 import re
@@ -31,13 +31,15 @@ def parse_codes(value):
 # ---------------------------------------------------------------- W2
 def w2_prompt(facts):
     names = ", ".join(s["name"] for s in facts["w2_keys"])
+    n = len(facts["w2_keys"])
     return (
-        "The document records shard codes at many depths. For each of the twenty shards named "
-        f"below, in exactly this order, report its live code in its XY-#### form:\n{names}\n\n"
+        "The document records shard codes at many depths. For each of the "
+        f"{n} shards named below, in exactly this order, report its live code in its "
+        f"XY-#### form:\n{names}\n\n"
         "Do not re-read, re-check or verify any shard, and do not deliberate once you have the "
-        "twenty codes: stop and emit the answer. Your response must end with one comma-separated "
-        "list on a single final line, in the same order:\n"
-        "ANSWER: <code1>, <code2>, ..., <code20>"
+        f"{n} codes: stop and emit the answer. Your response must end with one "
+        "comma-separated list on a single final line, in the same order:\n"
+        f"ANSWER: <code1>, <code2>, ..., <code{n}>"
     )
 
 
@@ -67,7 +69,7 @@ def grade_w2(facts, content, reasoning=""):
         keys.append(dict(name=shard["name"], depth=shard["frac"], expected=expected,
                          got=got, status=status))
     return dict(score=score, of=len(facts["w2_keys"]), keys=keys,
-                answer=value, source=source, codes=len(codes), extras=max(0, len(codes) - 20))
+                answer=value, source=source, codes=len(codes), extras=max(0, len(codes) - len(keys)))
 
 
 # ---------------------------------------------------------------- W6

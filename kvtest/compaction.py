@@ -6,7 +6,8 @@ brief verbatim, and asks questions whose answers lived deep in the discarded doc
 
 Three channels stay separate: brief retention out of 20 (the cache-damage channel and the primary
 endpoint), phase-B keys correct out of 5 (short-context reasoning), and degeneration over both
-responses (long-horizon behaviour).
+responses (long-horizon behaviour). The 20 are `facts["w3_keys"]`, a spread across the document;
+W2 asks about all 64 shards.
 """
 import re
 
@@ -25,7 +26,7 @@ def mutation_rows(facts, tenant):
 
 
 def phase_a_prompt(facts, tenant):
-    names = ", ".join(f"{s['name']}={s['code']}" for s in facts["w2_keys"])
+    names = ", ".join(f"{s['name']}={s['code']}" for s in facts["w3_keys"])
     rows = ", ".join(mutation_rows(facts, tenant))
     invs = "; ".join(facts["invariants"])
     return (
@@ -48,14 +49,12 @@ def _assoc_status(text, key):
     for m in re.finditer(re.escape(name.lower()), lower):
         if decoy and decoy.lower() in lower[m.start():m.end() + 240]:
             return "mutated"
-    if key.get("decoy_name") and key["decoy_name"].lower() in lower:
-        return "mutated"
     return "absent"
 
 
 def grade_brief(brief, facts):
-    keys = [dict(name=s["name"], code=s["code"], decoy=s["decoy"],
-                 decoy_name=s["decoy_name"], depth=s["frac"]) for s in facts["w2_keys"]]
+    keys = [dict(name=s["name"], code=s["code"], decoy=s["decoy"], depth=s["frac"])
+            for s in facts["w3_keys"]]
     for k in keys:
         k["status"] = _assoc_status(brief, k)
     words = len(re.findall(r"\S+", brief or ""))
@@ -77,7 +76,7 @@ def grade_brief(brief, facts):
 
 def phase_b_questions(facts):
     """Five questions answerable from the brief alone; answers lived deep in the document."""
-    deep = sorted(facts["w2_keys"], key=lambda s: -s["frac"])
+    deep = sorted(facts["w3_keys"], key=lambda s: -s["frac"])
     row_facts = {lg["id"]: lg for lg in facts["ledgers"]}
     deep_rows = [row_facts[r] for r in mutation_rows(facts, facts["tenants"][0]) if r in row_facts]
     deep_rows.sort(key=lambda lg: -lg["frac"])

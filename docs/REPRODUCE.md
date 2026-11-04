@@ -98,8 +98,8 @@ hold, the offload knob each model needs to fit, and the document length that lan
 `--deep-ppl-ctx` on a host without enough memory for the default depth.
 
 Everything else is fixed by design, because those are the values that make two runs comparable: the
-task text, the twenty-key selection, the tenant mutation sets, the five invariants, the brief's word
-cap, the tool-call guards, `temperature: 0.0`, the 64k response ceiling, the cache types and the
+task text, the sixty-four-key selection, the tenant mutation sets, the five invariants, the brief's
+word cap, the tool-call guards, `temperature: 0.0`, the 64k response ceiling, the cache types and the
 statistical rule.
 
 ## Output files
